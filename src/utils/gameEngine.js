@@ -18,13 +18,14 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 
 // ---------------------------------------------------------------------------
 // Bet calculation
-// SRD §3.1: Bet resets to STARTING_BET each round; modifiers accumulate.
+// The base bet increments every round: round 1 = bet 1, round 2 = bet 2, etc.
+// Trump modifiers accumulate on top of the round number.
 // Min bet is MIN_BET (0).
 // ---------------------------------------------------------------------------
-export function computeBetTotal(betModifiers) {
+export function computeBetTotal(betModifiers, round = 1) {
   return Math.max(
     GAME_CONFIG.MIN_BET,
-    GAME_CONFIG.STARTING_BET + betModifiers,
+    round + betModifiers,
   );
 }
 
@@ -153,7 +154,7 @@ function startRound(d, firstPlayerOverride = null) {
   // If the designated starter has already stood (shouldn't happen normally), advance
   if (d.players[d.turnIndex]?.stood) advanceTurn(d);
 
-  pushLog(d, `━━ Round ${d.round} · bet ${computeBetTotal(0)} ━━`);
+  pushLog(d, `━━ Round ${d.round} · bet ${computeBetTotal(0, d.round)} ━━`);
 }
 
 function advanceTurn(d) {
@@ -221,7 +222,7 @@ function resolveShowdown(d) {
   const winners = withBest.filter((p) => p.hand.length === minCards);
   const losers = active.filter((p) => !winners.some((w) => w.id === p.id));
 
-  const bet = computeBetTotal(d.betModifiers);
+  const bet = computeBetTotal(d.betModifiers, d.round);
   const naturalIds = active.filter((p) => isNatural(p.hand)).map((p) => p.id);
 
   active.forEach((p) => {
@@ -251,6 +252,7 @@ function resolveShowdown(d) {
 
   // SRD §3.2: winner receives chips 100–120 per win
   // The bet is also added to the winner's hearts (can exceed STARTING_LIVES).
+  // On a draw (no losers) no lives are exchanged.
   const payoutEach =
     winners.length && losers.length
       ? Math.floor((bet * losers.length) / winners.length)
@@ -258,7 +260,7 @@ function resolveShowdown(d) {
   let livesLostTotal = 0;
   for (const l of losers) livesLostTotal += Math.min(bet, GAME_CONFIG.STARTING_LIVES);
   for (const w of winners) {
-    w.lives += bet;
+    if (losers.length > 0) w.lives += bet;
     w.score += payoutEach;
     w.stats.livesTaken += Math.floor(livesLostTotal / winners.length);
   }

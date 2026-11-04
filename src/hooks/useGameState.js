@@ -2,7 +2,10 @@
 //
 // Model: the room HOST is authoritative. It owns the full state (deck, every hand),
 // runs `gameReducer`, then broadcasts masked state + per-player secrets.
-// Guests send actions to the host and render whatever the host sends back.
+//
+// State persistence: the full state is saved to Supabase `game_rooms` on every
+// commit so that a page refresh does not disconnect anyone.  On reload the
+// host reads `full_state` from the database; guests read `public_state`.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -16,28 +19,49 @@ import {
   viewFor,
 } from '../utils/gameEngine.js';
 import { useSupabaseRealtime } from './useSupabaseRealtime.js';
+import { supabase } from '../services/supabaseClient.js';
 
 export function useGameState({ partyCode, isHost, profile }) {
   const selfId = profile.id;
-  const fullRef   = useRef(null); // host only: complete (unmasked) state
-  const publicRef = useRef(null); // guest only: last public masked state
+  const fullRef    = useRef(null); // host only: complete (unmasked) state
+  const publicRef  = useRef(null); // guest only: last public masked state
   const privateRef = useRef(null); // guest only: my private packet
   const rtRef      = useRef(null);
+  const loadedRef  = useRef(false); // guard: initial DB load done
   const [view, setView] = useState(null);
 
-  // Host: commit a new full state, update own view, push to all clients.
+  const me = { id: selfId, name: profile.username, skinId: profile.equippedSkinId };
+
+  // ── Host: commit a new full state, update own view, push to clients + DB ──
   const commit = useCallback(
     (next) => {
       fullRef.current = next;
       setView(viewFor(next, selfId));
+      const masked = maskState(next);
       const rt = rtRef.current;
-      if (!rt) return;
-      rt.broadcastState(maskState(next));
-      next.players.forEach((p) => {
-        rt.sendPrivate(getPrivate(next, p.id));
-      });
+      if (rt) {
+        rt.broadcastState(masked);
+        next.players.forEach((p) => {
+          rt.sendPrivate(getPrivate(next, p.id));
+        });
+      }
+      // Persist to database (fire-and-forget so realtime stays snappy)
+      if (supabase && partyCode) {
+        supabase
+          .from('game_rooms')
+          .upsert({
+            party_code: partyCode,
+            host_id: selfId,
+            full_state: next,
+            public_state: masked,
+            updated_at: new Date().toISOString(),
+          })
+          .then(({ error }) => {
+            if (error) console.warn('[Lucky9] DB persist error:', error.message);
+          });
+      }
     },
-    [selfId],
+    [selfId, partyCode],
   );
 
   const hostApply = useCallback(
@@ -69,17 +93,74 @@ export function useGameState({ partyCode, isHost, profile }) {
   });
   rtRef.current = rt;
 
-  const me = { id: selfId, name: profile.username, skinId: profile.equippedSkinId };
-
-  // Host: create the room as soon as we have a party code.
+  // ── Host: load existing state from DB (handles page refresh) ──────────────
+  // If a room already exists in the database we resume it; otherwise we
+  // create a fresh initial state.  This runs once on mount.
   useEffect(() => {
-    if (isHost && partyCode && !fullRef.current) {
+    if (!isHost || !partyCode || loadedRef.current) return;
+    loadedRef.current = true;
+
+    if (supabase) {
+      supabase
+        .from('game_rooms')
+        .select('full_state')
+        .eq('party_code', partyCode)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.full_state) {
+            // Resume existing game
+            fullRef.current = data.full_state;
+            setView(viewFor(data.full_state, selfId));
+          } else {
+            // No existing room — create fresh
+            commit(createInitialState({ partyCode, hostPlayer: createPlayer(me) }));
+          }
+        });
+    } else {
+      // Supabase not configured — in-memory only
       commit(createInitialState({ partyCode, hostPlayer: createPlayer(me) }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, partyCode]);
 
-  // Guest: announce ourselves once the channel is live.
+  // ── Host: re-broadcast state once realtime connects (handles refresh) ─────
+  // After a page refresh the host loads state from DB, then this effect
+  // fires when the realtime channel comes online, pushing state to all guests.
+  useEffect(() => {
+    if (!isHost || !fullRef.current || rt.status !== 'SUBSCRIBED') return;
+    const masked = maskState(fullRef.current);
+    rt.broadcastState(masked);
+    fullRef.current.players.forEach((p) => {
+      rt.sendPrivate(getPrivate(fullRef.current, p.id));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, rt.status]);
+
+  // ── Guest: load public state from DB (handles page refresh) ───────────────
+  // Gives the guest an immediate view before the host re-broadcasts.
+  useEffect(() => {
+    if (isHost || !partyCode || loadedRef.current) return;
+    loadedRef.current = true;
+
+    if (supabase) {
+      supabase
+        .from('game_rooms')
+        .select('public_state')
+        .eq('party_code', partyCode)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.public_state) {
+            publicRef.current = data.public_state;
+            setView(applyPrivate(data.public_state, privateRef.current, selfId));
+          }
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost, partyCode]);
+
+  // ── Guest: announce ourselves once the channel is live ────────────────────
+  // JOIN is a no-op if we're already in the game (reconnect), but it triggers
+  // the host to re-broadcast state + our private packet.
   useEffect(() => {
     if (!isHost && rt.status === 'SUBSCRIBED') {
       rt.sendAction({ type: 'JOIN', player: me });
@@ -87,7 +168,7 @@ export function useGameState({ partyCode, isHost, profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, rt.status]);
 
-  // Guest: tell the host we're leaving if the tab closes.
+  // ── Guest: tell the host we're leaving if the tab closes ──────────────────
   useEffect(() => {
     if (isHost) return undefined;
     const bye = () => rtRef.current?.sendAction({ type: 'LEAVE', id: selfId });

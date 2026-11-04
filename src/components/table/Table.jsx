@@ -109,7 +109,7 @@ export default function Table({ game, onLeave }) {
   const opponents   = allPlayers.filter(p => p.id !== me.id);
   const turnPlayer  = allPlayers[view.turnIndex];
   const revealed    = view.phase === PHASES.SHOWDOWN || view.phase === PHASES.GAMEOVER;
-  const bet         = computeBetTotal(view.betModifiers ?? 0);
+  const bet         = computeBetTotal(view.betModifiers ?? 0, view.round ?? 1);
   const aimCfg      = aiming ? TRUMP_CARDS_CATALOG[aiming] : null;
   const targeting   = aimCfg?.targetType === 'SINGLE_PLAYER';
   const result      = view.lastResult;

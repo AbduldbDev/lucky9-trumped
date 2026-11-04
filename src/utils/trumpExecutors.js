@@ -23,13 +23,10 @@ function returnToDeck(draft, card) {
 export const EFFECT_EXECUTORS = {
   // ── BET_UP / BET_DOWN / DOUBLE_BET_UP / DOUBLE_BET_DOWN ─────────────────
   MODIFY_BET({ draft, actor, effect }) {
-    // Total bet = max(MIN_BET, STARTING_BET + betModifiers)
+    // betModifiers accumulates freely (e.g. two BET_DOWN → -2).
+    // computeBetTotal clamps the effective bet to MIN_BET at resolution time,
+    // so we do NOT clamp here — that would erase subsequent reductions.
     draft.betModifiers += effect.amount;
-    // Clamp so effective bet never drops below MIN_BET
-    const effective = GAME_CONFIG.STARTING_BET + draft.betModifiers;
-    if (effective < GAME_CONFIG.MIN_BET) {
-      draft.betModifiers = GAME_CONFIG.MIN_BET - GAME_CONFIG.STARTING_BET;
-    }
     const sign = effect.amount > 0 ? '+' : '';
     return `${actor.name} changed the bet pool (${sign}${effect.amount}).`;
   },

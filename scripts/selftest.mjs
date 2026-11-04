@@ -102,7 +102,7 @@ for (let game = 0; game < 300; game++) {
   s = gameReducer(s, { type: 'START', by: 'p0' });
 
   let guard = 0;
-  while (s.phase !== PHASES.GAMEOVER && guard++ < 10000) {
+  while (s.phase !== PHASES.GAMEOVER && guard++ < 50000) {
     if (s.phase === PHASES.COUNTDOWN) {
       s = gameReducer(s, { type: 'RESOLVE_SHOWDOWN' });
       continue;
