@@ -1,34 +1,79 @@
-import { getSkin } from '../../config/cardSkins.config.js';
-import { isRed } from '../../utils/deckEngine.js';
+import { getSkin } from "../../config/cardSkins.config.js";
+import { isRed } from "../../utils/deckEngine.js";
 
 const SIZES = {
-  xs: { w: 'w-9',   h: 'h-12',  rank: 'text-[10px]', suit: 'text-[8px]',  center: 'text-lg'  },
-  sm: { w: 'w-11',  h: 'h-16',  rank: 'text-xs',     suit: 'text-[9px]',  center: 'text-xl'  },
-  md: { w: 'w-14',  h: 'h-20',  rank: 'text-sm',     suit: 'text-xs',     center: 'text-2xl' },
-  lg: { w: 'w-16',  h: 'h-24',  rank: 'text-base',   suit: 'text-xs',     center: 'text-3xl' },
-  xl: { w: 'w-20',  h: 'h-28',  rank: 'text-lg',     suit: 'text-sm',     center: 'text-4xl' },
+  xs: {
+    w: "w-9",
+    h: "h-12",
+    rank: "text-[10px]",
+    suit: "text-[8px]",
+    center: "text-lg",
+  },
+  sm: {
+    w: "w-11",
+    h: "h-16",
+    rank: "text-xs",
+    suit: "text-[9px]",
+    center: "text-xl",
+  },
+  md: {
+    w: "w-14",
+    h: "h-20",
+    rank: "text-sm",
+    suit: "text-xs",
+    center: "text-2xl",
+  },
+  lg: {
+    w: "w-16",
+    h: "h-24",
+    rank: "text-base",
+    suit: "text-xs",
+    center: "text-3xl",
+  },
+  xl: {
+    w: "w-20",
+    h: "h-28",
+    rank: "text-lg",
+    suit: "text-sm",
+    center: "text-4xl",
+  },
 };
 
-export default function Card({ card, faceDown = false, skinId = 'classic_red', size = 'md', dim = false }) {
+export default function Card({
+  card,
+  faceDown = false,
+  skinId = "classic_red",
+  size = "md",
+  dim = false,
+}) {
   const skin = getSkin(skinId);
-  const s    = SIZES[size] ?? SIZES.md;
+  const s = SIZES[size] ?? SIZES.md;
   const down = faceDown || !card || card.hidden;
 
   const base = `playing-card relative shrink-0 select-none overflow-hidden
-    ${s.w} ${s.h} ${dim ? 'opacity-40' : ''}`;
+    ${s.w} ${s.h} ${dim ? "opacity-40" : ""}`;
 
   if (down) {
     return (
-      <div className={`${base} bg-gradient-to-br ${skin.previewColor} border border-white/10`}>
+      <div
+        className={`${base} bg-gradient-to-br ${skin.previewColor} border border-white/10`}
+      >
         {/* Diamond trellis pattern */}
-        <div className="absolute inset-0 opacity-[0.12]"
-          style={{ backgroundImage: 'repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)', backgroundSize: '8px 8px' }} />
+        <div
+          className="absolute inset-0 opacity-[0.12]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)",
+            backgroundSize: "8px 8px",
+          }}
+        />
         {/* Center pip */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {card?.hidden
-            ? <i className="fa-solid fa-question text-white/30 text-lg" />
-            : <i className="fa-solid fa-diamond text-white/20 text-lg" />
-          }
+          {card?.hidden ? (
+            <i className="fa-solid fa-question text-white/30 text-lg" />
+          ) : (
+            <i className="fa-solid fa-diamond text-white/20 text-lg" />
+          )}
         </div>
         {/* Shine */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
@@ -36,8 +81,8 @@ export default function Card({ card, faceDown = false, skinId = 'classic_red', s
     );
   }
 
-  const red   = isRed(card);
-  const color = red ? 'text-red-600' : 'text-gray-900';
+  const red = isRed(card);
+  const color = red ? "text-red-600" : "text-gray-900";
 
   return (
     <div className={`${base} bg-white border border-gray-200 ${color}`}>

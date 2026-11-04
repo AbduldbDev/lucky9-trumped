@@ -4,31 +4,31 @@
 
 export const CARD_SKINS_SHOP = [
   {
-    id: 'classic_red',
-    name: 'Classic Velvet Red',
-    rarity: 'Common',
+    id: "classic_red",
+    name: "Classic Velvet Red",
+    rarity: "Common",
     price: 0, // Free / Default
     unlockedByDefault: true,
-    previewColor: 'from-red-800 to-red-950',
-    borderColor: 'border-amber-300/60',
+    previewColor: "from-red-800 to-red-950",
+    borderColor: "border-amber-300/60",
   },
   {
-    id: 'cyberpunk_neon',
-    name: 'Cyberpunk Neon',
-    rarity: 'Rare',
-    price: 500,
+    id: "cyberpunk_neon",
+    name: "Cyberpunk Neon",
+    rarity: "Rare",
+    price: 0,
     unlockedByDefault: false,
-    previewColor: 'from-cyan-900 to-fuchsia-950',
-    borderColor: 'border-cyan-400',
+    previewColor: "from-cyan-900 to-fuchsia-950",
+    borderColor: "border-cyan-400",
   },
   {
-    id: 'dragon_gold',
-    name: 'Imperial Dragon Gold',
-    rarity: 'Legendary',
+    id: "dragon_gold",
+    name: "Imperial Dragon Gold",
+    rarity: "Legendary",
     price: 1500,
     unlockedByDefault: false,
-    previewColor: 'from-amber-700 to-yellow-950',
-    borderColor: 'border-yellow-400',
+    previewColor: "from-amber-700 to-yellow-950",
+    borderColor: "border-yellow-400",
   },
 ];
 

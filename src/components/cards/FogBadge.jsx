@@ -1,22 +1,29 @@
-import { exposedSum, handScore } from '../../utils/deckEngine.js';
+import { exposedSum, handScore } from "../../utils/deckEngine.js";
 
 export default function FogBadge({ hand, revealed = false, isSelf = false }) {
-  const known  = revealed || isSelf;
-  const score  = known ? handScore(hand) : null;
-  const exp    = known ? null : exposedSum(hand);
+  const known = revealed || isSelf;
+  const score = known ? handScore(hand) : null;
+  const exp = known ? null : exposedSum(hand);
   const isNine = known && score === 9;
+
+  const baseClass = `inline-flex items-center gap-0.5 sm:gap-1 rounded-full
+    px-1.5 py-0 sm:px-2 sm:py-0.5
+    text-[10px] sm:text-xs font-semibold tabular-nums`;
 
   if (known) {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums
-          ${isNine
-            ? 'bg-gold-DEFAULT/20 text-gold-light border border-gold-DEFAULT/50'
-            : 'bg-black/30 text-ivory-dim border border-white/10'
+        className={`${baseClass}
+          ${
+            isNine
+              ? "bg-gold-DEFAULT/20 text-gold-light border border-gold-DEFAULT/50"
+              : "bg-black/30 text-ivory-dim border border-white/10"
           }`}
         aria-label={`Score: ${score}`}
       >
-        {isNine && <i className="fa-solid fa-star text-[9px] text-gold-DEFAULT" />}
+        {isNine && (
+          <i className="fa-solid fa-star text-[7px] sm:text-[9px] text-gold-DEFAULT" />
+        )}
         {score}
       </span>
     );
@@ -24,11 +31,10 @@ export default function FogBadge({ hand, revealed = false, isSelf = false }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5
-        text-xs text-white/40 border border-white/8"
+      className={`${baseClass} font-normal bg-black/40 text-white/40 border border-white/8`}
       aria-label={`Exposed: ${exp}`}
     >
-      <i className="fa-solid fa-eye-slash text-[9px]" />
+      <i className="fa-solid fa-eye-slash text-[7px] sm:text-[9px]" />
       {exp}
     </span>
   );
