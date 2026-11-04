@@ -2,16 +2,16 @@
 // HOST runs gameReducer; guests render masked state + their own private secrets.
 // SRD §3, §5, §8 edge-case rules are all implemented here.
 
-import { GAME_CONFIG } from '../config/gameRules.config.js';
-import { createDeck, shuffle, handScore, isNatural } from './deckEngine.js';
-import { executeTrump, rollTrumpCard } from './trumpExecutors.js';
+import { GAME_CONFIG } from "../config/gameRules.config.js";
+import { createDeck, shuffle, handScore, isNatural } from "./deckEngine.js";
+import { executeTrump, rollTrumpCard } from "./trumpExecutors.js";
 
 export const PHASES = {
-  LOBBY:     'lobby',
-  PLAYING:   'playing',
-  COUNTDOWN: 'countdown',
-  SHOWDOWN:  'showdown',
-  GAMEOVER:  'gameover',
+  LOBBY: "lobby",
+  PLAYING: "playing",
+  COUNTDOWN: "countdown",
+  SHOWDOWN: "showdown",
+  GAMEOVER: "gameover",
 };
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -23,32 +23,29 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 // Min bet is MIN_BET (0).
 // ---------------------------------------------------------------------------
 export function computeBetTotal(betModifiers, round = 1) {
-  return Math.max(
-    GAME_CONFIG.MIN_BET,
-    round + betModifiers,
-  );
+  return Math.max(GAME_CONFIG.MIN_BET, round + betModifiers);
 }
 
 // ---------------------------------------------------------------------------
 // Player factory
 // SRD §3.2: 12 lives, STARTING_TRUMP_CARDS trump cards on match start.
 // ---------------------------------------------------------------------------
-export function createPlayer({ id, name, skinId = 'classic_red' }) {
+export function createPlayer({ id, name, skinId = "classic_red" }) {
   return {
     id,
-    name: String(name || 'Player').slice(0, 20),
+    name: String(name || "Player").slice(0, 20),
     skinId,
     lives: GAME_CONFIG.STARTING_LIVES,
-    score: 0,          // chips accumulated this match
+    score: 0, // chips accumulated this match
     isEliminated: false,
     isSpectator: false,
     timeoutEliminated: false, // eliminated by timeout (temporary, only current round)
-    hand: [],          // hand[0] = hole card
-    trumps: [],        // trump card IDs in inventory
+    hand: [], // hand[0] = hole card
+    trumps: [], // trump card IDs in inventory
     stood: false,
-    disabled: false,   // DISABLE trump effect — skipped this round
+    disabled: false, // DISABLE trump effect — skipped this round
     angelProtected: false, // ANGEL_CARD protection active
-    lucky9Awarded: false,  // flag: bonus trump card already given this round
+    lucky9Awarded: false, // flag: bonus trump card already given this round
     stats: {
       livesTaken: 0,
       trumpsPlayed: 0,
@@ -70,16 +67,16 @@ export function createInitialState({ partyCode, hostPlayer }) {
     players: [hostPlayer],
     turnIndex: -1,
     betModifiers: 0,
-    trumpLog: [],          // for SHUTTER tracking
-    trumpPlays: [],        // recent trump card plays for display (id, trumpId, playerName, timestamp)
+    trumpLog: [], // for SHUTTER tracking
+    trumpPlays: [], // recent trump card plays for display (id, trumpId, playerName, timestamp)
     activeTrumpEffects: [], // persistent trump effects (bet modifiers, angel, etc.)
     personalNotifications: {}, // per-player notifications (playerId -> array of notifications)
-    checkerResults: {},    // CHECKER results per playerId (private)
-    rematchVotes: {},      // playerId → boolean (REMATCH_VOTE)
+    checkerResults: {}, // CHECKER results per playerId (private)
+    rematchVotes: {}, // playerId → boolean (REMATCH_VOTE)
     rematchTimerEnd: null, // epoch ms when rematch vote expires
     lastResult: null,
     winnerId: null,
-    showdownAt: null,    // epoch ms when countdown ends → showdown
+    showdownAt: null, // epoch ms when countdown ends → showdown
     log: [],
   };
 }
@@ -93,15 +90,15 @@ const pushLog = (d, msg) => {
 };
 
 function assertTurn(d, by) {
-  if (d.phase !== PHASES.PLAYING) throw new Error('Not in a round.');
+  if (d.phase !== PHASES.PLAYING) throw new Error("Not in a round.");
   const p = d.players[d.turnIndex];
-  if (!p || p.id !== by) throw new Error('Not your turn.');
-  if (p.isEliminated) throw new Error('You are eliminated.');
+  if (!p || p.id !== by) throw new Error("Not your turn.");
+  if (p.isEliminated) throw new Error("You are eliminated.");
   return p;
 }
 
 function assertHost(d, by) {
-  if (d.hostId !== by) throw new Error('Host only.');
+  if (d.hostId !== by) throw new Error("Host only.");
 }
 
 /** Grant a trump card to a player — unlimited inventory. */
@@ -125,24 +122,26 @@ function startRound(d, firstPlayerOverride = null) {
   d.deck = shuffle(createDeck());
   d.phase = PHASES.PLAYING;
 
-  const activePlayers = d.players.filter((p) => !p.isEliminated && !p.isSpectator);
+  const activePlayers = d.players.filter(
+    (p) => !p.isEliminated && !p.isSpectator,
+  );
 
   for (const p of d.players) {
     p.hand = [];
     p.stood = p.isEliminated || p.isSpectator;
     p.disabled = false;
     p.lucky9Awarded = false;
-    
+
     // Clear Angel Card protection at the start of each round (only lasts 1 round)
     p.angelProtected = false;
-    
+
     // Re-enable timeout-eliminated players (temporary elimination only for previous round)
     if (p.timeoutEliminated && !p.isEliminated) {
       p.timeoutEliminated = false;
       p.isSpectator = false;
       p.stood = false; // They can play this round
     }
-    
+
     if (p.isEliminated || p.isSpectator) continue;
     // Deal 2 cards: [hole card, up card]
     p.hand.push(d.deck.pop(), d.deck.pop());
@@ -194,13 +193,18 @@ function advanceTurn(d) {
 function triggerShowdown(d) {
   d.phase = PHASES.COUNTDOWN;
   d.showdownAt = Date.now() + GAME_CONFIG.ROUND_RESULT_COUNTDOWN * 1000;
-  pushLog(d, `All players stood — revealing in ${GAME_CONFIG.ROUND_RESULT_COUNTDOWN}…`);
+  pushLog(
+    d,
+    `All players stood — revealing in ${GAME_CONFIG.ROUND_RESULT_COUNTDOWN}…`,
+  );
 }
 
 // SRD §8.7: if only one active player remains mid-round, they win immediately.
 function checkSingleActiveRemaining(d) {
   if (d.phase !== PHASES.PLAYING) return;
-  const active = d.players.filter((p) => !p.isEliminated && !p.isSpectator && !p.stood);
+  const active = d.players.filter(
+    (p) => !p.isEliminated && !p.isSpectator && !p.stood,
+  );
   const notElim = d.players.filter((p) => !p.isEliminated && !p.isSpectator);
   if (notElim.length === 1) {
     // Walkover — only one player left, resolve immediately
@@ -217,16 +221,23 @@ function checkSingleActiveRemaining(d) {
 // ---------------------------------------------------------------------------
 function resolveShowdown(d) {
   d.showdownAt = null;
-  
+
   // Include timeout-eliminated players in showdown (they compete but are eliminated for the round)
   // Only exclude permanently eliminated players
   const active = d.players.filter((p) => !p.isEliminated);
-  
+
   if (active.length === 0) {
     d.phase = PHASES.SHOWDOWN;
     d.lastResult = {
-      round: d.round, bet: 0, scores: {}, winnerIds: [], loserIds: [],
-      eliminatedIds: [], naturalIds: [], payoutEach: 0, draw: true,
+      round: d.round,
+      bet: 0,
+      scores: {},
+      winnerIds: [],
+      loserIds: [],
+      eliminatedIds: [],
+      naturalIds: [],
+      payoutEach: 0,
+      draw: true,
     };
     pushLog(d, `Round ${d.round}: No active players — Draw.`);
     checkMatchOver(d);
@@ -255,11 +266,11 @@ function resolveShowdown(d) {
   for (const l of losers) {
     const loss = Math.min(bet, l.lives);
     l.lives -= loss;
-    
+
     // SRD §3.3 / §8.6: Angel Card protects from life-loss elimination (not timer)
     if (l.lives <= 0) {
       if (l.angelProtected) {
-        l.lives = 0;         // stays at 0 but not eliminated yet
+        l.lives = 0; // stays at 0 but not eliminated yet
         l.angelProtected = false; // protection consumed
         pushLog(d, `${l.name}'s Angel Card saved them from elimination!`);
       } else {
@@ -281,7 +292,8 @@ function resolveShowdown(d) {
       ? Math.floor((bet * losers.length) / winners.length)
       : 0;
   let livesLostTotal = 0;
-  for (const l of losers) livesLostTotal += Math.min(bet, GAME_CONFIG.STARTING_LIVES);
+  for (const l of losers)
+    livesLostTotal += Math.min(bet, GAME_CONFIG.STARTING_LIVES);
   for (const w of winners) {
     if (losers.length > 0) w.lives += bet;
     w.score += payoutEach;
@@ -304,7 +316,7 @@ function resolveShowdown(d) {
   d.betModifiers = 0;
   d.phase = PHASES.SHOWDOWN;
 
-  const wNames = winners.map((w) => w.name).join(' & ');
+  const wNames = winners.map((w) => w.name).join(" & ");
   pushLog(
     d,
     losers.length
@@ -323,7 +335,7 @@ function checkMatchOver(d) {
   if (remaining.length <= 1) {
     d.phase = PHASES.GAMEOVER;
     d.winnerId = remaining[0]?.id ?? null;
-    pushLog(d, `🏆 ${remaining[0]?.name ?? 'Nobody'} wins the match!`);
+    pushLog(d, `🏆 ${remaining[0]?.name ?? "Nobody"} wins the match!`);
     // Start rematch voting timer
     if (GAME_CONFIG.ENABLE_REMATCH) {
       d.rematchTimerEnd = Date.now() + GAME_CONFIG.REMATCH_VOTING_TIMER * 1000;
@@ -343,19 +355,20 @@ function checkLucky9(d, player) {
     player.lucky9Awarded = true;
     grantTrump(player);
     pushLog(d, `⭐ ${player.name} hit 9! Bonus Trump Card awarded.`);
-    
+
     // Create personal notification for the player
     if (!d.personalNotifications) d.personalNotifications = {};
-    if (!d.personalNotifications[player.id]) d.personalNotifications[player.id] = [];
-    
-    d.personalNotifications[player.id].push({
-      id: `lucky9-${player.id}-${Date.now()}`,
-      type: 'LUCKY_9',
-      title: 'Lucky 9!',
-      message: 'Your hand totals 9! You earned a bonus Trump Card!',
-      bonus: '+1 Trump Card',
-      timestamp: Date.now(),
-    });
+    if (!d.personalNotifications[player.id])
+      d.personalNotifications[player.id] = [];
+
+    // d.personalNotifications[player.id].push({
+    //   id: `lucky9-${player.id}-${Date.now()}`,
+    //   type: 'LUCKY_9',
+    //   title: 'Lucky 9!',
+    //   message: 'Your hand totals 9! You earned a bonus Trump Card!',
+    //   bonus: '+1 Trump Card',
+    //   timestamp: Date.now(),
+    // });
   }
 }
 
@@ -365,8 +378,9 @@ function checkLucky9(d, player) {
 const HANDLERS = {
   JOIN(d, { player }) {
     if (d.players.some((p) => p.id === player.id)) return false; // reconnect
-    if (d.phase !== PHASES.LOBBY) throw new Error('Game already started.');
-    if (d.players.length >= GAME_CONFIG.MAX_PLAYERS) throw new Error('Room is full.');
+    if (d.phase !== PHASES.LOBBY) throw new Error("Game already started.");
+    if (d.players.length >= GAME_CONFIG.MAX_PLAYERS)
+      throw new Error("Room is full.");
     d.players.push(createPlayer(player));
     pushLog(d, `${player.name} joined.`);
   },
@@ -397,8 +411,9 @@ const HANDLERS = {
 
   START(d, { by }) {
     assertHost(d, by);
-    if (d.phase !== PHASES.LOBBY) throw new Error('Already started.');
-    if (d.players.length < GAME_CONFIG.MIN_PLAYERS) throw new Error('Need more players.');
+    if (d.phase !== PHASES.LOBBY) throw new Error("Already started.");
+    if (d.players.length < GAME_CONFIG.MIN_PLAYERS)
+      throw new Error("Need more players.");
 
     // SRD §3.2: grant STARTING_TRUMP_CARDS at match start
     for (const p of d.players) {
@@ -409,21 +424,23 @@ const HANDLERS = {
 
   NEXT_ROUND(d, { by, winnerId }) {
     assertHost(d, by);
-    if (d.phase !== PHASES.SHOWDOWN) throw new Error('Round still in progress.');
+    if (d.phase !== PHASES.SHOWDOWN)
+      throw new Error("Round still in progress.");
     // SRD §3.2: winner goes first next round
     startRound(d, GAME_CONFIG.WINNER_FIRST_NEXT_ROUND ? winnerId : null);
   },
 
   // SRD §5.2: Rematch — unanimous vote required within 30s timer
   REMATCH_VOTE(d, { by, accept }) {
-    if (d.phase !== PHASES.GAMEOVER) throw new Error('Match must be over to vote.');
+    if (d.phase !== PHASES.GAMEOVER)
+      throw new Error("Match must be over to vote.");
     if (!GAME_CONFIG.ENABLE_REMATCH) return false;
     d.rematchVotes[by] = Boolean(accept);
     const allPlayers = d.players; // all players (not just active) vote
     const yesCount = Object.values(d.rematchVotes).filter(Boolean).length;
     const noCount = Object.values(d.rematchVotes).filter((v) => !v).length;
     if (noCount > 0) {
-      pushLog(d, 'Rematch rejected — a player declined.');
+      pushLog(d, "Rematch rejected — a player declined.");
       return; // leave as gameover
     }
     if (yesCount === allPlayers.length) {
@@ -440,7 +457,8 @@ const HANDLERS = {
         p.angelProtected = false;
         p.lucky9Awarded = false;
         p.trumps = [];
-        for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(p);
+        for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++)
+          grantTrump(p);
       }
       Object.assign(d, {
         phase: PHASES.LOBBY,
@@ -458,9 +476,12 @@ const HANDLERS = {
         winnerId: null,
         log: [],
       });
-      pushLog(d, 'Rematch! Room reset — waiting for host to start.');
+      pushLog(d, "Rematch! Room reset — waiting for host to start.");
     } else {
-      pushLog(d, `${d.players.find((p) => p.id === by)?.name} accepted rematch (${yesCount}/${allPlayers.length}).`);
+      pushLog(
+        d,
+        `${d.players.find((p) => p.id === by)?.name} accepted rematch (${yesCount}/${allPlayers.length}).`,
+      );
     }
   },
 
@@ -504,8 +525,10 @@ const HANDLERS = {
   HIT(d, { by }) {
     const p = assertTurn(d, by);
     if (p.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
-      throw new Error(`Hand is full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max). Stand or play a Trump Card.`);
-    if (!d.deck.length) throw new Error('Deck is empty.');
+      throw new Error(
+        `Hand is full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max). Stand or play a Trump Card.`,
+      );
+    if (!d.deck.length) throw new Error("Deck is empty.");
     p.hand.push(d.deck.pop());
     pushLog(d, `${p.name} drew a card.`);
     checkLucky9(d, p);
@@ -535,12 +558,12 @@ const HANDLERS = {
     if (!p || p.isEliminated || p.isSpectator || p.stood) return false;
     if (d.phase !== PHASES.PLAYING) return false;
     if (d.players[d.turnIndex]?.id !== by) return false;
-    
+
     // Mark as timeout-eliminated (temporary, only for this round)
     p.stood = true;
     p.timeoutEliminated = true;
     p.isSpectator = true; // Temporarily a spectator for this round
-    
+
     pushLog(d, `${p.name} timed out and was eliminated from this round!`);
     // SRD §8.8: track timeout eliminations this round for potential draw
     if (!d.timeoutEliminatedIds) d.timeoutEliminatedIds = [];
@@ -551,14 +574,15 @@ const HANDLERS = {
   TRUMP(d, { by, trumpId, targetId, rank }) {
     const p = assertTurn(d, by);
     // SRD §8.5: no trump plays after standing
-    if (p.stood) throw new Error('You have already stood — cannot play Trump Cards.');
+    if (p.stood)
+      throw new Error("You have already stood — cannot play Trump Cards.");
     const idx = p.trumps.indexOf(trumpId);
     if (idx === -1) throw new Error("You don't hold that Trump Card.");
     const msg = executeTrump(d, p, trumpId, { targetId, rank });
     p.trumps.splice(idx, 1);
     p.stats.trumpsPlayed += 1;
     pushLog(d, msg);
-    
+
     // Record this trump play for display on table
     if (!d.trumpPlays) d.trumpPlays = [];
     d.trumpPlays.push({
@@ -568,17 +592,21 @@ const HANDLERS = {
       playerName: p.name,
       timestamp: Date.now(),
     });
-    
+
     // Keep only recent plays (last 10 seconds)
     const now = Date.now();
-    d.trumpPlays = d.trumpPlays.filter(tp => now - tp.timestamp < 10000);
-    
+    d.trumpPlays = d.trumpPlays.filter((tp) => now - tp.timestamp < 10000);
+
     // Track persistent effects (bet modifiers, angel card, etc.)
     if (!d.activeTrumpEffects) d.activeTrumpEffects = [];
     const persistentEffects = [
-      'BET_UP', 'BET_DOWN', 'DOUBLE_BET_UP', 'DOUBLE_BET_DOWN', 'ANGEL_CARD'
+      "BET_UP",
+      "BET_DOWN",
+      "DOUBLE_BET_UP",
+      "DOUBLE_BET_DOWN",
+      "ANGEL_CARD",
     ];
-    
+
     if (persistentEffects.includes(trumpId)) {
       d.activeTrumpEffects.push({
         id: `${by}-${trumpId}-${Date.now()}`,
@@ -593,7 +621,7 @@ const HANDLERS = {
 
   // Host dispatches this after the 3-second COUNTDOWN overlay expires.
   RESOLVE_SHOWDOWN(d) {
-    if (d.phase !== PHASES.COUNTDOWN) throw new Error('Not in countdown.');
+    if (d.phase !== PHASES.COUNTDOWN) throw new Error("Not in countdown.");
     resolveShowdown(d);
   },
 };
@@ -661,7 +689,11 @@ export function getPrivate(state, playerId) {
       isSpectator: true,
       hole: me.hand[0] ?? null,
       trumps: me.trumps,
-      allHands: state.players.map((p) => ({ id: p.id, hand: p.hand, trumps: p.trumps })),
+      allHands: state.players.map((p) => ({
+        id: p.id,
+        hand: p.hand,
+        trumps: p.trumps,
+      })),
       checkerResult: state.checkerResults?.[playerId] ?? null,
       personalNotifications,
     };

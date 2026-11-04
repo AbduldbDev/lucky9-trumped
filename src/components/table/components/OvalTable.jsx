@@ -46,7 +46,7 @@ export default function OvalTable({
       <div
         ref={areaRef}
         className="relative w-full h-full"
-        style={{ maxWidth: 820, maxHeight: 540 }}
+        style={{ maxWidth: 1120, maxHeight: 740 }}
       >
         {/* Oval felt surface */}
         <div

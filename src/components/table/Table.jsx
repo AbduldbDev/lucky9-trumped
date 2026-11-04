@@ -259,12 +259,12 @@ export default function Table({ game, onLeave }) {
       />
 
       {/* Personal notification (Lucky 9, etc.) */}
-      <PersonalNotification
+      {/* <PersonalNotification
         notification={personalNotification}
         onDismiss={() => {
           setPersonalNotification(null);
         }}
-      />
+      /> */}
     </div>
   );
 }
