@@ -1,5 +1,5 @@
 import Seat from "./Seat.jsx";
-import TimerRing from "../TimerRing.jsx";
+import TimerRing from "../Timerring.jsx";
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 import { PHASES } from "../../../utils/gameEngine.js";
 import { useElementSize } from "../../../hooks/useElementSize.js";
