@@ -129,7 +129,7 @@ export const TRUMP_CARDS_CATALOG = {
     id: 'FRIENDSHIP_CARD',
     name: 'Friendship Card',
     rarity: 'MYTHIC',
-    description: 'All active players (including yourself) draw one additional card.',
+    description: 'All non-eliminated players (including yourself) draw one additional card.',
     targetType: 'ALL_PLAYERS',
     effect: { type: 'MASS_DRAW_ALL' },
   },

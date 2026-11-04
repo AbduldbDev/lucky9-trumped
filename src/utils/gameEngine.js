@@ -42,6 +42,7 @@ export function createPlayer({ id, name, skinId = 'classic_red' }) {
     score: 0,          // chips accumulated this match
     isEliminated: false,
     isSpectator: false,
+    timeoutEliminated: false, // eliminated by timeout (temporary, only current round)
     hand: [],          // hand[0] = hole card
     trumps: [],        // trump card IDs in inventory
     stood: false,
@@ -130,6 +131,14 @@ function startRound(d, firstPlayerOverride = null) {
     p.stood = p.isEliminated || p.isSpectator;
     p.disabled = false;
     p.lucky9Awarded = false;
+    
+    // Re-enable timeout-eliminated players (temporary elimination only for previous round)
+    if (p.timeoutEliminated && !p.isEliminated) {
+      p.timeoutEliminated = false;
+      p.isSpectator = false;
+      p.stood = false; // They can play this round
+    }
+    
     if (p.isEliminated || p.isSpectator) continue;
     // Deal 2 cards: [hole card, up card]
     p.hand.push(d.deck.pop(), d.deck.pop());
@@ -204,7 +213,11 @@ function checkSingleActiveRemaining(d) {
 // ---------------------------------------------------------------------------
 function resolveShowdown(d) {
   d.showdownAt = null;
-  const active = d.players.filter((p) => !p.isEliminated && !p.isSpectator);
+  
+  // Include timeout-eliminated players in showdown (they compete but are eliminated for the round)
+  // Only exclude permanently eliminated players
+  const active = d.players.filter((p) => !p.isEliminated);
+  
   if (active.length === 0) {
     d.phase = PHASES.SHOWDOWN;
     d.lastResult = {
@@ -234,11 +247,11 @@ function resolveShowdown(d) {
   });
 
   const eliminatedIds = [];
-  // SRD §8.8: if ALL active players are timer-eliminated → draw, no life loss
-  // (handled upstream via TIMEOUT action; here we check if everyone stood already)
+  // Process losers - deduct lives and check for permanent elimination
   for (const l of losers) {
     const loss = Math.min(bet, l.lives);
     l.lives -= loss;
+    
     // SRD §3.3 / §8.6: Angel Card protects from life-loss elimination (not timer)
     if (l.lives <= 0) {
       if (l.angelProtected) {
@@ -246,9 +259,11 @@ function resolveShowdown(d) {
         l.angelProtected = false; // protection consumed
         pushLog(d, `${l.name}'s Angel Card saved them from elimination!`);
       } else {
+        // Permanent elimination due to running out of lives
         l.isEliminated = true;
         l.isSpectator = true;
         l.stood = true;
+        l.timeoutEliminated = false; // Clear timeout flag
         eliminatedIds.push(l.id);
       }
     }
@@ -401,6 +416,7 @@ const HANDLERS = {
         p.isEliminated = false;
         p.isSpectator = false;
         p.stood = false;
+        p.timeoutEliminated = false;
         p.hand = [];
         p.disabled = false;
         p.angelProtected = false;
@@ -438,6 +454,7 @@ const HANDLERS = {
       p.isEliminated = false;
       p.isSpectator = false;
       p.stood = false;
+      p.timeoutEliminated = false;
       p.hand = [];
       p.disabled = false;
       p.angelProtected = false;
@@ -493,16 +510,20 @@ const HANDLERS = {
     advanceTurn(d);
   },
 
-  // SRD §3.2: timeout → eliminate for current round (Angel Card does NOT protect)
+  // SRD §3.2: timeout → eliminate for current round only (temporary elimination)
+  // Angel Card does NOT protect against timeout
   TIMEOUT(d, { by }) {
     const p = d.players.find((x) => x.id === by);
     if (!p || p.isEliminated || p.isSpectator || p.stood) return false;
     if (d.phase !== PHASES.PLAYING) return false;
     if (d.players[d.turnIndex]?.id !== by) return false;
+    
+    // Mark as timeout-eliminated (temporary, only for this round)
     p.stood = true;
-    p.isEliminated = true;
-    p.isSpectator = true;
-    pushLog(d, `${p.name} timed out and was eliminated!`);
+    p.timeoutEliminated = true;
+    p.isSpectator = true; // Temporarily a spectator for this round
+    
+    pushLog(d, `${p.name} timed out and was eliminated from this round!`);
     // SRD §8.8: track timeout eliminations this round for potential draw
     if (!d.timeoutEliminatedIds) d.timeoutEliminatedIds = [];
     d.timeoutEliminatedIds.push(p.id);

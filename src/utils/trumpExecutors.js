@@ -156,7 +156,8 @@ export const EFFECT_EXECUTORS = {
   MASS_DRAW_ALL({ draft, actor }) {
     let drew = 0;
     for (const p of draft.players) {
-      if (p.isEliminated || p.stood) continue;
+      // Skip only eliminated players (stood players can still draw)
+      if (p.isEliminated) continue;
       if (p.hand.length < GAME_CONFIG.MAX_CARDS_IN_HAND && draft.deck.length) {
         p.hand.push(draft.deck.pop());
         drew++;
