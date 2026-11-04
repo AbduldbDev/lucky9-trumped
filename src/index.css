@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  color: #e8e0d0;
+  /* Deep casino night */
+  background: radial-gradient(ellipse at 50% 0%, #0d3d22 0%, #071911 60%, #030c07 100%) fixed;
+  overflow: hidden; /* full-screen, no scroll on table */
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.25); border-radius: 2px; }
+
+/* ── Casino felt surface ── */
+.felt-surface {
+  background: radial-gradient(ellipse at 50% 40%, #145c30 0%, #0c3d22 50%, #071f11 100%);
+  box-shadow: inset 0 0 120px rgba(0,0,0,0.5);
+}
+
+/* ── Oval table border ── */
+.table-border {
+  box-shadow:
+    0 0 0 8px #8B6914,
+    0 0 0 12px #5a4010,
+    0 0 40px rgba(0,0,0,0.8),
+    inset 0 0 100px rgba(0,0,0,0.4);
+}
+
+/* ── Gold shimmer text ── */
+.text-gold-shimmer {
+  background: linear-gradient(90deg,
+    #a07828 0%, #e2c97e 30%, #f5e8b0 50%, #e2c97e 70%, #a07828 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+/* ── Playing card ── */
+.playing-card {
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+  animation: deal 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  user-select: none;
+}
+
+/* ── Trump card button ── */
+.trump-btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.trump-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+.trump-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+.trump-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.trump-btn.targeting {
+  box-shadow: 0 0 0 2px #fff, 0 0 16px rgba(255,255,255,0.3);
+}
+
+/* ── Player seat ── */
+.player-seat {
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+.player-seat.active-turn {
+  box-shadow: 0 0 0 2px #c9a84c, 0 0 20px rgba(201,168,76,0.25);
+}
+.player-seat.targetable {
+  box-shadow: 0 0 0 2px #ef4444, 0 0 20px rgba(239,68,68,0.3);
+  cursor: crosshair;
+}
+
+/* ── Timer ring ── */
+.timer-circle { transition: stroke-dashoffset 1s linear; }
+
+/* ── Rarity colors ── */
+:root {
+  --c-common:    #94a3b8;
+  --c-uncommon:  #4ade80;
+  --c-rare:      #60a5fa;
+  --c-legendary: #c9a84c;
+  --c-mythic:    #c084fc;
+}
+
+/* ── Utility ── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

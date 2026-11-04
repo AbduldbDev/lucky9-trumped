@@ -1,0 +1,101 @@
+import Card from '../cards/Card.jsx';
+import FogBadge from '../cards/FogBadge.jsx';
+import { GAME_CONFIG } from '../../config/gameRules.config.js';
+
+/** A player seat around the circular table. */
+export default function Seat({ player, isTurn, revealed, targetable, onTarget, isMe = false }) {
+  const isOut      = player.isEliminated || player.isSpectator;
+  const lives      = player.lives;
+  const maxLives   = GAME_CONFIG.STARTING_LIVES;
+  const trumpCount = player.trumpCount ?? player.trumps?.length ?? 0;
+
+  const handleClick = () => { if (targetable) onTarget?.(player); };
+
+  return (
+    <div
+      onClick={handleClick}
+      className={`player-seat relative flex flex-col items-center gap-1.5 rounded-2xl p-2
+        select-none transition-all
+        ${isTurn && !isOut  ? 'active-turn bg-black/40' : 'bg-black/25'}
+        ${targetable        ? 'targetable hover:bg-red-950/40' : ''}
+        ${isOut             ? 'opacity-40' : ''}
+        ${isMe              ? 'ring-1 ring-white/20' : ''}
+      `}
+      role={targetable ? 'button' : undefined}
+      tabIndex={targetable ? 0 : undefined}
+      aria-label={`${player.name}${targetable ? ' — click to target' : ''}`}
+      onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+    >
+      {/* Active turn pip */}
+      {isTurn && !isOut && (
+        <div className="absolute -top-1.5 left-1/2 -translate-x-1/2
+          w-2 h-2 rounded-full bg-gold-DEFAULT shadow-gold animate-glow" />
+      )}
+
+      {/* Target crosshair */}
+      {targetable && (
+        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full
+          bg-red-600 flex items-center justify-center shadow-lg animate-beat">
+          <i className="fa-solid fa-crosshairs text-white text-[9px]" />
+        </div>
+      )}
+
+      {/* Name */}
+      <div className="flex items-center gap-1 max-w-full">
+        {player.id === player.hostId && (
+          <i className="fa-solid fa-crown text-gold-DEFAULT text-[9px]" />
+        )}
+        <span className="text-[11px] font-semibold text-ivory-DEFAULT truncate max-w-[70px]">
+          {player.name}
+        </span>
+        {isMe && <span className="text-[9px] text-white/30">(you)</span>}
+      </div>
+
+      {/* Score badge */}
+      {!isOut && player.hand.length > 0 && (
+        <FogBadge hand={player.hand} revealed={revealed} />
+      )}
+
+      {/* Cards */}
+      <div className="flex gap-0.5 justify-center">
+        {isOut ? (
+          <div className="text-[10px] text-red-400/70 font-medium">
+            <i className="fa-solid fa-skull mr-1" />
+            {player.isSpectator ? 'Spectating' : 'Out'}
+          </div>
+        ) : player.hand.length === 0 ? (
+          <div className="w-11 h-16 rounded opacity-20 border border-white/10" />
+        ) : (
+          player.hand.map((c, i) => (
+            <Card key={i} card={c} size="sm" skinId={player.skinId} />
+          ))
+        )}
+      </div>
+
+      {/* Lives bar */}
+      <div className="w-full flex items-center gap-1.5">
+        <div className="flex-1 h-1 rounded-full bg-white/10 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-500"
+            style={{ width: `${Math.min(100, (lives / maxLives) * 100)}%` }}
+          />
+        </div>
+        <span className="text-[10px] text-white/40 tabular-nums font-mono">{lives}</span>
+      </div>
+
+      {/* Footer: status + trump count */}
+      <div className="flex items-center justify-between w-full">
+        <div className="text-[10px] text-white/30">
+          {isTurn && !isOut     && <span className="text-gold-DEFAULT"><i className="fa-solid fa-hourglass-half mr-1" />Playing</span>}
+          {player.stood && !isOut && !isTurn && <span><i className="fa-solid fa-hand mr-1" />Stood</span>}
+          {player.disabled       && <span className="text-yellow-400"><i className="fa-solid fa-ban mr-1" />Off</span>}
+          {player.angelProtected && <span className="text-purple-400"><i className="fa-solid fa-shield-halved mr-1" /></span>}
+        </div>
+        <div className="text-[10px] text-white/25 flex items-center gap-0.5">
+          <i className="fa-solid fa-cards-blank text-[8px]" />
+          {trumpCount}
+        </div>
+      </div>
+    </div>
+  );
+}
