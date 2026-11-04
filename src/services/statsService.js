@@ -6,11 +6,11 @@
 //   "cloud" — Supabase anonymous auth + tables from 001_schema.sql
 //   "local" — localStorage fallback when Supabase isn't configured
 
-import { GAME_CONFIG } from '../config/gameRules.config.js';
-import { CARD_SKINS_SHOP } from '../config/cardSkins.config.js';
-import { supabase } from './supabaseClient.js';
+import { GAME_CONFIG } from "../config/gameRules.config.js";
+import { CARD_SKINS_SHOP } from "../config/cardSkins.config.js";
+import { supabase } from "./supabaseClient.js";
 
-const LOCAL_KEY = 'lucky9.profile.v2';
+const LOCAL_KEY = "lucky9.profile.v2";
 
 const emptyStats = () => ({
   totalMatches: 0,
@@ -18,7 +18,7 @@ const emptyStats = () => ({
   totalLosses: 0,
   currentWinStreak: 0,
   highestWinStreak: 0,
-  favoriteTrumpCard: 'BET_UP',
+  favoriteTrumpCard: "BET_UP",
 });
 
 // ─── LOCAL MODE ─────────────────────────────────────────────────────────────
@@ -26,17 +26,19 @@ function readLocal() {
   try {
     const raw = JSON.parse(localStorage.getItem(LOCAL_KEY));
     if (raw?.id) return raw;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   const id = crypto.randomUUID();
   const fresh = {
     id,
-    username: 'Player' + id.slice(0, 4).toUpperCase(),
-    avatarUrl: 'default_avatar.png',
-    chips: GAME_CONFIG.STARTING_CHIPS,  // SRD: 0
+    username: "Player" + id.slice(0, 4).toUpperCase(),
+    avatarUrl: "default_avatar.png",
+    chips: GAME_CONFIG.STARTING_CHIPS, // SRD: 0
     level: 1,
-    currentRank: 'Rookie',
-    equippedSkinId: 'classic_red',
+    currentRank: "Rookie",
+    equippedSkinId: "classic_red",
     owned: CARD_SKINS_SHOP.filter((s) => s.unlockedByDefault).map((s) => s.id),
     stats: emptyStats(),
   };
@@ -45,7 +47,11 @@ function readLocal() {
 }
 
 function writeLocal(p) {
-  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(p)); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(p));
+  } catch {
+    /* ignore */
+  }
 }
 
 // ─── CLOUD MODE ─────────────────────────────────────────────────────────────
@@ -59,11 +65,12 @@ async function loadCloud() {
   }
   const uid = session.user.id;
 
-  const [{ data: prof, error: e1 }, { data: inv }, { data: st }] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', uid).single(),
-    supabase.from('user_inventory').select('item_id').eq('user_id', uid),
-    supabase.from('player_stats').select('*').eq('user_id', uid).single(),
-  ]);
+  const [{ data: prof, error: e1 }, { data: inv }, { data: st }] =
+    await Promise.all([
+      supabase.from("profiles").select("*").eq("id", uid).single(),
+      supabase.from("user_inventory").select("item_id").eq("user_id", uid),
+      supabase.from("player_stats").select("*").eq("user_id", uid).single(),
+    ]);
   if (e1) throw e1;
 
   return {
@@ -72,7 +79,7 @@ async function loadCloud() {
     avatarUrl: prof.avatar_url,
     chips: prof.chips,
     level: prof.level ?? 1,
-    currentRank: prof.current_rank ?? 'Rookie',
+    currentRank: prof.current_rank ?? "Rookie",
     equippedSkinId: prof.equipped_skin_id,
     owned: (inv ?? []).map((r) => r.item_id),
     stats: st
@@ -82,26 +89,29 @@ async function loadCloud() {
           totalLosses: st.total_losses,
           currentWinStreak: st.current_win_streak,
           highestWinStreak: st.highest_win_streak,
-          favoriteTrumpCard: st.favorite_trump_card ?? 'BET_UP',
+          favoriteTrumpCard: st.favorite_trump_card ?? "BET_UP",
         }
       : emptyStats(),
   };
 }
 
 // ─── PUBLIC API ──────────────────────────────────────────────────────────────
-let mode = 'local';
+let mode = "cloud";
 
 export async function initProfile() {
   if (supabase) {
     try {
       const p = await loadCloud();
-      mode = 'cloud';
+      mode = "cloud";
       return { ...p, mode };
     } catch (err) {
-      console.warn('[Lucky9] Supabase unavailable, using local profile:', err.message ?? err);
+      console.warn(
+        "[Lucky9] Supabase unavailable, using local profile:",
+        err.message ?? err,
+      );
     }
   }
-  mode = 'local';
+  mode = "local";
   return { ...readLocal(), mode };
 }
 
@@ -110,9 +120,15 @@ export const getMode = () => mode;
 export async function saveUsername(profile, username) {
   const name = String(username).trim().slice(0, 20);
   if (!name) return profile;
-  if (mode === 'cloud') {
-    const { error } = await supabase.from('profiles').update({ username: name }).eq('id', profile.id);
-    if (error) throw new Error(error.code === '23505' ? 'That name is taken.' : error.message);
+  if (mode === "cloud") {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ username: name })
+      .eq("id", profile.id);
+    if (error)
+      throw new Error(
+        error.code === "23505" ? "That name is taken." : error.message,
+      );
     return { ...profile, username: name };
   }
   const next = { ...readLocal(), username: name };
@@ -122,24 +138,30 @@ export async function saveUsername(profile, username) {
 
 export async function purchaseSkin(profile, itemId) {
   const skin = CARD_SKINS_SHOP.find((s) => s.id === itemId);
-  if (!skin) throw new Error('Unknown skin.');
-  if (profile.owned.includes(itemId)) throw new Error('Already owned.');
-  if (profile.chips < skin.price) throw new Error('Not enough chips.');
+  if (!skin) throw new Error("Unknown skin.");
+  if (profile.owned.includes(itemId)) throw new Error("Already owned.");
+  if (profile.chips < skin.price) throw new Error("Not enough chips.");
 
-  if (mode === 'cloud') {
-    const { data, error } = await supabase.rpc('purchase_skin', { p_item_id: itemId });
+  if (mode === "cloud") {
+    const { data, error } = await supabase.rpc("purchase_skin", {
+      p_item_id: itemId,
+    });
     if (error) throw new Error(error.message);
     return { ...profile, chips: data, owned: [...profile.owned, itemId] };
   }
-  const next = { ...readLocal(), chips: profile.chips - skin.price, owned: [...profile.owned, itemId] };
+  const next = {
+    ...readLocal(),
+    chips: profile.chips - skin.price,
+    owned: [...profile.owned, itemId],
+  };
   writeLocal(next);
   return { ...profile, chips: next.chips, owned: next.owned };
 }
 
 export async function equipSkin(profile, itemId) {
-  if (!profile.owned.includes(itemId)) throw new Error('Skin not owned.');
-  if (mode === 'cloud') {
-    const { error } = await supabase.rpc('equip_skin', { p_item_id: itemId });
+  if (!profile.owned.includes(itemId)) throw new Error("Skin not owned.");
+  if (mode === "cloud") {
+    const { error } = await supabase.rpc("equip_skin", { p_item_id: itemId });
     if (error) throw new Error(error.message);
   } else {
     writeLocal({ ...readLocal(), equippedSkinId: itemId });
@@ -153,14 +175,22 @@ export async function equipSkin(profile, itemId) {
  */
 export function calcMatchChips({ won }) {
   if (!won || !GAME_CONFIG.ENABLE_CHIP_REWARDS) return 0;
-  return GAME_CONFIG.WIN_REWARD_MIN +
-    Math.floor(Math.random() * (GAME_CONFIG.WIN_REWARD_MAX - GAME_CONFIG.WIN_REWARD_MIN + 1));
+  return (
+    GAME_CONFIG.WIN_REWARD_MIN +
+    Math.floor(
+      Math.random() *
+        (GAME_CONFIG.WIN_REWARD_MAX - GAME_CONFIG.WIN_REWARD_MIN + 1),
+    )
+  );
 }
 
 /** Persist a finished match and return the updated profile. */
-export async function recordMatchResult(profile, { won, chipsEarned, trumpsPlayed, naturals }) {
-  if (mode === 'cloud') {
-    const { data, error } = await supabase.rpc('record_match', {
+export async function recordMatchResult(
+  profile,
+  { won, chipsEarned, trumpsPlayed, naturals },
+) {
+  if (mode === "cloud") {
+    const { data, error } = await supabase.rpc("record_match", {
       p_won: won,
       p_chips: chipsEarned,
       p_trumps: trumpsPlayed,

@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import Lobby from './components/lobby/Lobby.jsx';
-import WaitingRoom from './components/lobby/WaitingRoom.jsx';
-import Table from './components/table/Table.jsx';
-import Shop from './components/shop/Shop.jsx';
-import { useGameState } from './hooks/useGameState.js';
-import { PHASES } from './utils/gameEngine.js';
-import { generatePartyCode } from './utils/partyCode.js';
+import { useEffect, useRef, useState } from "react";
+import Lobby from "./components/lobby/Lobby.jsx";
+import WaitingRoom from "./components/lobby/WaitingRoom.jsx";
+import Table from "./components/table/Table.jsx";
+import Shop from "./components/shop/Shop.jsx";
+import SplashScreen from "./components/intro/SplashScreen.jsx";
+import WelcomeScreen from "./components/intro/WelcomeScreen.jsx";
+import LobbySkeleton from "./components/intro/LobbySkeleton.jsx";
+import { useGameState } from "./hooks/useGameState.js";
+import { PHASES } from "./utils/gameEngine.js";
+import { generatePartyCode } from "./utils/partyCode.js";
+import { getIntroState, stampVisit } from "./utils/introState.js";
 import {
   calcMatchChips,
   equipSkin,
@@ -13,11 +17,15 @@ import {
   purchaseSkin,
   recordMatchResult,
   saveUsername,
-} from './services/statsService.js';
+} from "./services/statsService.js";
 
 /** Mounted only while inside a room so every room gets a fresh game-state hook. */
 function Room({ room, profile, onProfile, onExit }) {
-  const game = useGameState({ partyCode: room.partyCode, isHost: room.isHost, profile });
+  const game = useGameState({
+    partyCode: room.partyCode,
+    isHost: room.isHost,
+    profile,
+  });
   const { view, me, actions } = game;
   const settled = useRef(false);
 
@@ -34,7 +42,9 @@ function Room({ room, profile, onProfile, onExit }) {
       naturals: me.stats.naturals,
     })
       .then(onProfile)
-      .catch((e) => console.warn('[Lucky9] Could not save match result:', e.message));
+      .catch((e) =>
+        console.warn("[Lucky9] Could not save match result:", e.message),
+      );
   }, [view?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset settled flag on rematch (back to lobby)
@@ -64,19 +74,36 @@ function Room({ room, profile, onProfile, onExit }) {
 }
 
 export default function App() {
+  const [intro] = useState(getIntroState); // { isFirstVisit, showIntro }
   const [profile, setProfile] = useState(null);
   const [room, setRoom] = useState(null); // { partyCode, isHost }
   const [shopOpen, setShopOpen] = useState(false);
+  const [splashDone, setSplashDone] = useState(!intro.showIntro);
+  const [welcomed, setWelcomed] = useState(!intro.showIntro);
+
+  useEffect(() => {
+    stampVisit();
+  }, []);
 
   useEffect(() => {
     initProfile().then(setProfile);
   }, []);
 
+  if (!splashDone) {
+    return <SplashScreen onDone={() => setSplashDone(true)} />;
+  }
+
   if (!profile) {
+    return <LobbySkeleton />;
+  }
+
+  if (!welcomed) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-emerald-100/70">
-        Shuffling the deck…
-      </div>
+      <WelcomeScreen
+        profile={profile}
+        isFirstVisit={intro.isFirstVisit}
+        onEnter={() => setWelcomed(true)}
+      />
     );
   }
 
@@ -92,8 +119,12 @@ export default function App() {
       ) : (
         <Lobby
           profile={profile}
-          onRename={async (name) => setProfile(await saveUsername(profile, name))}
-          onCreate={() => setRoom({ partyCode: generatePartyCode(), isHost: true })}
+          onRename={async (name) =>
+            setProfile(await saveUsername(profile, name))
+          }
+          onCreate={() =>
+            setRoom({ partyCode: generatePartyCode(), isHost: true })
+          }
           onJoin={(code) => setRoom({ partyCode: code, isHost: false })}
           onOpenShop={() => setShopOpen(true)}
         />
