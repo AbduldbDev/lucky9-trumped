@@ -1,5 +1,7 @@
 import Seat from "./Seat.jsx";
 import TimerRing from "../Timerring.jsx";
+import TrumpCardDisplay from "./TrumpCardDisplay.jsx";
+import ActiveEffects from "./ActiveEffects.jsx";
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 import { PHASES } from "../../../utils/gameEngine.js";
 import { useElementSize } from "../../../hooks/useElementSize.js";
@@ -26,6 +28,7 @@ export default function OvalTable({
   targeting,
   onTarget,
   secondsLeft,
+  displayedTrumps = [],
 }) {
   const [areaRef, { width, height }] = useElementSize();
   const { scale, cy, seats } = computeSeatLayout(
@@ -107,7 +110,15 @@ export default function OvalTable({
               )}
             </div>
           )}
+
+          {/* Active trump effects */}
+          <ActiveEffects effects={view.activeTrumpEffects} />
         </div>
+
+        {/* Trump cards displayed on table */}
+        {/* {displayedTrumps.length > 0 && (
+          <TrumpCardDisplay trumpCards={displayedTrumps} />
+        )} */}
 
         {/* Opponent seats (pixel-positioned, scaled to fit) */}
         {opponents.map((opp, idx) => {

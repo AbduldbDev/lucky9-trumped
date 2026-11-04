@@ -70,6 +70,8 @@ export function createInitialState({ partyCode, hostPlayer }) {
     turnIndex: -1,
     betModifiers: 0,
     trumpLog: [],          // for SHUTTER tracking
+    trumpPlays: [],        // recent trump card plays for display (id, trumpId, playerName, timestamp)
+    activeTrumpEffects: [], // persistent trump effects (bet modifiers, angel, etc.)
     checkerResults: {},    // CHECKER results per playerId (private)
     rematchVotes: {},      // playerId → boolean (REMATCH_VOTE)
     rematchTimerEnd: null, // epoch ms when rematch vote expires
@@ -113,6 +115,8 @@ function startRound(d, firstPlayerOverride = null) {
   d.betModifiers = 0;
   d.lastResult = null;
   d.trumpLog = [];
+  d.trumpPlays = []; // Clear trump card displays for new round
+  d.activeTrumpEffects = []; // Clear persistent trump effects for new round
   d.checkerResults = {};
   d.rematchVotes = {};
   d.rematchTimerEnd = null;
@@ -411,6 +415,8 @@ const HANDLERS = {
         turnIndex: -1,
         betModifiers: 0,
         trumpLog: [],
+        trumpPlays: [],
+        activeTrumpEffects: [],
         checkerResults: {},
         rematchVotes: {},
         rematchTimerEnd: null,
@@ -446,6 +452,8 @@ const HANDLERS = {
       turnIndex: -1,
       betModifiers: 0,
       trumpLog: [],
+      trumpPlays: [],
+      activeTrumpEffects: [],
       checkerResults: {},
       rematchVotes: {},
       rematchTimerEnd: null,
@@ -511,6 +519,37 @@ const HANDLERS = {
     p.trumps.splice(idx, 1);
     p.stats.trumpsPlayed += 1;
     pushLog(d, msg);
+    
+    // Record this trump play for display on table
+    if (!d.trumpPlays) d.trumpPlays = [];
+    d.trumpPlays.push({
+      id: `${by}-${trumpId}-${Date.now()}`,
+      trumpId,
+      playerId: by,
+      playerName: p.name,
+      timestamp: Date.now(),
+    });
+    
+    // Keep only recent plays (last 10 seconds)
+    const now = Date.now();
+    d.trumpPlays = d.trumpPlays.filter(tp => now - tp.timestamp < 10000);
+    
+    // Track persistent effects (bet modifiers, angel card, etc.)
+    if (!d.activeTrumpEffects) d.activeTrumpEffects = [];
+    const persistentEffects = [
+      'BET_UP', 'BET_DOWN', 'DOUBLE_BET_UP', 'DOUBLE_BET_DOWN', 'ANGEL_CARD'
+    ];
+    
+    if (persistentEffects.includes(trumpId)) {
+      d.activeTrumpEffects.push({
+        id: `${by}-${trumpId}-${Date.now()}`,
+        trumpId,
+        playerId: by,
+        playerName: p.name,
+        targetId: targetId || null,
+        timestamp: Date.now(),
+      });
+    }
   },
 
   // Host dispatches this after the 3-second COUNTDOWN overlay expires.

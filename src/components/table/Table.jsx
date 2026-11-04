@@ -10,6 +10,8 @@ import StoodStatus from "./components/StoodStatus.jsx";
 import RoundResult from "./components/RoundResult.jsx";
 import GameOverPanel from "./components/GameOverPanel.jsx";
 import ShowdownOverlay from "./components/ShowdownOverlay.jsx";
+import TrumpNotification from "./components/TrumpNotification.jsx";
+import TrumpCardDisplay from "./components/TrumpCardDisplay.jsx";
 import { TRUMP_CARDS_CATALOG } from "../../config/trumpCards.config.js";
 import { PHASES, computeBetTotal } from "../../utils/gameEngine.js";
 import { useTurnTimer } from "../../hooks/useTurnTimer.js";
@@ -21,6 +23,9 @@ export default function Table({ game, onLeave }) {
   const { view, me, isMyTurn, isHost, turnKey, actions } = game;
   const [aiming, setAiming] = useState(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const [displayedTrumps, setDisplayedTrumps] = useState([]);
+  const [shownNotificationIds, setShownNotificationIds] = useState(new Set());
 
   const { secondsLeft } = useTurnTimer({
     active: isMyTurn,
@@ -43,6 +48,44 @@ export default function Table({ game, onLeave }) {
   useEffect(() => {
     if (!isMyTurn) setAiming(null);
   }, [isMyTurn]);
+
+  // Handle trump card plays - show notification and update display
+  useEffect(() => {
+    if (!view?.trumpPlays || view.trumpPlays.length === 0) {
+      setDisplayedTrumps([]);
+      setNotification(null); // Clear notification when no trump plays
+      return;
+    }
+
+    // Get the most recent trump play
+    const latestPlay = view.trumpPlays[view.trumpPlays.length - 1];
+    
+    // Show notification only if we haven't shown this specific play before
+    if (!shownNotificationIds.has(latestPlay.id)) {
+      setNotification(latestPlay);
+      setShownNotificationIds(prev => new Set([...prev, latestPlay.id]));
+    }
+    
+    // Update displayed trumps on table (filter out old ones)
+    const now = Date.now();
+    const recentTrumps = view.trumpPlays.filter(tp => now - tp.timestamp < 6000);
+    setDisplayedTrumps(recentTrumps);
+  }, [view?.trumpPlays, shownNotificationIds]);
+
+  // Clear notification IDs and notification state when round changes
+  useEffect(() => {
+    setShownNotificationIds(new Set());
+    setNotification(null);
+  }, [view?.round]);
+
+  // Clear notification when phase changes (safety net)
+  useEffect(() => {
+    if (view?.phase === PHASES.COUNTDOWN || 
+        view?.phase === PHASES.SHOWDOWN || 
+        view?.phase === PHASES.GAMEOVER) {
+      setNotification(null);
+    }
+  }, [view?.phase]);
 
   if (!view || !me) return null;
 
@@ -103,6 +146,7 @@ export default function Table({ game, onLeave }) {
         targeting={targeting}
         onTarget={onTarget}
         secondsLeft={secondsLeft}
+        displayedTrumps={displayedTrumps}
       />
 
       <BottomPanel
@@ -166,6 +210,14 @@ export default function Table({ game, onLeave }) {
       {view.phase === PHASES.COUNTDOWN && (
         <ShowdownOverlay countdown={countdown} />
       )}
+
+      {/* Trump card notification */}
+      <TrumpNotification
+        notification={notification}
+        onDismiss={() => {
+          setNotification(null);
+        }}
+      />
     </div>
   );
 }

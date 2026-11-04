@@ -48,6 +48,22 @@ export const EFFECT_EXECUTORS = {
     if (last.betDelta !== undefined) {
       draft.betModifiers -= last.betDelta;
     }
+    
+    // Remove from active trump effects if it was persistent
+    if (draft.activeTrumpEffects) {
+      const cancelledCardId = last.cardId;
+      const cancelledPlayerId = last.playerId;
+      // Remove the most recent matching active effect from that player
+      const matchingIdx = [...draft.activeTrumpEffects]
+        .reverse()
+        .findIndex(e => e.trumpId === cancelledCardId && e.playerId === cancelledPlayerId);
+      
+      if (matchingIdx !== -1) {
+        const actualIdx = draft.activeTrumpEffects.length - 1 - matchingIdx;
+        draft.activeTrumpEffects.splice(actualIdx, 1);
+      }
+    }
+    
     return `${actor.name} used Shutter! Cancelled ${last.playerName}'s ${last.cardName}.`;
   },
 
