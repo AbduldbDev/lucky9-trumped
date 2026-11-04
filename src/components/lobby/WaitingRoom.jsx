@@ -19,9 +19,7 @@ export default function WaitingRoom({
       await navigator.clipboard.writeText(partyCode);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* unavailable */
-    }
+    } catch {}
   };
 
   return (

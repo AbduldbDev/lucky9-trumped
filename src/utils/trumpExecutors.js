@@ -5,9 +5,12 @@
 //
 // SRD §4.2 defines all 15 trump cards and their effect.type values.
 
-import { GAME_CONFIG } from '../config/gameRules.config.js';
-import { TRUMP_CARDS_CATALOG, TRUMP_RARITIES } from '../config/trumpCards.config.js';
-import { SUMMONABLE_RANKS } from './deckEngine.js';
+import { GAME_CONFIG } from "../config/gameRules.config.js";
+import {
+  TRUMP_CARDS_CATALOG,
+  TRUMP_RARITIES,
+} from "../config/trumpCards.config.js";
+import { SUMMONABLE_RANKS } from "./deckEngine.js";
 
 const randInt = (n) => Math.floor(Math.random() * n);
 
@@ -27,7 +30,7 @@ export const EFFECT_EXECUTORS = {
     // computeBetTotal clamps the effective bet to MIN_BET at resolution time,
     // so we do NOT clamp here — that would erase subsequent reductions.
     draft.betModifiers += effect.amount;
-    const sign = effect.amount > 0 ? '+' : '';
+    const sign = effect.amount > 0 ? "+" : "";
     return `${actor.name} changed the bet pool (${sign}${effect.amount}).`;
   },
 
@@ -36,7 +39,7 @@ export const EFFECT_EXECUTORS = {
     // Find the most recent trump log entry placed by someone else this round
     // We track a trumpLog array on the state for this purpose.
     if (!draft.trumpLog || draft.trumpLog.length === 0)
-      throw new Error('No unresolved Trump Card to cancel.');
+      throw new Error("No unresolved Trump Card to cancel.");
     const last = draft.trumpLog[draft.trumpLog.length - 1];
     if (last.playerId === actor.id)
       throw new Error("You can only cancel another player's Trump Card.");
@@ -50,7 +53,8 @@ export const EFFECT_EXECUTORS = {
 
   // ── RETURN ───────────────────────────────────────────────────────────────
   REMOVE_SELF_LAST_CARD({ draft, actor }) {
-    if (actor.hand.length < 2) throw new Error('No drawn card to return (hole card stays).');
+    if (actor.hand.length < 2)
+      throw new Error("No drawn card to return (hole card stays).");
     const card = actor.hand.pop();
     returnToDeck(draft, card);
     return `${actor.name} returned their last drawn card to the deck.`;
@@ -58,14 +62,17 @@ export const EFFECT_EXECUTORS = {
 
   // ── DISCARD ──────────────────────────────────────────────────────────────
   REMOVE_TARGET_LAST_CARD({ draft, actor, target }) {
-    if (target.hand.length < 2) throw new Error('Target has no drawn card to discard (only hole card).');
+    if (target.hand.length < 2)
+      throw new Error("Target has no drawn card to discard (only hole card).");
     const card = target.hand.pop();
     returnToDeck(draft, card);
     return `${actor.name} discarded ${target.name}'s last drawn card.`;
   },
+
   // ── REFRESH ──────────────────────────────────────────────────────────────
   REFRESH_HAND({ draft, actor }) {
-    if (draft.deck.length < 2) throw new Error('Not enough cards in deck to refresh.');
+    if (draft.deck.length < 2)
+      throw new Error("Not enough cards in deck to refresh.");
     // Return all current cards to deck
     for (const c of actor.hand) returnToDeck(draft, c);
     actor.hand = [];
@@ -76,8 +83,8 @@ export const EFFECT_EXECUTORS = {
 
   // ── EXCHANGE ─────────────────────────────────────────────────────────────
   SWAP_LAST_CARDS({ actor, target }) {
-    if (actor.hand.length < 1) throw new Error('You have no card to swap.');
-    if (target.hand.length < 1) throw new Error('Target has no card to swap.');
+    if (actor.hand.length < 1) throw new Error("You have no card to swap.");
+    if (target.hand.length < 1) throw new Error("Target has no card to swap.");
     const myLast = actor.hand.pop();
     const theirLast = target.hand.pop();
     actor.hand.push(theirLast);
@@ -88,8 +95,10 @@ export const EFFECT_EXECUTORS = {
   // ── TARGET ───────────────────────────────────────────────────────────────
   FORCE_DRAW({ draft, target, actor }) {
     if (target.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
-      throw new Error(`${target.name}'s hand is already full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`);
-    if (!draft.deck.length) throw new Error('Deck is empty.');
+      throw new Error(
+        `${target.name}'s hand is already full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`,
+      );
+    if (!draft.deck.length) throw new Error("Deck is empty.");
     target.hand.push(draft.deck.pop());
     return `${actor.name} forced ${target.name} to draw a card.`;
   },
@@ -97,9 +106,11 @@ export const EFFECT_EXECUTORS = {
   // ── SELECT ───────────────────────────────────────────────────────────────
   DRAW_RANK({ draft, actor, ctx }) {
     if (actor.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
-      throw new Error(`Your hand is full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`);
+      throw new Error(
+        `Your hand is full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`,
+      );
     if (!SUMMONABLE_RANKS.includes(ctx?.rank))
-      throw new Error('Choose a rank from Ace to 10.');
+      throw new Error("Choose a rank from Ace to 10.");
     const idx = draft.deck.findIndex((c) => c.rank === ctx.rank);
     if (idx === -1) throw new Error(`No ${ctx.rank} remaining in the deck.`);
     actor.hand.push(draft.deck.splice(idx, 1)[0]);
@@ -108,7 +119,7 @@ export const EFFECT_EXECUTORS = {
 
   // ── DISABLE ──────────────────────────────────────────────────────────────
   SKIP_TURNS_ROUND({ target, actor }) {
-    if (target.isEliminated) throw new Error('Target is already eliminated.');
+    if (target.isEliminated) throw new Error("Target is already eliminated.");
     target.disabled = true;
     target.stood = true; // treated as stood so advanceTurn skips them
     return `${actor.name} disabled ${target.name} for the rest of this round.`;
@@ -117,7 +128,7 @@ export const EFFECT_EXECUTORS = {
   // ── CHECKER ──────────────────────────────────────────────────────────────
   INSPECT_DECK({ draft, actor, ctx }) {
     if (!SUMMONABLE_RANKS.includes(ctx?.rank))
-      throw new Error('Choose a rank from Ace to 10.');
+      throw new Error("Choose a rank from Ace to 10.");
     const count = draft.deck.filter((c) => c.rank === ctx.rank).length;
     // Store the result on a per-player checker field visible only to actor
     if (!draft.checkerResults) draft.checkerResults = {};
@@ -141,7 +152,7 @@ export const EFFECT_EXECUTORS = {
   // ── ANGEL CARD ───────────────────────────────────────────────────────────
   DEATH_PROTECTION({ actor }) {
     if (actor.angelProtected)
-      throw new Error('Angel Card protection is already active.');
+      throw new Error("Angel Card protection is already active.");
     actor.angelProtected = true;
     return `${actor.name} activated Angel Card — protected from death by life loss!`;
   },
@@ -163,14 +174,15 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
   const card = TRUMP_CARDS_CATALOG[trumpId];
   if (!card) throw new Error(`Unknown trump card: ${trumpId}`);
   const exec = EFFECT_EXECUTORS[card.effect.type];
-  if (!exec) throw new Error(`No executor for effect type: ${card.effect.type}`);
+  if (!exec)
+    throw new Error(`No executor for effect type: ${card.effect.type}`);
 
   let target = null;
-  if (card.targetType === 'SINGLE_PLAYER') {
+  if (card.targetType === "SINGLE_PLAYER") {
     target = draft.players.find(
       (p) => p.id === ctx.targetId && p.id !== actor.id && !p.isEliminated,
     );
-    if (!target) throw new Error('Choose a valid opponent.');
+    if (!target) throw new Error("Choose a valid opponent.");
   }
 
   // For SHUTTER we record the bet delta of the last log entry before calling
@@ -180,9 +192,7 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
 
   // Record this trump in the log (used by SHUTTER)
   const betDelta =
-    card.effect.type === 'MODIFY_BET'
-      ? card.effect.amount
-      : undefined;
+    card.effect.type === "MODIFY_BET" ? card.effect.amount : undefined;
 
   draft.trumpLog.push({
     playerId: actor.id,
@@ -211,7 +221,10 @@ export function rollTrumpCard(rng = Math.random) {
   let rarity = rarities[rarities.length - 1];
   for (const r of rarities) {
     roll -= r.chance;
-    if (roll < 0) { rarity = r; break; }
+    if (roll < 0) {
+      rarity = r;
+      break;
+    }
   }
   const pool = cards.filter((c) => c.rarity === rarity.id);
   return pool[Math.floor(rng() * pool.length)].id;

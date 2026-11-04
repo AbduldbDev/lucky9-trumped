@@ -1,6 +1,3 @@
-// Central configuration — every tunable value lives here.
-// Engine files read from this object; never hard-code magic numbers elsewhere.
-
 export const GAME_CONFIG = {
   // GENERAL GAME SETTINGS
   MAX_PLAYERS: 6,
@@ -34,7 +31,7 @@ export const GAME_CONFIG = {
   SHUFFLE_DECK_EVERY_ROUND: true,
 
   // TURN SETTINGS
-  TURN_TIMER: 9990, // seconds per turn
+  TURN_TIMER: 30, // seconds per turn
   TIMER_WARNING: 10, // blink/heartbeat threshold (seconds)
   AUTO_ELIMINATE_ON_TIMEOUT: true,
   SKIP_ELIMINATED_PLAYERS: true,
