@@ -12,6 +12,7 @@ import GameOverPanel from "./components/GameOverPanel.jsx";
 import ShowdownOverlay from "./components/ShowdownOverlay.jsx";
 import TrumpNotification from "./components/TrumpNotification.jsx";
 import TrumpCardDisplay from "./components/TrumpCardDisplay.jsx";
+import PersonalNotification from "./components/PersonalNotification.jsx";
 import { TRUMP_CARDS_CATALOG } from "../../config/trumpCards.config.js";
 import { PHASES, computeBetTotal } from "../../utils/gameEngine.js";
 import { useTurnTimer } from "../../hooks/useTurnTimer.js";
@@ -26,6 +27,8 @@ export default function Table({ game, onLeave }) {
   const [notification, setNotification] = useState(null);
   const [displayedTrumps, setDisplayedTrumps] = useState([]);
   const [shownNotificationIds, setShownNotificationIds] = useState(new Set());
+  const [personalNotification, setPersonalNotification] = useState(null);
+  const [shownPersonalIds, setShownPersonalIds] = useState(new Set());
 
   const { secondsLeft } = useTurnTimer({
     active: isMyTurn,
@@ -59,16 +62,18 @@ export default function Table({ game, onLeave }) {
 
     // Get the most recent trump play
     const latestPlay = view.trumpPlays[view.trumpPlays.length - 1];
-    
+
     // Show notification only if we haven't shown this specific play before
     if (!shownNotificationIds.has(latestPlay.id)) {
       setNotification(latestPlay);
-      setShownNotificationIds(prev => new Set([...prev, latestPlay.id]));
+      setShownNotificationIds((prev) => new Set([...prev, latestPlay.id]));
     }
-    
+
     // Update displayed trumps on table (filter out old ones)
     const now = Date.now();
-    const recentTrumps = view.trumpPlays.filter(tp => now - tp.timestamp < 6000);
+    const recentTrumps = view.trumpPlays.filter(
+      (tp) => now - tp.timestamp < 6000,
+    );
     setDisplayedTrumps(recentTrumps);
   }, [view?.trumpPlays, shownNotificationIds]);
 
@@ -80,12 +85,39 @@ export default function Table({ game, onLeave }) {
 
   // Clear notification when phase changes (safety net)
   useEffect(() => {
-    if (view?.phase === PHASES.COUNTDOWN || 
-        view?.phase === PHASES.SHOWDOWN || 
-        view?.phase === PHASES.GAMEOVER) {
+    if (
+      view?.phase === PHASES.COUNTDOWN ||
+      view?.phase === PHASES.SHOWDOWN ||
+      view?.phase === PHASES.GAMEOVER
+    ) {
       setNotification(null);
     }
   }, [view?.phase]);
+
+  // Handle personal notifications (Lucky 9, etc.)
+  useEffect(() => {
+    if (
+      !view?.personalNotifications ||
+      view.personalNotifications.length === 0
+    ) {
+      return;
+    }
+
+    // Get the most recent personal notification
+    const latestPersonal =
+      view.personalNotifications[view.personalNotifications.length - 1];
+
+    // Show if we haven't shown this one before
+    if (latestPersonal && !shownPersonalIds.has(latestPersonal.id)) {
+      setPersonalNotification(latestPersonal);
+      setShownPersonalIds((prev) => new Set([...prev, latestPersonal.id]));
+    }
+  }, [view?.personalNotifications, shownPersonalIds]);
+
+  // Clear personal notification IDs when round changes
+  useEffect(() => {
+    setShownPersonalIds(new Set());
+  }, [view?.round]);
 
   if (!view || !me) return null;
 
@@ -134,7 +166,14 @@ export default function Table({ game, onLeave }) {
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-[#040e06]">
       <TopBar view={view} bet={bet} onLeave={onLeave} />
-
+      {/* Vignette */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)",
+        }}
+      />
       <OvalTable
         view={view}
         allPlayers={allPlayers}
@@ -216,6 +255,14 @@ export default function Table({ game, onLeave }) {
         notification={notification}
         onDismiss={() => {
           setNotification(null);
+        }}
+      />
+
+      {/* Personal notification (Lucky 9, etc.) */}
+      <PersonalNotification
+        notification={personalNotification}
+        onDismiss={() => {
+          setPersonalNotification(null);
         }}
       />
     </div>

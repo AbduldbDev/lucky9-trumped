@@ -12,7 +12,9 @@ export default function BottomPanel({
 }) {
   return (
     <div
-      className={`flex-none flex flex-col border-t z-20 backdrop-blur-md transition-colors
+      className={`flex-none flex flex-col w-full max-w-5xl mx-auto
+      rounded-t-2xl overflow-hidden border-t z-20 backdrop-blur-md
+      transition-colors bg-black/50
       ${
         isMyTurn
           ? "border-gold/40 bg-gradient-to-t from-black to-ink/90"

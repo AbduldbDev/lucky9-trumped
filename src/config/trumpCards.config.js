@@ -137,7 +137,7 @@ export const TRUMP_CARDS_CATALOG = {
     id: 'ANGEL_CARD',
     name: 'Angel Card',
     rarity: 'MYTHIC',
-    description: 'Prevents death when running out of lives while protection is active.',
+    description: 'Prevents death when running out of lives. Protection lasts only for the current round.',
     targetType: 'SELF',
     effect: { type: 'DEATH_PROTECTION' },
   },

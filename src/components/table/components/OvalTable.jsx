@@ -42,15 +42,6 @@ export default function OvalTable({
 
   return (
     <div className="flex-1 min-h-0 relative flex items-center justify-center overflow-hidden pt-7">
-      {/* Vignette */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%)",
-        }}
-      />
-
       {/* Stage: capped size, centred. Everything below is positioned inside it */}
       <div
         ref={areaRef}

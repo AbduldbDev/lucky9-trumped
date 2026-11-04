@@ -73,6 +73,7 @@ export function createInitialState({ partyCode, hostPlayer }) {
     trumpLog: [],          // for SHUTTER tracking
     trumpPlays: [],        // recent trump card plays for display (id, trumpId, playerName, timestamp)
     activeTrumpEffects: [], // persistent trump effects (bet modifiers, angel, etc.)
+    personalNotifications: {}, // per-player notifications (playerId -> array of notifications)
     checkerResults: {},    // CHECKER results per playerId (private)
     rematchVotes: {},      // playerId → boolean (REMATCH_VOTE)
     rematchTimerEnd: null, // epoch ms when rematch vote expires
@@ -131,6 +132,9 @@ function startRound(d, firstPlayerOverride = null) {
     p.stood = p.isEliminated || p.isSpectator;
     p.disabled = false;
     p.lucky9Awarded = false;
+    
+    // Clear Angel Card protection at the start of each round (only lasts 1 round)
+    p.angelProtected = false;
     
     // Re-enable timeout-eliminated players (temporary elimination only for previous round)
     if (p.timeoutEliminated && !p.isEliminated) {
@@ -330,6 +334,7 @@ function checkMatchOver(d) {
 // ---------------------------------------------------------------------------
 // Lucky 9 check — award bonus trump when hand first reaches 9 this round
 // SRD §8.3: only ONCE per round per player.
+// Also creates a personal notification for the player.
 // ---------------------------------------------------------------------------
 function checkLucky9(d, player) {
   if (!GAME_CONFIG.TRUMP_CARD_ON_TOTAL_NINE) return;
@@ -338,6 +343,19 @@ function checkLucky9(d, player) {
     player.lucky9Awarded = true;
     grantTrump(player);
     pushLog(d, `⭐ ${player.name} hit 9! Bonus Trump Card awarded.`);
+    
+    // Create personal notification for the player
+    if (!d.personalNotifications) d.personalNotifications = {};
+    if (!d.personalNotifications[player.id]) d.personalNotifications[player.id] = [];
+    
+    d.personalNotifications[player.id].push({
+      id: `lucky9-${player.id}-${Date.now()}`,
+      type: 'LUCKY_9',
+      title: 'Lucky 9!',
+      message: 'Your hand totals 9! You earned a bonus Trump Card!',
+      bonus: '+1 Trump Card',
+      timestamp: Date.now(),
+    });
   }
 }
 
@@ -633,6 +651,9 @@ export function getPrivate(state, playerId) {
   const me = state.players.find((x) => x.id === playerId);
   if (!me) return { toId: playerId };
 
+  // Get personal notifications for this player
+  const personalNotifications = state.personalNotifications?.[playerId] ?? [];
+
   // Spectators see everything
   if (me.isSpectator || me.isEliminated) {
     return {
@@ -642,6 +663,7 @@ export function getPrivate(state, playerId) {
       trumps: me.trumps,
       allHands: state.players.map((p) => ({ id: p.id, hand: p.hand, trumps: p.trumps })),
       checkerResult: state.checkerResults?.[playerId] ?? null,
+      personalNotifications,
     };
   }
 
@@ -652,6 +674,7 @@ export function getPrivate(state, playerId) {
     trumps: me.trumps,
     allHands: null,
     checkerResult: state.checkerResults?.[playerId] ?? null,
+    personalNotifications,
   };
 }
 
@@ -664,6 +687,7 @@ export function applyPrivate(pub, priv, selfId) {
     return {
       ...pub,
       checkerResult: priv.checkerResult,
+      personalNotifications: priv.personalNotifications,
       players: pub.players.map((p) => {
         const full = priv.allHands.find((h) => h.id === p.id);
         if (!full) return p;
@@ -680,6 +704,7 @@ export function applyPrivate(pub, priv, selfId) {
   return {
     ...pub,
     checkerResult: priv.checkerResult,
+    personalNotifications: priv.personalNotifications,
     players: pub.players.map((p) =>
       p.id !== selfId
         ? p
