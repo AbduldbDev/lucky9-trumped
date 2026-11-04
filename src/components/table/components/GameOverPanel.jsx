@@ -1,6 +1,5 @@
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 
-/** Winner banner, rematch vote and back-to-lobby (host). */
 export default function GameOverPanel({
   winnerName,
   rematchLeft,
@@ -33,16 +32,17 @@ export default function GameOverPanel({
               onClick={() => actions.rematchVote(true)}
               className="min-h-[44px] rounded-md text-xs font-semibold uppercase tracking-widest
                         bg-emerald-900/50 border border-emerald-700/40 text-emerald-300
-                        hover:bg-emerald-900/70 disabled:opacity-30 transition touch-manipulation"
+                        hover:bg-emerald-900/70 disabled:cursor-not-allowed disabled:opacity-30 transition touch-manipulation"
             >
               <i className="fa-solid fa-check mr-1" />
               Accept
             </button>
             <button
+              disabled={rematchLeft === 0}
               onClick={() => actions.rematchVote(false)}
               className="min-h-[44px] rounded-md text-xs font-semibold uppercase tracking-widest
                         bg-black/30 border border-white/10 text-white/50
-                        hover:border-white/25 hover:text-white/70 transition touch-manipulation"
+                        hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-30 hover:text-white/70 transition touch-manipulation"
             >
               <i className="fa-solid fa-xmark mr-1" />
               Decline
