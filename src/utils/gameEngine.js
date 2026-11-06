@@ -908,6 +908,7 @@ export function getPrivate(state, playerId) {
       checkerResult: state.checkerResults?.[playerId] ?? null,
       fortuneResult: state.fortuneResults?.[playerId] ?? null,
       personalNotifications,
+      waitingForCounterResponse: false, // Spectators don't need this
     };
   }
 
@@ -922,6 +923,7 @@ export function getPrivate(state, playerId) {
     fortuneResult: state.fortuneResults?.[playerId] ?? null,
     personalNotifications,
     counterRequest: getCounterRequestForPlayer(state, playerId),
+    waitingForCounterResponse: isWaitingForCounterResponse(state, playerId),
   };
 }
 
@@ -959,6 +961,21 @@ function getCounterRequestForPlayer(state, playerId) {
   return null;
 }
 
+// Helper to check if player is waiting for counter responses
+function isWaitingForCounterResponse(state, playerId) {
+  if (!state.counterRequests) return false;
+
+  // Check if there's any counter request where this player is the attacker
+  for (const requestId in state.counterRequests) {
+    const request = state.counterRequests[requestId];
+    if (request.attackerId === playerId) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /** Merge private packet into the public (masked) state. */
 export function applyPrivate(pub, priv, selfId) {
   if (!pub || !priv || priv.toId !== selfId) return pub;
@@ -971,6 +988,7 @@ export function applyPrivate(pub, priv, selfId) {
       fortuneResult: priv.fortuneResult,
       personalNotifications: priv.personalNotifications,
       counterRequest: priv.counterRequest,
+      waitingForCounterResponse: priv.waitingForCounterResponse,
       players: pub.players.map((p) => {
         const full = priv.allHands.find((h) => h.id === p.id);
         if (!full) return p;
@@ -990,6 +1008,7 @@ export function applyPrivate(pub, priv, selfId) {
     fortuneResult: priv.fortuneResult,
     personalNotifications: priv.personalNotifications,
     counterRequest: priv.counterRequest,
+    waitingForCounterResponse: priv.waitingForCounterResponse,
     players: pub.players.map((p) =>
       p.id !== selfId
         ? p

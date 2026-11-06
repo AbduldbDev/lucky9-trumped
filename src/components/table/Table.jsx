@@ -232,6 +232,7 @@ export default function Table({ game, onLeave }) {
         {showControls ? (
           <Controls
             me={me}
+            view={view}
             isMyTurn={isMyTurn}
             actions={actions}
             aiming={aiming}

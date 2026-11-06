@@ -12,14 +12,35 @@ const TAP =
   "disabled:opacity-25 disabled:cursor-not-allowed disabled:active:scale-100";
 const CAN_HOVER = "[@media(hover:hover)]:hover";
 
-export function ActionBar({ me, isMyTurn, actions }) {
+export function ActionBar({
+  me,
+  isMyTurn,
+  actions,
+  waitingForCounterResponse,
+}) {
   const max = GAME_CONFIG.MAX_CARDS_IN_HAND;
   const handFull = me.hand.length >= max;
-  const canHit = isMyTurn && !me.stood && !handFull;
-  const canStand = isMyTurn && !me.stood;
+
+  // Disable Hit and Stand if waiting for counter responses
+  const canHit =
+    isMyTurn && !me.stood && !handFull && !waitingForCounterResponse;
+  const canStand = isMyTurn && !me.stood && !waitingForCounterResponse;
 
   return (
     <div className="controls flex flex-col gap-1">
+      {/* Waiting for counter indicator */}
+      {waitingForCounterResponse && (
+        <div className="flex items-center justify-center gap-2 px-3 py-1.5 mb-1 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-500" />
+          </span>
+          <span className="text-[10px] font-medium text-yellow-200/90 uppercase tracking-wider">
+            Waiting for counter response...
+          </span>
+        </div>
+      )}
+
       <div className="ctl-actions flex items-center gap-1.5">
         {/* Hit */}
         <button
@@ -38,9 +59,11 @@ export function ActionBar({ me, isMyTurn, actions }) {
             ${CAN_HOVER}:border-gold/40
             ${CAN_HOVER}:bg-felt-light/90`}
           title={
-            handFull
-              ? "Hand full — Stand or play a Trump"
-              : `Draw a card (${me.hand.length}/${max})`
+            waitingForCounterResponse
+              ? "Waiting for counter response..."
+              : handFull
+                ? "Hand full — Stand or play a Trump"
+                : `Draw a card (${me.hand.length}/${max})`
           }
           aria-label={`Hit, ${me.hand.length} of ${max} cards`}
         >
@@ -76,7 +99,11 @@ export function ActionBar({ me, isMyTurn, actions }) {
             ${CAN_HOVER}:border-gold/70
             ${CAN_HOVER}:from-gold/25
             ${CAN_HOVER}:to-gold/10`}
-          title="Lock your hand — you will not draw again this round"
+          title={
+            waitingForCounterResponse
+              ? "Waiting for counter response..."
+              : "Lock your hand — you will not draw again this round"
+          }
         >
           <span
             aria-hidden="true"
@@ -91,7 +118,7 @@ export function ActionBar({ me, isMyTurn, actions }) {
       </div>
 
       {/* Hand limit hint */}
-      {handFull && isMyTurn && !me.stood && (
+      {handFull && isMyTurn && !me.stood && !waitingForCounterResponse && (
         <p
           role="status"
           className="ctl-hint text-center text-[8px] font-medium uppercase
@@ -99,6 +126,17 @@ export function ActionBar({ me, isMyTurn, actions }) {
         >
           Hand full <span className="mx-1 text-gold/30">·</span>
           Play a Trump or Stand
+        </p>
+      )}
+
+      {/* Waiting for counter hint */}
+      {waitingForCounterResponse && isMyTurn && (
+        <p
+          role="status"
+          className="ctl-hint text-center text-[8px] font-medium uppercase
+            tracking-[0.14em] text-yellow-400/70"
+        >
+          Target player deciding to counter...
         </p>
       )}
     </div>
@@ -112,6 +150,7 @@ export function TrumpTray({
   aiming,
   onAim,
   onCancelAim,
+  waitingForCounterResponse,
 }) {
   const [rank, setRank] = useState("A");
   const aimCfg = aiming ? TRUMP_CARDS_CATALOG[aiming] : null;
@@ -315,16 +354,25 @@ export function TrumpTray({
   );
 }
 export default function Controls(props) {
+  const { view } = props;
+  const waitingForCounterResponse = view?.waitingForCounterResponse ?? false;
+
   return (
     <div
       className="flex flex-col gap-2.5 w-full min-w-0 px-3 pt-2.5 pb-1
         border-t border-gold/15 bg-ink/60 backdrop-blur-md"
     >
       {/* Top: Hit / Stand (full width) */}
-      <ActionBar {...props} />
+      <ActionBar
+        {...props}
+        waitingForCounterResponse={waitingForCounterResponse}
+      />
 
       {/* Bottom: Trump cards (full width) */}
-      <TrumpTray {...props} />
+      <TrumpTray
+        {...props}
+        waitingForCounterResponse={waitingForCounterResponse}
+      />
     </div>
   );
 }
