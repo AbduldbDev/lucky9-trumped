@@ -3,10 +3,6 @@ import Card from "../../cards/Card.jsx";
 export default function PlayerHand({ me, amSpectator }) {
   return (
     <div className="flex-1 min-w-0 flex flex-col justify-center px-3 pb-2 pt-1 sm:py-2">
-      <div className="hidden sm:block text-[9px] text-white/25 uppercase tracking-luxe text-center mb-1">
-        Hand
-      </div>
-
       <div className="overflow-x-auto no-scrollbar">
         <div className="flex gap-1.5 w-max mx-auto sm:mx-0">
           {amSpectator ? (

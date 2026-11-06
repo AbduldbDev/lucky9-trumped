@@ -1,6 +1,5 @@
 import Seat from "./Seat.jsx";
-import TimerRing from "../Timerring.jsx";
-import TrumpCardDisplay from "./TrumpCardDisplay.jsx";
+import TimerRing from "./Timerring.jsx";
 import ActiveEffects from "./ActiveEffects.jsx";
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 import { PHASES } from "../../../utils/gameEngine.js";
@@ -76,7 +75,7 @@ export default function OvalTable({
           </div>
           <div className="flex items-center gap-1 bg-black/30 rounded-full px-3 py-1">
             <i className="fa-solid fa-heart text-red-500/60 text-[10px]" />
-            <span className="text-xs font-semibold text-gold-DEFAULT tabular-nums">
+            <span className="text-xs font-semibold text-white/60 tabular-nums">
               {bet}
             </span>
           </div>
@@ -88,14 +87,12 @@ export default function OvalTable({
           {view.phase === PHASES.PLAYING && (
             <div className="text-[10px] text-white/30 text-center leading-tight">
               {isMyTurn ? (
-                <span className="text-gold-DEFAULT font-semibold">
-                  Your turn
-                </span>
+                <span className="text-gold font-semibold">Your turn</span>
               ) : (
                 <span>{turnPlayer?.name}</span>
               )}
               {active.length > 0 && (
-                <div className="text-white/20">
+                <div className="text-white/20 mt-1">
                   {stood}/{active.length} stood
                 </div>
               )}
@@ -105,11 +102,6 @@ export default function OvalTable({
           {/* Active trump effects */}
           <ActiveEffects effects={view.activeTrumpEffects} />
         </div>
-
-        {/* Trump cards displayed on table */}
-        {/* {displayedTrumps.length > 0 && (
-          <TrumpCardDisplay trumpCards={displayedTrumps} />
-        )} */}
 
         {/* Opponent seats (pixel-positioned, scaled to fit) */}
         {opponents.map((opp, idx) => {

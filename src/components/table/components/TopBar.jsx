@@ -23,7 +23,8 @@ export default function TopBar({ view, bet, onLeave }) {
             LUCKY 9
           </span>
           <span className="ml-2 text-[10px] text-white/20 font-mono">
-            R{view.round} · {view.partyCode}
+            {/* R{view.round} ·  */}
+            {view.partyCode}
           </span>
         </div>
         <div className="flex items-center gap-3 text-xs text-white/30">
@@ -39,23 +40,20 @@ export default function TopBar({ view, bet, onLeave }) {
           >
             <i className="fa-solid fa-question text-xs" />
           </button>
-          
-          <span>
+
+          {/* <span>
             <i className="fa-solid fa-layer-group mr-1" />
             {view.deckCount}
           </span>
           <span className="text-gold-DEFAULT font-semibold">
             <i className="fa-solid fa-heart mr-1 text-red-500/70" />
             {bet}
-          </span>
+          </span> */}
         </div>
       </div>
 
       {/* Trump Guide Modal */}
-      <TrumpGuideModal
-        isOpen={showGuide}
-        onClose={() => setShowGuide(false)}
-      />
+      <TrumpGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import Controls from "./Controls.jsx";
+import Controls from "./components/Controls.jsx";
 import TopBar from "./components/TopBar.jsx";
 import OvalTable from "./components/OvalTable.jsx";
 import BottomPanel from "./components/BottomPanel.jsx";
@@ -15,7 +15,6 @@ import RoundResult from "./components/RoundResult.jsx";
 import GameOverPanel from "./components/GameOverPanel.jsx";
 import ShowdownOverlay from "./components/ShowdownOverlay.jsx";
 import TrumpNotification from "./components/TrumpNotification.jsx";
-import TrumpCardDisplay from "./components/TrumpCardDisplay.jsx";
 import PersonalNotification from "./components/PersonalNotification.jsx";
 import { TRUMP_CARDS_CATALOG } from "../../config/trumpCards.config.js";
 import { PHASES, computeBetTotal } from "../../utils/gameEngine.js";
@@ -119,7 +118,12 @@ export default function Table({ game, onLeave }) {
       return;
     }
 
-    if (list.length === 0) return;
+    // Clear notification if personalNotifications is empty (round reset)
+    if (list.length === 0) {
+      setPersonalNotification(null);
+      return;
+    }
+
     const latest = list[list.length - 1];
     const key = `${view.round}:${latest.id}`;
     if (shownPersonalKeys.current.has(key)) return;
