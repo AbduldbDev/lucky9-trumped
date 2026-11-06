@@ -16,6 +16,7 @@ import GameOverPanel from "./components/GameOverPanel.jsx";
 import ShowdownOverlay from "./components/ShowdownOverlay.jsx";
 import TrumpNotification from "./components/TrumpNotification.jsx";
 import PersonalNotification from "./components/PersonalNotification.jsx";
+import CounterPrompt from "./components/CounterPrompt.jsx";
 import { TRUMP_CARDS_CATALOG } from "../../config/trumpCards.config.js";
 import { PHASES, computeBetTotal } from "../../utils/gameEngine.js";
 import { useTurnTimer } from "../../hooks/useTurnTimer.js";
@@ -284,6 +285,19 @@ export default function Table({ game, onLeave }) {
           setPersonalNotification(null);
         }}
       />
+
+      {/* Counter prompt (SHUTTER response) */}
+      {view.counterRequest && (
+        <CounterPrompt
+          counterRequest={view.counterRequest}
+          onAccept={() => {
+            actions.respondCounter(view.counterRequest.requestId, true);
+          }}
+          onDecline={() => {
+            actions.respondCounter(view.counterRequest.requestId, false);
+          }}
+        />
+      )}
     </div>
   );
 }

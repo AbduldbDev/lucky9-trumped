@@ -81,7 +81,12 @@ export const EFFECT_EXECUTORS = {
   },
 
   // ── DISCARD ──────────────────────────────────────────────────────────────
-  REMOVE_TARGET_LAST_CARD({ draft, actor, target }) {
+  REMOVE_TARGET_LAST_CARD({ draft, actor, target, ctx }) {
+    // Check if target countered with SHUTTER
+    if (ctx?.countered && ctx.countered.includes(target.id)) {
+      return `${actor.name} tried to discard ${target.name}'s card, but ${target.name} countered with SHUTTER!`;
+    }
+
     if (target.hand.length < 2)
       throw new Error("Target has no drawn card to discard (only hole card).");
     const card = target.hand.pop();
@@ -104,7 +109,12 @@ export const EFFECT_EXECUTORS = {
   },
 
   // ── EXCHANGE ─────────────────────────────────────────────────────────────
-  SWAP_LAST_CARDS({ draft, actor, target }) {
+  SWAP_LAST_CARDS({ draft, actor, target, ctx }) {
+    // Check if target countered with SHUTTER
+    if (ctx?.countered && ctx.countered.includes(target.id)) {
+      return `${actor.name} tried to exchange cards with ${target.name}, but ${target.name} countered with SHUTTER!`;
+    }
+
     if (actor.hand.length < 1) throw new Error("You have no card to swap.");
     if (target.hand.length < 1) throw new Error("Target has no card to swap.");
     const myLast = actor.hand.pop();
@@ -118,7 +128,12 @@ export const EFFECT_EXECUTORS = {
   },
 
   // ── TARGET ───────────────────────────────────────────────────────────────
-  FORCE_DRAW({ draft, target, actor }) {
+  FORCE_DRAW({ draft, target, actor, ctx }) {
+    // Check if target countered with SHUTTER
+    if (ctx?.countered && ctx.countered.includes(target.id)) {
+      return `${actor.name} tried to force ${target.name} to draw, but ${target.name} countered with SHUTTER!`;
+    }
+
     if (target.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
       throw new Error(
         `${target.name}'s hand is already full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`,
@@ -147,7 +162,12 @@ export const EFFECT_EXECUTORS = {
   },
 
   // ── DISABLE ──────────────────────────────────────────────────────────────
-  SKIP_TURNS_ROUND({ target, actor }) {
+  SKIP_TURNS_ROUND({ target, actor, ctx }) {
+    // Check if target countered with SHUTTER
+    if (ctx?.countered && ctx.countered.includes(target.id)) {
+      return `${actor.name} tried to disable ${target.name}, but ${target.name} countered with SHUTTER!`;
+    }
+
     if (target.isEliminated) throw new Error("Target is already eliminated.");
     target.disabled = true;
     target.stood = true; // treated as stood so advanceTurn skips them
@@ -166,11 +186,19 @@ export const EFFECT_EXECUTORS = {
   },
 
   // ── FRIENDSHIP CARD ──────────────────────────────────────────────────────
-  MASS_DRAW_ALL({ draft, actor }) {
+  MASS_DRAW_ALL({ draft, actor, ctx }) {
     let drew = 0;
+    const countered = ctx?.countered || [];
+
     for (const p of draft.players) {
       // Skip only eliminated players (stood players can still draw)
       if (p.isEliminated) continue;
+
+      // Skip players who countered with SHUTTER
+      if (countered.includes(p.id)) {
+        continue;
+      }
+
       if (p.hand.length < GAME_CONFIG.MAX_CARDS_IN_HAND && draft.deck.length) {
         p.hand.push(draft.deck.pop());
         // Check Lucky 9 for each player who drew
@@ -178,7 +206,13 @@ export const EFFECT_EXECUTORS = {
         drew++;
       }
     }
-    return `${actor.name} played Friendship Card! ${drew} player(s) drew a card.`;
+
+    const counteredCount = countered.length;
+    let msg = `${actor.name} played Friendship Card! ${drew} player(s) drew a card.`;
+    if (counteredCount > 0) {
+      msg += ` ${counteredCount} player(s) countered with SHUTTER.`;
+    }
+    return msg;
   },
 
   // ── ANGEL CARD ───────────────────────────────────────────────────────────

@@ -120,6 +120,7 @@ export const TRUMP_CARDS_CATALOG = {
     rarity: "UNCOMMON",
     description: "Remove the most recently drawn card of a selected player.",
     targetType: "SINGLE_PLAYER",
+    counterable: true, // Can be blocked by SHUTTER
     effect: { type: "REMOVE_TARGET_LAST_CARD" },
   },
 
@@ -140,6 +141,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Swap your last drawn card with a selected player's last drawn card.",
     targetType: "SINGLE_PLAYER",
+    counterable: true, // Can be blocked by SHUTTER
     effect: { type: "SWAP_LAST_CARDS" },
   },
   TARGET: {
@@ -149,6 +151,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Force a selected player to draw 1 additional card (up to 3 max).",
     targetType: "SINGLE_PLAYER",
+    counterable: true, // Can be blocked by SHUTTER
     effect: { type: "FORCE_DRAW" },
   },
   HUSH: {
@@ -177,6 +180,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Prevent a selected player from taking turns for the remainder of the round.",
     targetType: "SINGLE_PLAYER",
+    counterable: true, // Can be blocked by SHUTTER
     effect: { type: "SKIP_TURNS_ROUND" },
   },
   CHECKER: {
@@ -197,6 +201,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "All non-eliminated players (including yourself) draw one additional card.",
     targetType: "ALL_PLAYERS",
+    counterable: true, // Can be blocked by SHUTTER (each player decides)
     effect: { type: "MASS_DRAW_ALL" },
   },
   ANGEL_CARD: {
@@ -217,3 +222,27 @@ export const TRUMP_CARDS_CATALOG = {
     effect: { type: "PEEK_DECK" },
   },
 };
+
+/**
+ * Helper to determine which players can counter a trump card
+ */
+export function getCounterableTargets(trumpId, actorId, targetId, allPlayers) {
+  const card = TRUMP_CARDS_CATALOG[trumpId];
+  if (!card || !card.counterable) return [];
+
+  const targets = [];
+
+  if (card.targetType === "SINGLE_PLAYER" && targetId) {
+    // Single target can counter
+    targets.push(targetId);
+  } else if (card.targetType === "ALL_PLAYERS") {
+    // All players except actor can counter
+    allPlayers.forEach((p) => {
+      if (p.id !== actorId && !p.isEliminated && !p.isSpectator) {
+        targets.push(p.id);
+      }
+    });
+  }
+
+  return targets;
+}

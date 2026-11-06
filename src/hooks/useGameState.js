@@ -7,7 +7,7 @@
 // commit so that a page refresh does not disconnect anyone.  On reload the
 // host reads `full_state` from the database; guests read `public_state`.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   PHASES,
   applyPrivate,
@@ -17,20 +17,24 @@ import {
   getPrivate,
   maskState,
   viewFor,
-} from '../utils/gameEngine.js';
-import { useSupabaseRealtime } from './useSupabaseRealtime.js';
-import { supabase } from '../services/supabaseClient.js';
+} from "../utils/gameEngine.js";
+import { useSupabaseRealtime } from "./useSupabaseRealtime.js";
+import { supabase } from "../services/supabaseClient.js";
 
 export function useGameState({ partyCode, isHost, profile }) {
   const selfId = profile.id;
-  const fullRef    = useRef(null); // host only: complete (unmasked) state
-  const publicRef  = useRef(null); // guest only: last public masked state
+  const fullRef = useRef(null); // host only: complete (unmasked) state
+  const publicRef = useRef(null); // guest only: last public masked state
   const privateRef = useRef(null); // guest only: my private packet
-  const rtRef      = useRef(null);
-  const loadedRef  = useRef(false); // guard: initial DB load done
+  const rtRef = useRef(null);
+  const loadedRef = useRef(false); // guard: initial DB load done
   const [view, setView] = useState(null);
 
-  const me = { id: selfId, name: profile.username, skinId: profile.equippedSkinId };
+  const me = {
+    id: selfId,
+    name: profile.username,
+    skinId: profile.equippedSkinId,
+  };
 
   // ── Host: commit a new full state, update own view, push to clients + DB ──
   const commit = useCallback(
@@ -48,7 +52,7 @@ export function useGameState({ partyCode, isHost, profile }) {
       // Persist to database (fire-and-forget so realtime stays snappy)
       if (supabase && partyCode) {
         supabase
-          .from('game_rooms')
+          .from("game_rooms")
           .upsert({
             party_code: partyCode,
             host_id: selfId,
@@ -57,7 +61,8 @@ export function useGameState({ partyCode, isHost, profile }) {
             updated_at: new Date().toISOString(),
           })
           .then(({ error }) => {
-            if (error) console.warn('[Lucky9] DB persist error:', error.message);
+            if (error)
+              console.warn("[Lucky9] DB persist error:", error.message);
           });
       }
     },
@@ -69,7 +74,7 @@ export function useGameState({ partyCode, isHost, profile }) {
       const cur = fullRef.current;
       if (!cur) return;
       const next = gameReducer(cur, action);
-      if (next !== cur || action.type === 'JOIN') commit(next);
+      if (next !== cur || action.type === "JOIN") commit(next);
     },
     [commit],
   );
@@ -102,9 +107,9 @@ export function useGameState({ partyCode, isHost, profile }) {
 
     if (supabase) {
       supabase
-        .from('game_rooms')
-        .select('full_state')
-        .eq('party_code', partyCode)
+        .from("game_rooms")
+        .select("full_state")
+        .eq("party_code", partyCode)
         .maybeSingle()
         .then(({ data }) => {
           if (data?.full_state) {
@@ -113,7 +118,9 @@ export function useGameState({ partyCode, isHost, profile }) {
             setView(viewFor(data.full_state, selfId));
           } else {
             // No existing room — create fresh
-            commit(createInitialState({ partyCode, hostPlayer: createPlayer(me) }));
+            commit(
+              createInitialState({ partyCode, hostPlayer: createPlayer(me) }),
+            );
           }
         });
     } else {
@@ -127,7 +134,7 @@ export function useGameState({ partyCode, isHost, profile }) {
   // After a page refresh the host loads state from DB, then this effect
   // fires when the realtime channel comes online, pushing state to all guests.
   useEffect(() => {
-    if (!isHost || !fullRef.current || rt.status !== 'SUBSCRIBED') return;
+    if (!isHost || !fullRef.current || rt.status !== "SUBSCRIBED") return;
     const masked = maskState(fullRef.current);
     rt.broadcastState(masked);
     fullRef.current.players.forEach((p) => {
@@ -144,14 +151,16 @@ export function useGameState({ partyCode, isHost, profile }) {
 
     if (supabase) {
       supabase
-        .from('game_rooms')
-        .select('public_state')
-        .eq('party_code', partyCode)
+        .from("game_rooms")
+        .select("public_state")
+        .eq("party_code", partyCode)
         .maybeSingle()
         .then(({ data }) => {
           if (data?.public_state) {
             publicRef.current = data.public_state;
-            setView(applyPrivate(data.public_state, privateRef.current, selfId));
+            setView(
+              applyPrivate(data.public_state, privateRef.current, selfId),
+            );
           }
         });
     }
@@ -162,8 +171,8 @@ export function useGameState({ partyCode, isHost, profile }) {
   // JOIN is a no-op if we're already in the game (reconnect), but it triggers
   // the host to re-broadcast state + our private packet.
   useEffect(() => {
-    if (!isHost && rt.status === 'SUBSCRIBED') {
-      rt.sendAction({ type: 'JOIN', player: me });
+    if (!isHost && rt.status === "SUBSCRIBED") {
+      rt.sendAction({ type: "JOIN", player: me });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, rt.status]);
@@ -171,9 +180,9 @@ export function useGameState({ partyCode, isHost, profile }) {
   // ── Guest: tell the host we're leaving if the tab closes ──────────────────
   useEffect(() => {
     if (isHost) return undefined;
-    const bye = () => rtRef.current?.sendAction({ type: 'LEAVE', id: selfId });
-    window.addEventListener('beforeunload', bye);
-    return () => window.removeEventListener('beforeunload', bye);
+    const bye = () => rtRef.current?.sendAction({ type: "LEAVE", id: selfId });
+    window.addEventListener("beforeunload", bye);
+    return () => window.removeEventListener("beforeunload", bye);
   }, [isHost, selfId]);
 
   const dispatch = useCallback(
@@ -187,24 +196,29 @@ export function useGameState({ partyCode, isHost, profile }) {
 
   // Derive the last round's winner for NEXT_ROUND
   const lastWinnerId =
-    view?.lastResult?.winnerIds?.length === 1 ? view.lastResult.winnerIds[0] : null;
+    view?.lastResult?.winnerIds?.length === 1
+      ? view.lastResult.winnerIds[0]
+      : null;
 
   const actions = {
-    start:      ()                         => dispatch({ type: 'START' }),
-    nextRound:  ()                         => dispatch({ type: 'NEXT_ROUND', winnerId: lastWinnerId }),
-    hit:        ()                         => dispatch({ type: 'HIT' }),
-    stand:      ()                         => dispatch({ type: 'STAND' }),
-    timeout:    ()                         => dispatch({ type: 'TIMEOUT' }),
-    resolveShowdown: ()                   => dispatch({ type: 'RESOLVE_SHOWDOWN' }),
-    playTrump:  (trumpId, opts = {})       => dispatch({ type: 'TRUMP', trumpId, ...opts }),
-    rematchVote:(accept)                   => dispatch({ type: 'REMATCH_VOTE', accept }),
-    reset:      ()                         => dispatch({ type: 'RESET' }),
-    leave:      ()                         => dispatch({ type: 'LEAVE', id: selfId }),
+    start: () => dispatch({ type: "START" }),
+    nextRound: () => dispatch({ type: "NEXT_ROUND", winnerId: lastWinnerId }),
+    hit: () => dispatch({ type: "HIT" }),
+    stand: () => dispatch({ type: "STAND" }),
+    timeout: () => dispatch({ type: "TIMEOUT" }),
+    resolveShowdown: () => dispatch({ type: "RESOLVE_SHOWDOWN" }),
+    playTrump: (trumpId, opts = {}) =>
+      dispatch({ type: "TRUMP", trumpId, ...opts }),
+    respondCounter: (requestId, useShutter) =>
+      dispatch({ type: "RESPOND_COUNTER", requestId, useShutter }),
+    rematchVote: (accept) => dispatch({ type: "REMATCH_VOTE", accept }),
+    reset: () => dispatch({ type: "RESET" }),
+    leave: () => dispatch({ type: "LEAVE", id: selfId }),
   };
 
   const current = view?.players?.[view.turnIndex];
   const isMyTurn = view?.phase === PHASES.PLAYING && current?.id === selfId;
-  const turnKey  = `${view?.round ?? 0}-${view?.turnIndex ?? -1}`;
+  const turnKey = `${view?.round ?? 0}-${view?.turnIndex ?? -1}`;
 
   return {
     view,

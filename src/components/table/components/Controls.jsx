@@ -48,7 +48,7 @@ export function ActionBar({ me, isMyTurn, actions }) {
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-gold-light/50 to-transparent"
           />
-          <span class="text-[10px] font-semibold uppercase tracking-[0.16em]">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
             Hit
           </span>
 
@@ -84,7 +84,7 @@ export function ActionBar({ me, isMyTurn, actions }) {
           />
 
           <i className="fa-solid fa-hand text-[8px] opacity-80" />
-          <span class="text-[10px] font-semibold uppercase tracking-[0.16em]">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
             Stand
           </span>
         </button>

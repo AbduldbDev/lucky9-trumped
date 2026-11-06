@@ -3,6 +3,7 @@
 // SRD §3, §5, §8 edge-case rules are all implemented here.
 
 import { GAME_CONFIG } from "../config/gameRules.config.js";
+import { TRUMP_CARDS_CATALOG } from "../config/trumpCards.config.js";
 import { createDeck, shuffle, handScore, isNatural } from "./deckEngine.js";
 import { executeTrump, rollTrumpCard } from "./trumpExecutors.js";
 
@@ -72,6 +73,9 @@ export function createInitialState({ partyCode, hostPlayer }) {
     activeTrumpEffects: [], // persistent trump effects (bet modifiers, angel, etc.)
     personalNotifications: {}, // per-player notifications (playerId -> array of notifications)
     checkerResults: {}, // CHECKER results per playerId (private)
+    fortuneResults: {}, // FORTUNE_TELLER results per playerId (private)
+    counterRequests: {}, // pending counter requests per playerId (playerId -> { attackerId, trumpId, ... })
+    counterResponses: {}, // collected counter responses (requestId -> { playerId, accepted })
     rematchVotes: {}, // playerId → boolean (REMATCH_VOTE)
     rematchTimerEnd: null, // epoch ms when rematch vote expires
     lastResult: null,
@@ -375,6 +379,81 @@ export function checkLucky9(d, player) {
 }
 
 // ---------------------------------------------------------------------------
+// Execute trump with counter responses
+// ---------------------------------------------------------------------------
+function executeCounteredTrump(d, request) {
+  const attacker = d.players.find((p) => p.id === request.attackerId);
+  if (!attacker) return;
+
+  const card = TRUMP_CARDS_CATALOG[request.trumpId];
+  if (!card) return;
+
+  // Collect who countered
+  const countered = Object.keys(request.responses).filter(
+    (playerId) => request.responses[playerId] === true,
+  );
+
+  // Execute the trump with counter information
+  const msg = executeTrump(d, attacker, request.trumpId, {
+    targetId: request.targetId,
+    rank: request.rank,
+    countered, // Pass list of players who countered
+  });
+
+  // Remove the trump card from attacker's inventory (if not already done in TRUMP handler)
+  const idx = attacker.trumps.indexOf(request.trumpId);
+  if (idx !== -1) {
+    attacker.trumps.splice(idx, 1);
+    attacker.stats.trumpsPlayed += 1;
+  }
+
+  pushLog(d, msg);
+
+  // Record this trump play for display on table
+  if (!d.trumpPlays) d.trumpPlays = [];
+  d.trumpPlays.push({
+    id: `${request.attackerId}-${request.trumpId}-${Date.now()}`,
+    trumpId: request.trumpId,
+    playerId: request.attackerId,
+    playerName: request.attackerName,
+    timestamp: Date.now(),
+    countered, // Include counter info
+  });
+
+  // Keep only recent plays
+  const now = Date.now();
+  d.trumpPlays = d.trumpPlays.filter((tp) => now - tp.timestamp < 10000);
+
+  // Track persistent effects
+  if (!d.activeTrumpEffects) d.activeTrumpEffects = [];
+  const persistentEffects = [
+    "BET_UP",
+    "BET_DOWN",
+    "DOUBLE_BET_UP",
+    "DOUBLE_BET_DOWN",
+    "ANGEL_CARD",
+  ];
+
+  if (persistentEffects.includes(request.trumpId)) {
+    d.activeTrumpEffects.push({
+      id: `${request.attackerId}-${request.trumpId}-${Date.now()}`,
+      trumpId: request.trumpId,
+      playerId: request.attackerId,
+      playerName: request.attackerName,
+      targetId: request.targetId || null,
+      timestamp: Date.now(),
+    });
+  }
+
+  // Reset all stood flags
+  for (const pl of d.players) {
+    if (!pl.isEliminated && !pl.isSpectator && !pl.disabled) {
+      pl.stood = false;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Action handlers
 // ---------------------------------------------------------------------------
 const HANDLERS = {
@@ -581,6 +660,56 @@ const HANDLERS = {
     const p = assertTurn(d, by);
     const idx = p.trumps.indexOf(trumpId);
     if (idx === -1) throw new Error("You don't hold that Trump Card.");
+
+    // Import is at the top of the file, we can access TRUMP_CARDS_CATALOG directly
+    const card = TRUMP_CARDS_CATALOG[trumpId];
+
+    // Check if this trump is counterable
+    if (card.counterable) {
+      // Determine who can counter based on target type
+      const counterTargets = [];
+
+      if (card.targetType === "SINGLE_PLAYER" && targetId) {
+        // Single target can counter
+        const target = d.players.find((pl) => pl.id === targetId);
+        if (target && !target.isEliminated && !target.isSpectator) {
+          counterTargets.push(targetId);
+        }
+      } else if (card.targetType === "ALL_PLAYERS") {
+        // All players except actor can counter
+        d.players.forEach((pl) => {
+          if (pl.id !== by && !pl.isEliminated && !pl.isSpectator) {
+            counterTargets.push(pl.id);
+          }
+        });
+      }
+
+      if (counterTargets.length > 0) {
+        // Create counter request
+        const requestId = `counter-${Date.now()}-${by}-${trumpId}`;
+        if (!d.counterRequests) d.counterRequests = {};
+
+        d.counterRequests[requestId] = {
+          requestId,
+          attackerId: by,
+          attackerName: p.name,
+          trumpId,
+          trumpName: card.name,
+          targetId,
+          rank,
+          counterTargets, // List of player IDs who can counter
+          responses: {}, // Will collect responses here
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 10000, // 10 second timeout
+        };
+
+        // Don't execute the trump yet - wait for responses
+        pushLog(d, `${p.name} played ${card.name}. Waiting for counters...`);
+        return;
+      }
+    }
+
+    // Not counterable or no valid targets - execute immediately
     const msg = executeTrump(d, p, trumpId, { targetId, rank });
     p.trumps.splice(idx, 1);
     p.stats.trumpsPlayed += 1;
@@ -634,6 +763,58 @@ const HANDLERS = {
   RESOLVE_SHOWDOWN(d) {
     if (d.phase !== PHASES.COUNTDOWN) throw new Error("Not in countdown.");
     resolveShowdown(d);
+  },
+
+  // Player responds to a counter request
+  RESPOND_COUNTER(d, { by, requestId, useShutter }) {
+    if (!d.counterRequests || !d.counterRequests[requestId]) {
+      throw new Error("Invalid counter request.");
+    }
+
+    const request = d.counterRequests[requestId];
+
+    // Check if this player can respond
+    if (!request.counterTargets.includes(by)) {
+      throw new Error("You are not a target of this trump card.");
+    }
+
+    // Check if already responded
+    if (request.responses[by] !== undefined) {
+      throw new Error("You have already responded.");
+    }
+
+    const responder = d.players.find((p) => p.id === by);
+
+    // If using shutter, check if they have it
+    if (useShutter) {
+      const shutterIdx = responder.trumps.indexOf("SHUTTER");
+      if (shutterIdx === -1) {
+        throw new Error("You don't have a SHUTTER card.");
+      }
+
+      // Remove SHUTTER from their inventory
+      responder.trumps.splice(shutterIdx, 1);
+      responder.stats.trumpsPlayed += 1;
+    }
+
+    // Record response
+    request.responses[by] = useShutter;
+    pushLog(
+      d,
+      `${responder.name} ${useShutter ? "used SHUTTER to counter" : "declined to counter"}.`,
+    );
+
+    // Check if all responses are in
+    const allResponded = request.counterTargets.every(
+      (targetId) => request.responses[targetId] !== undefined,
+    );
+
+    if (allResponded) {
+      // Execute the trump with counter information
+      executeCounteredTrump(d, request);
+      // Clean up
+      delete d.counterRequests[requestId];
+    }
   },
 };
 
@@ -740,7 +921,42 @@ export function getPrivate(state, playerId) {
     checkerResult: state.checkerResults?.[playerId] ?? null,
     fortuneResult: state.fortuneResults?.[playerId] ?? null,
     personalNotifications,
+    counterRequest: getCounterRequestForPlayer(state, playerId),
   };
+}
+
+// Helper to get counter request for a specific player
+function getCounterRequestForPlayer(state, playerId) {
+  if (!state.counterRequests) return null;
+
+  // Find any counter request where this player is a target
+  for (const requestId in state.counterRequests) {
+    const request = state.counterRequests[requestId];
+    if (request.counterTargets.includes(playerId)) {
+      // Check if they already responded
+      if (request.responses[playerId] !== undefined) continue;
+
+      // Check if they have SHUTTER
+      const player = state.players.find((p) => p.id === playerId);
+      const hasShutter = player && player.trumps.includes("SHUTTER");
+
+      // Check if targeted directly
+      const isTargeted = request.targetId === playerId;
+
+      return {
+        requestId,
+        attackerId: request.attackerId,
+        attackerName: request.attackerName,
+        trumpId: request.trumpId,
+        trumpName: request.trumpName,
+        hasShutter,
+        isTargeted,
+        expiresAt: request.expiresAt,
+      };
+    }
+  }
+
+  return null;
 }
 
 /** Merge private packet into the public (masked) state. */
@@ -754,6 +970,7 @@ export function applyPrivate(pub, priv, selfId) {
       checkerResult: priv.checkerResult,
       fortuneResult: priv.fortuneResult,
       personalNotifications: priv.personalNotifications,
+      counterRequest: priv.counterRequest,
       players: pub.players.map((p) => {
         const full = priv.allHands.find((h) => h.id === p.id);
         if (!full) return p;
@@ -772,6 +989,7 @@ export function applyPrivate(pub, priv, selfId) {
     checkerResult: priv.checkerResult,
     fortuneResult: priv.fortuneResult,
     personalNotifications: priv.personalNotifications,
+    counterRequest: priv.counterRequest,
     players: pub.players.map((p) =>
       p.id !== selfId
         ? p
