@@ -16,13 +16,13 @@ export default function FogBadge({ hand, revealed = false, isSelf = false }) {
         className={`${baseClass}
           ${
             isNine
-              ? "bg-gold-DEFAULT/20 text-gold-light border border-gold-DEFAULT/50"
+              ? "bg-gold-DEFAULT/20 text-gold-light border border-gold/50"
               : "bg-black/30 text-ivory-dim border border-white/10"
           }`}
         aria-label={`Score: ${score}`}
       >
         {isNine && (
-          <i className="fa-solid fa-star text-[7px] sm:text-[9px] text-gold-DEFAULT" />
+          <i className="fa-solid fa-star text-[7px] sm:text-[9px] text-gold" />
         )}
         {score}
       </span>

@@ -118,6 +118,7 @@ function startRound(d, firstPlayerOverride = null) {
   d.activeTrumpEffects = []; // Clear persistent trump effects for new round
   d.checkerResults = {};
   d.fortuneResults = {}; // Clear fortune teller results for new round
+  d.personalNotifications = {}; // Clear personal notifications for new round
   d.rematchVotes = {};
   d.rematchTimerEnd = null;
   d.deck = shuffle(createDeck());
@@ -362,14 +363,14 @@ function checkLucky9(d, player) {
     if (!d.personalNotifications[player.id])
       d.personalNotifications[player.id] = [];
 
-    // d.personalNotifications[player.id].push({
-    //   id: `lucky9-${player.id}-${Date.now()}`,
-    //   type: 'LUCKY_9',
-    //   title: 'Lucky 9!',
-    //   message: 'Your hand totals 9! You earned a bonus Trump Card!',
-    //   bonus: '+1 Trump Card',
-    //   timestamp: Date.now(),
-    // });
+    d.personalNotifications[player.id].push({
+      id: `lucky9-${player.id}-${Date.now()}`,
+      type: "LUCKY_9",
+      title: "Lucky 9!",
+      message: "Your hand totals 9! You earned a bonus Trump Card!",
+      bonus: "+1 Trump Card",
+      timestamp: Date.now(),
+    });
   }
 }
 
@@ -472,6 +473,7 @@ const HANDLERS = {
         activeTrumpEffects: [],
         checkerResults: {},
         fortuneResults: {},
+        personalNotifications: {},
         rematchVotes: {},
         rematchTimerEnd: null,
         lastResult: null,
@@ -514,6 +516,7 @@ const HANDLERS = {
       activeTrumpEffects: [],
       checkerResults: {},
       fortuneResults: {},
+      personalNotifications: {},
       rematchVotes: {},
       rematchTimerEnd: null,
       lastResult: null,

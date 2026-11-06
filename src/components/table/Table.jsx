@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Controls from "./Controls.jsx";
 import TopBar from "./components/TopBar.jsx";
 import OvalTable from "./components/OvalTable.jsx";
@@ -32,7 +32,12 @@ export default function Table({ game, onLeave }) {
   const [displayedTrumps, setDisplayedTrumps] = useState([]);
   const [shownNotificationIds, setShownNotificationIds] = useState(new Set());
   const [personalNotification, setPersonalNotification] = useState(null);
-  const [shownPersonalIds, setShownPersonalIds] = useState(new Set());
+
+  // Personal notifications: remember what has already been shown in a ref
+  // (no re-render, no effect re-run). Keys include the round so ids that
+  // restart each round can't collide, and nothing needs resetting.
+  const shownPersonalKeys = useRef(new Set());
+  const personalSeeded = useRef(false);
 
   const { secondsLeft } = useTurnTimer({
     active: isMyTurn,
@@ -98,30 +103,30 @@ export default function Table({ game, onLeave }) {
     }
   }, [view?.phase]);
 
-  // Handle personal notifications (Lucky 9, etc.)
+  // Personal notifications (Lucky 9, etc.): show ONLY when a new one is
+  // triggered. The child hides it after 3s and calls onDismiss.
   useEffect(() => {
-    if (
-      !view?.personalNotifications ||
-      view.personalNotifications.length === 0
-    ) {
+    if (!view) return;
+    const list = view.personalNotifications ?? [];
+
+    // First view we ever see: mark whatever already exists as "seen" so a
+    // reload/reconnect doesn't replay an old popup.
+    if (!personalSeeded.current) {
+      personalSeeded.current = true;
+      list.forEach((n) =>
+        shownPersonalKeys.current.add(`${view.round}:${n.id}`),
+      );
       return;
     }
 
-    // Get the most recent personal notification
-    const latestPersonal =
-      view.personalNotifications[view.personalNotifications.length - 1];
+    if (list.length === 0) return;
+    const latest = list[list.length - 1];
+    const key = `${view.round}:${latest.id}`;
+    if (shownPersonalKeys.current.has(key)) return;
 
-    // Show if we haven't shown this one before
-    if (latestPersonal && !shownPersonalIds.has(latestPersonal.id)) {
-      setPersonalNotification(latestPersonal);
-      setShownPersonalIds((prev) => new Set([...prev, latestPersonal.id]));
-    }
-  }, [view?.personalNotifications, shownPersonalIds]);
-
-  // Clear personal notification IDs when round changes
-  useEffect(() => {
-    setShownPersonalIds(new Set());
-  }, [view?.round]);
+    shownPersonalKeys.current.add(key);
+    setPersonalNotification(latest);
+  }, [view?.personalNotifications, view?.round]);
 
   if (!view || !me) return null;
 
@@ -269,12 +274,12 @@ export default function Table({ game, onLeave }) {
       />
 
       {/* Personal notification (Lucky 9, etc.) */}
-      {/* <PersonalNotification
+      <PersonalNotification
         notification={personalNotification}
         onDismiss={() => {
           setPersonalNotification(null);
         }}
-      /> */}
+      />
     </div>
   );
 }
