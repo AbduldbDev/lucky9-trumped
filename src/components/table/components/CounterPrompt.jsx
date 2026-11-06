@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
-const COUNTER_TIME_MS = 50000; // 5 seconds to respond
+const COUNTER_PROMPT_TIME_MS = 5000; // 5 seconds to respond
 
 /**
  * Mobile-first sizing: the base classes are the compact phone layout,
  * and the `sm:` classes restore the roomier desktop sizes.
  */
 export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
-  const [timeLeft, setTimeLeft] = useState(COUNTER_TIME_MS / 1000);
+  const [timeLeft, setTimeLeft] = useState(COUNTER_PROMPT_TIME_MS / 1000);
   const [responded, setResponded] = useState(false);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
   // Reset when new request comes in
   useEffect(() => {
     if (counterRequest) {
-      setTimeLeft(COUNTER_TIME_MS / 1000);
+      setTimeLeft(COUNTER_PROMPT_TIME_MS / 1000);
       setResponded(false);
     }
   }, [counterRequest]);
@@ -53,7 +53,7 @@ export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
     onDecline();
   };
 
-  const progress = (timeLeft / (COUNTER_TIME_MS / 1000)) * 100;
+  const progress = (timeLeft / (COUNTER_PROMPT_TIME_MS / 1000)) * 100;
   const isUrgent = timeLeft <= 2;
 
   return (

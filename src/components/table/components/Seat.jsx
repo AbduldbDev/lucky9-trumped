@@ -83,22 +83,39 @@ export default function Seat({
         )}
 
         {/* Name row */}
-        <div className="flex w-full items-center justify-between gap-1.5 sm:gap-3">
-          <div className="flex min-w-0 items-center gap-1 sm:gap-1.5">
-            {player.id === player.hostId && (
-              <i className="fa-solid fa-crown flex-none text-[8px] text-gold sm:text-[9px]" />
-            )}
-            <span
-              className="max-w-[55px] truncate text-[9px] font-medium tracking-wide
+        <div className="flex w-full items-center justify-between gap-3 sm:gap-7">
+          <div className="flex flex-col">
+            <div className="flex min-w-0 items-center gap-1 sm:gap-1.5">
+              {player.id === player.hostId && (
+                <i className="fa-solid fa-crown flex-none text-[8px] text-gold sm:text-[9px]" />
+              )}
+              <span
+                className="max-w-[55px] truncate text-[9px] font-medium tracking-wide
                   text-ivory sm:max-w-[70px] sm:text-[11px]"
-            >
-              {player.name}
-            </span>
-            {isMe && (
-              <span className="flex-none text-[7px] uppercase tracking-[0.15em] text-gold/60 sm:text-[8px]">
-                you
+              >
+                {player.name}
               </span>
-            )}
+              {isMe && (
+                <span className="flex-none text-[7px] uppercase tracking-[0.15em] text-gold/60 sm:text-[8px]">
+                  you
+                </span>
+              )}
+            </div>
+            {/* Lives bar */}
+            <div className="flex w-full items-center gap-1.5 sm:gap-2">
+              <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10 sm:h-1">
+                <div
+                  className="h-full bg-gradient-to-r from-red-600 to-red-400
+              transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, (lives / maxLives) * 100)}%`,
+                  }}
+                />
+              </div>
+              <span className="font-mono text-[8px] tabular-nums text-ivory-dim/50 sm:text-[10px]">
+                {lives}
+              </span>
+            </div>
           </div>
 
           {/* Score badge */}
@@ -107,22 +124,6 @@ export default function Seat({
               <FogBadge hand={player.hand} revealed={revealed} />
             </div>
           )}
-        </div>
-
-        {/* Lives bar */}
-        <div className="flex w-full items-center gap-1.5 sm:gap-2">
-          <div className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10 sm:h-1">
-            <div
-              className="h-full bg-gradient-to-r from-red-600 to-red-400
-              transition-all duration-500"
-              style={{
-                width: `${Math.min(100, (lives / maxLives) * 100)}%`,
-              }}
-            />
-          </div>
-          <span className="font-mono text-[8px] tabular-nums text-ivory-dim/50 sm:text-[10px]">
-            {lives}
-          </span>
         </div>
       </div>
 
@@ -175,7 +176,7 @@ export default function Seat({
           {isTurn && !isOut && (
             <span className="text-gold-DEFAULT inline-flex items-center">
               <i
-                className="fa-solid fa-hourglass-half mr-0.5 sm:mr-1
+                className="fa-solid fa-hourglass-half mr-1
                 animate-[spin_2s_linear_infinite]"
               />
               Playing

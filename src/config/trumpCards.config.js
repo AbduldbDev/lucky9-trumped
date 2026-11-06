@@ -79,6 +79,15 @@ export const TRUMP_CARDS_CATALOG = {
     targetType: "NONE",
     effect: { type: "MODIFY_BET", amount: -1 },
   },
+  SHUTTER: {
+    id: "SHUTTER",
+    name: "Shutter",
+    rarity: "COMMON",
+    description:
+      "Remove the most recently played unresolved Trump Card by another player.",
+    targetType: "NONE",
+    effect: { type: "CANCEL_LAST_TRUMP" },
+  },
 
   // ── UNCOMMON ────────────────────────────────────────────────────────────
   DOUBLE_BET_UP: {
@@ -96,15 +105,6 @@ export const TRUMP_CARDS_CATALOG = {
     description: "Decrease total bet by 2 (Min bet: 0).",
     targetType: "NONE",
     effect: { type: "MODIFY_BET", amount: -2 },
-  },
-  SHUTTER: {
-    id: "SHUTTER",
-    name: "Shutter",
-    rarity: "UNCOMMON",
-    description:
-      "Remove the most recently played unresolved Trump Card by another player.",
-    targetType: "NONE",
-    effect: { type: "CANCEL_LAST_TRUMP" },
   },
   RETURN: {
     id: "RETURN",
@@ -157,7 +157,7 @@ export const TRUMP_CARDS_CATALOG = {
   HUSH: {
     id: "HUSH",
     name: "Hush",
-    rarity: "COMMON",
+    rarity: "RARE",
     description: "Draw one card face-down. Other players cannot see its value.",
     targetType: "NONE",
     effect: { type: "DRAW_HIDDEN" },
@@ -216,7 +216,7 @@ export const TRUMP_CARDS_CATALOG = {
   FORTUNE_TELLER: {
     id: "FORTUNE_TELLER",
     name: "Fortune Teller",
-    rarity: "COMMON",
+    rarity: "MYTHIC",
     description: "Reveals the next 3 cards in the deck (visible only to you).",
     targetType: "NONE",
     effect: { type: "PEEK_DECK" },

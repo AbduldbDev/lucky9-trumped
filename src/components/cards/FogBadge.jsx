@@ -38,8 +38,8 @@ export default function FogBadge({ hand, revealed = false, isSelf = false }) {
       className={`${baseClass} font-normal bg-black/40 text-white/80 border border-white/8`}
       aria-label={`Exposed: ${exp}`}
     >
-      <i className="fa-solid fa-eye-slash text-[5px] sm:text-[7px]" />
-      <span className="text-[7px] sm:text-[10px]">{exp}</span>
+      <i className="fa-solid fa-eye-slash text-[8px] sm:text-[7px]" />
+      <span className="text-[10px] sm:text-[10px]">{exp}</span>
     </div>
   );
 }
