@@ -1,7 +1,11 @@
 import { exposedSum, handScore } from "../../utils/deckEngine.js";
 
 export default function FogBadge({ hand, revealed = false, isSelf = false }) {
-  const known = revealed || isSelf;
+  // Check if all cards in hand are visible (for spectators)
+  const allCardsVisible = hand.every((card) => !card.hidden);
+
+  // Known score: revealed phase, self, or all cards visible (spectator)
+  const known = revealed || isSelf || allCardsVisible;
   const score = known ? handScore(hand) : null;
   const exp = known ? null : exposedSum(hand);
   const isNine = known && score === 9;
