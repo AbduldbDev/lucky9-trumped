@@ -6,10 +6,6 @@ import {
   TRUMP_ICONS,
 } from "../../../config/trumpCards.config.js";
 
-/**
- * Modal displaying all trump cards as a reference guide.
- * Shows icon, name, rarity, and description for each card.
- */
 export default function TrumpGuideModal({ isOpen, onClose }) {
   // Handle Escape key to close
   useEffect(() => {
@@ -39,53 +35,64 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Trump cards guide"
       className="fixed inset-0 z-[100] flex items-center justify-center
-        bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+        bg-black/75 backdrop-blur-md animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl max-h-[90vh] m-4
-          bg-gradient-to-b from-[#0a1a0f] to-[#040a06]
-          border border-gold/20 rounded-lg shadow-2xl
-          flex flex-col overflow-hidden"
+        className="relative m-3 flex max-h-[88dvh] w-full max-w-3xl flex-col
+          overflow-hidden rounded-xl border border-gold/25 bg-ink/95
+          sm:m-4 sm:rounded-2xl"
+        style={{
+          boxShadow:
+            "0 30px 80px -16px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Top hairline accent */}
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold-light/70 to-transparent" />
+
         {/* Header */}
         <div
-          className="flex-none flex items-center justify-between
-            px-4 sm:px-6 py-3 sm:py-4
-            border-b border-gold/20 bg-black/40"
+          className="flex flex-none items-center justify-between
+            border-b border-white/[0.06] px-4 py-3 sm:px-6 sm:py-4"
         >
           <div className="flex items-center gap-3">
             <div
-              className="flex items-center justify-center w-10 h-10 rounded-lg
-                bg-gold/10 border border-gold/30"
+              className="flex h-8 w-8 items-center justify-center rounded-full
+                border border-gold/40 bg-gold/[0.06] sm:h-10 sm:w-10"
             >
-              <i className="fa-solid fa-bolt-lightning text-gold text-lg" />
+              <i className="fa-solid fa-bolt-lightning text-xs text-gold-light sm:text-sm" />
             </div>
             <div>
-              <h2 className="text-gold-shimmer font-serif font-bold text-lg sm:text-xl">
+              <span className="text-[8px] font-medium uppercase tracking-[0.3em] text-gold/80 sm:text-[9px]">
+                Reference
+              </span>
+              <h2 className="font-serif text-sm font-medium leading-tight tracking-wide text-ivory sm:text-base">
                 Trump Cards Guide
               </h2>
-              <p className="text-[10px] sm:text-xs text-white/40 mt-0.5">
-                All {Object.keys(TRUMP_CARDS_CATALOG).length} trump cards and
-                their effects
+              <p className="mt-0.5 text-[9px] text-ivory-dim/50 sm:text-[10px]">
+                {Object.keys(TRUMP_CARDS_CATALOG).length} cards and their
+                effects
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-8 h-8 rounded-lg
-              text-white/40 hover:text-white hover:bg-white/5
-              transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full
+              text-white/30 transition-colors hover:bg-white/5 hover:text-white/80
+              focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60"
             aria-label="Close guide"
           >
-            <i className="fa-solid fa-xmark text-lg" />
+            <i className="fa-solid fa-xmark text-sm" />
           </button>
         </div>
 
         {/* Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 sm:space-y-6 sm:p-6">
           {rarityOrder.map((rarityId) => {
             const cards = cardsByRarity[rarityId] || [];
             if (cards.length === 0) return null;
@@ -94,54 +101,50 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
             const color = rarity.color;
 
             return (
-              <div key={rarityId} className="space-y-3">
+              <section key={rarityId} className="space-y-2.5">
                 {/* Rarity Header */}
-                <div className="flex items-center gap-2">
-                  <div
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full
-                      border bg-black/40"
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
                     style={{
-                      borderColor: `${color}40`,
-                      boxShadow: `0 0 12px ${color}20`,
+                      backgroundColor: color,
+                      boxShadow: `0 0 8px ${color}`,
                     }}
+                  />
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-[0.25em] sm:text-[11px]"
+                    style={{ color }}
                   >
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span
-                      className="text-sm font-bold uppercase tracking-wider"
-                      style={{ color }}
-                    >
-                      {rarity.name}
-                    </span>
-                    <span className="text-xs text-white/30 font-mono">
-                      {rarity.chance}%
-                    </span>
-                  </div>
-                  <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent" />
+                    {rarity.name}
+                  </span>
+                  <span className="font-mono text-[9px] tabular-nums text-ivory-dim/40 sm:text-[10px]">
+                    {rarity.chance}%
+                  </span>
+                  <div
+                    className="h-px flex-1"
+                    style={{
+                      background: `linear-gradient(90deg, ${color}40, transparent)`,
+                    }}
+                  />
                 </div>
 
                 {/* Cards Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5">
                   {cards.map((card) => (
                     <TrumpCardItem key={card.id} card={card} />
                   ))}
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>
 
         {/* Footer */}
-        <div
-          className="flex-none px-4 sm:px-6 py-3
-            border-t border-white/5 bg-black/40"
-        >
-          <p className="text-xs text-white/30 text-center leading-relaxed">
+        <div className="flex-none border-t border-white/[0.06] px-4 py-2.5 sm:px-6 sm:py-3">
+          <p className="text-center text-[9px] leading-relaxed tracking-wide text-ivory-dim/40 sm:text-[10px]">
             <i className="fa-solid fa-lightbulb mr-1.5 text-gold/50" />
             Trump cards are randomly awarded each round. Use them strategically
-            to gain an advantage!
+            to gain an advantage.
           </p>
         </div>
       </div>
@@ -155,44 +158,41 @@ function TrumpCardItem({ card }) {
 
   return (
     <div
-      className="flex gap-3 p-3 rounded-lg border bg-black/30
-        hover:bg-black/50 transition-colors"
+      className="group relative flex gap-2.5 overflow-hidden rounded-lg border p-2.5
+        transition-all duration-200 hover:brightness-125 sm:gap-3 sm:p-3"
       style={{
-        borderColor: `${color}20`,
+        // Soft rarity wash fading into the dark card body
+        background: `linear-gradient(180deg, ${color}14 0%, rgba(11,11,12,0.7) 60%)`,
+        borderColor: "rgba(255,255,255,0.07)",
       }}
     >
+      {/* Rarity hairline along the top edge */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-3 top-0 h-px"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${color}99, transparent)`,
+        }}
+      />
+
       {/* Icon */}
       <div
-        className="flex-none flex items-center justify-center
-          w-12 h-12 rounded-lg border"
+        className="flex h-9 w-9 flex-none items-center justify-center rounded-full border sm:h-10 sm:w-10"
         style={{
-          backgroundColor: `${color}15`,
-          borderColor: `${color}40`,
-          boxShadow: `inset 0 2px 0 ${color}30`,
+          color,
+          borderColor: `${color}50`,
+          background: `radial-gradient(circle at 50% 35%, ${color}26, ${color}0a 70%)`,
         }}
       >
-        <i className={`fa-solid ${icon} text-xl`} style={{ color }} />
+        <i className={`fa-solid ${icon} text-xs sm:text-sm`} />
       </div>
 
       {/* Info */}
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-bold text-sm leading-tight" style={{ color }}>
-            {card.name}
-          </h3>
-          <span
-            className="flex-none text-[9px] font-medium uppercase tracking-wider
-              px-1.5 py-0.5 rounded border"
-            style={{
-              color: `${color}cc`,
-              borderColor: `${color}30`,
-              backgroundColor: `${color}10`,
-            }}
-          >
-            {card.rarity}
-          </span>
-        </div>
-        <p className="text-xs text-white/60 leading-relaxed">
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <h3 className="text-[11px] font-medium leading-tight tracking-wide text-ivory sm:text-xs">
+          {card.name}
+        </h3>
+        <p className="text-[10px] leading-snug text-ivory-dim/60 sm:text-[11px] sm:leading-relaxed">
           {card.description}
         </p>
       </div>
