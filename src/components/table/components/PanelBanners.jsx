@@ -20,3 +20,53 @@ export function CheckerBanner({ result }) {
     </div>
   );
 }
+
+export function FortuneBanner({ result, deckCount }) {
+  if (!result?.cards || result.cards.length === 0) return null;
+
+  // Filter out cards that have already been drawn
+  // If we have cardIds, check them against remaining deck count
+  // Once all revealed cards are drawn, hide the banner
+  const remainingCards = result.cards.filter((card, index) => {
+    // If deck count has decreased by more than the card's position,
+    // that card has been drawn
+    const initialDeckCount = result.initialDeckCount || 52;
+    const cardPosition = index; // 0 = next card, 1 = second card, 2 = third card
+    const cardsDrawnSinceReveal = initialDeckCount - deckCount;
+    return cardsDrawnSinceReveal <= cardPosition;
+  });
+
+  // Hide banner if all cards have been drawn
+  if (remainingCards.length === 0) return null;
+
+  return (
+    <div className="flex-none px-4 py-2 bg-purple-900/40 border-b border-purple-600/20">
+      <div className="text-center">
+        <div className="text-xs text-purple-300/70 mb-2">
+          <i className="fa-solid fa-crystal-ball mr-1.5" />
+          Fortune Teller — Next {remainingCards.length} card
+          {remainingCards.length !== 1 ? "s" : ""} in deck:
+        </div>
+        <div className="flex justify-center gap-2 flex-wrap">
+          {remainingCards.map((card, idx) => (
+            <div
+              key={idx}
+              className="inline-flex items-center justify-center min-w-[3rem] px-3 py-1.5 rounded-md bg-black/40 border border-white/20"
+            >
+              <span
+                className={`text-sm font-bold ${
+                  card.suit === "♥" || card.suit === "♦"
+                    ? "text-red-400"
+                    : "text-white"
+                }`}
+              >
+                {card.rank}
+                <span className="ml-0.5">{card.suit}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

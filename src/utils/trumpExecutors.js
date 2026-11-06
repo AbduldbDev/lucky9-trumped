@@ -48,7 +48,7 @@ export const EFFECT_EXECUTORS = {
     if (last.betDelta !== undefined) {
       draft.betModifiers -= last.betDelta;
     }
-    
+
     // Remove from active trump effects if it was persistent
     if (draft.activeTrumpEffects) {
       const cancelledCardId = last.cardId;
@@ -56,14 +56,17 @@ export const EFFECT_EXECUTORS = {
       // Remove the most recent matching active effect from that player
       const matchingIdx = [...draft.activeTrumpEffects]
         .reverse()
-        .findIndex(e => e.trumpId === cancelledCardId && e.playerId === cancelledPlayerId);
-      
+        .findIndex(
+          (e) =>
+            e.trumpId === cancelledCardId && e.playerId === cancelledPlayerId,
+        );
+
       if (matchingIdx !== -1) {
         const actualIdx = draft.activeTrumpEffects.length - 1 - matchingIdx;
         draft.activeTrumpEffects.splice(actualIdx, 1);
       }
     }
-    
+
     return `${actor.name} used Shutter! Cancelled ${last.playerName}'s ${last.cardName}.`;
   },
 
@@ -172,6 +175,43 @@ export const EFFECT_EXECUTORS = {
       throw new Error("Angel Card protection is already active.");
     actor.angelProtected = true;
     return `${actor.name} activated Angel Card — protected from death by life loss!`;
+  },
+
+  // ── HUSH ─────────────────────────────────────────────────────────────────
+  DRAW_HIDDEN({ draft, actor }) {
+    if (actor.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
+      throw new Error(
+        `Your hand is full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`,
+      );
+    if (!draft.deck.length) throw new Error("Deck is empty.");
+    const card = draft.deck.pop();
+    // Mark the card as hidden so it won't be revealed to other players
+    card.hidden = true;
+    actor.hand.push(card);
+    return `${actor.name} drew a hidden card.`;
+  },
+
+  // ── FORTUNE TELLER ───────────────────────────────────────────────────────
+  PEEK_DECK({ draft, actor }) {
+    const peekCount = Math.min(3, draft.deck.length);
+    if (peekCount === 0) throw new Error("Deck is empty.");
+
+    // Get the next cards that would be drawn (last cards in deck array)
+    const nextCards = draft.deck.slice(-peekCount).reverse();
+
+    // Store the card IDs so we can track when they've been drawn
+    const cardIds = nextCards.map((c) => c.id);
+
+    // Store the result on a per-player fortune field visible only to actor
+    if (!draft.fortuneResults) draft.fortuneResults = {};
+    draft.fortuneResults[actor.id] = {
+      cards: nextCards,
+      cardIds: cardIds, // Track which cards were revealed
+      initialDeckCount: draft.deck.length, // Store current deck count
+      timestamp: Date.now(),
+    };
+
+    return `${actor.name} used Fortune Teller to peek at the next ${peekCount} card(s) in the deck.`;
   },
 };
 

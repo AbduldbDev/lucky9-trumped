@@ -1,31 +1,10 @@
 import { useEffect } from "react";
-import { TRUMP_CARDS_CATALOG, TRUMP_RARITIES } from "../../../config/trumpCards.config.js";
-
-const TRUMP_ICONS = {
-  BET_UP: "fa-arrow-trend-up",
-  BET_DOWN: "fa-arrow-trend-down",
-  DOUBLE_BET_UP: "fa-angles-up",
-  DOUBLE_BET_DOWN: "fa-angles-down",
-  SHUTTER: "fa-ban",
-  RETURN: "fa-rotate-left",
-  DISCARD: "fa-trash-can",
-  REFRESH: "fa-arrows-rotate",
-  EXCHANGE: "fa-right-left",
-  TARGET: "fa-location-crosshairs",
-  SELECT: "fa-hand-pointer",
-  DISABLE: "fa-eye-slash",
-  CHECKER: "fa-magnifying-glass",
-  FRIENDSHIP_CARD: "fa-people-group",
-  ANGEL_CARD: "fa-shield-halved",
-};
-
-const RARITY_COLOR = {
-  COMMON: "#8d99a8",
-  UNCOMMON: "#5fbf86",
-  RARE: "#6a9fd8",
-  LEGENDARY: "#b89b5e",
-  MYTHIC: "#a98bd6",
-};
+import {
+  TRUMP_CARDS_CATALOG,
+  TRUMP_RARITIES,
+  RARITY_COLOR,
+  TRUMP_ICONS,
+} from "../../../config/trumpCards.config.js";
 
 /**
  * Modal displaying all trump cards as a reference guide.
@@ -48,7 +27,7 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
 
   // Group cards by rarity
   const cardsByRarity = {};
-  Object.values(TRUMP_CARDS_CATALOG).forEach(card => {
+  Object.values(TRUMP_CARDS_CATALOG).forEach((card) => {
     if (!cardsByRarity[card.rarity]) {
       cardsByRarity[card.rarity] = [];
     }
@@ -56,7 +35,7 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
   });
 
   // Sort rarities by their order (Common to Mythic)
-  const rarityOrder = ['COMMON', 'UNCOMMON', 'RARE', 'LEGENDARY', 'MYTHIC'];
+  const rarityOrder = ["COMMON", "UNCOMMON", "RARE", "LEGENDARY", "MYTHIC"];
 
   return (
     <div
@@ -89,7 +68,8 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
                 Trump Cards Guide
               </h2>
               <p className="text-[10px] sm:text-xs text-white/40 mt-0.5">
-                All {Object.keys(TRUMP_CARDS_CATALOG).length} trump cards and their effects
+                All {Object.keys(TRUMP_CARDS_CATALOG).length} trump cards and
+                their effects
               </p>
             </div>
           </div>
@@ -106,7 +86,7 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          {rarityOrder.map(rarityId => {
+          {rarityOrder.map((rarityId) => {
             const cards = cardsByRarity[rarityId] || [];
             if (cards.length === 0) return null;
 
@@ -144,7 +124,7 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
 
                 {/* Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {cards.map(card => (
+                  {cards.map((card) => (
                     <TrumpCardItem key={card.id} card={card} />
                   ))}
                 </div>
@@ -160,7 +140,8 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
         >
           <p className="text-xs text-white/30 text-center leading-relaxed">
             <i className="fa-solid fa-lightbulb mr-1.5 text-gold/50" />
-            Trump cards are randomly awarded each round. Use them strategically to gain an advantage!
+            Trump cards are randomly awarded each round. Use them strategically
+            to gain an advantage!
           </p>
         </div>
       </div>
@@ -190,19 +171,13 @@ function TrumpCardItem({ card }) {
           boxShadow: `inset 0 2px 0 ${color}30`,
         }}
       >
-        <i
-          className={`fa-solid ${icon} text-xl`}
-          style={{ color }}
-        />
+        <i className={`fa-solid ${icon} text-xl`} style={{ color }} />
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-start justify-between gap-2">
-          <h3
-            className="font-bold text-sm leading-tight"
-            style={{ color }}
-          >
+          <h3 className="font-bold text-sm leading-tight" style={{ color }}>
             {card.name}
           </h3>
           <span

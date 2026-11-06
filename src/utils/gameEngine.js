@@ -117,6 +117,7 @@ function startRound(d, firstPlayerOverride = null) {
   d.trumpPlays = []; // Clear trump card displays for new round
   d.activeTrumpEffects = []; // Clear persistent trump effects for new round
   d.checkerResults = {};
+  d.fortuneResults = {}; // Clear fortune teller results for new round
   d.rematchVotes = {};
   d.rematchTimerEnd = null;
   d.deck = shuffle(createDeck());
@@ -470,6 +471,7 @@ const HANDLERS = {
         trumpPlays: [],
         activeTrumpEffects: [],
         checkerResults: {},
+        fortuneResults: {},
         rematchVotes: {},
         rematchTimerEnd: null,
         lastResult: null,
@@ -511,6 +513,7 @@ const HANDLERS = {
       trumpPlays: [],
       activeTrumpEffects: [],
       checkerResults: {},
+      fortuneResults: {},
       rematchVotes: {},
       rematchTimerEnd: null,
       lastResult: null,
@@ -656,16 +659,23 @@ const isRevealPhase = (phase) =>
  */
 export function maskState(state) {
   const reveal = isRevealPhase(state.phase);
-  const { deck, checkerResults, ...rest } = state; // strip secrets
+  const { deck, checkerResults, fortuneResults, ...rest } = state; // strip secrets
   return {
     ...rest,
     deckCount: deck.length,
     checkerResults: {}, // sent via private channel only
+    fortuneResults: {}, // sent via private channel only
     players: state.players.map((p) => ({
       ...p,
       trumpCount: p.trumps.length,
       trumps: [],
-      hand: p.hand.map((c, i) => (i === 0 && !reveal ? { hidden: true } : c)),
+      hand: p.hand.map((c, i) => {
+        // Hide hole card (index 0) unless in reveal phase
+        if (i === 0 && !reveal) return { hidden: true };
+        // Hide cards marked as hidden (from HUSH) unless in reveal phase
+        if (c.hidden && !reveal) return { hidden: true };
+        return c;
+      }),
     })),
   };
 }
@@ -673,7 +683,7 @@ export function maskState(state) {
 /**
  * Private packet for a single player.
  * Spectators get all hole cards + all trump inventories.
- * Active players get their own hole card + their own trumps + any CHECKER result.
+ * Active players get their own full hand (no hidden cards) + their own trumps + any CHECKER/FORTUNE result.
  */
 export function getPrivate(state, playerId) {
   const me = state.players.find((x) => x.id === playerId);
@@ -682,6 +692,17 @@ export function getPrivate(state, playerId) {
   // Get personal notifications for this player
   const personalNotifications = state.personalNotifications?.[playerId] ?? [];
 
+  // Helper to reveal hidden cards (remove hidden flag) for the owner
+  const revealHiddenCards = (hand) =>
+    hand.map((card) => {
+      if (card.hidden) {
+        // Remove the hidden flag so the owner can see the card
+        const { hidden, ...revealedCard } = card;
+        return revealedCard;
+      }
+      return card;
+    });
+
   // Spectators see everything
   if (me.isSpectator || me.isEliminated) {
     return {
@@ -689,12 +710,14 @@ export function getPrivate(state, playerId) {
       isSpectator: true,
       hole: me.hand[0] ?? null,
       trumps: me.trumps,
+      fullHand: revealHiddenCards(me.hand), // Reveal hidden cards for spectators
       allHands: state.players.map((p) => ({
         id: p.id,
         hand: p.hand,
         trumps: p.trumps,
       })),
       checkerResult: state.checkerResults?.[playerId] ?? null,
+      fortuneResult: state.fortuneResults?.[playerId] ?? null,
       personalNotifications,
     };
   }
@@ -704,8 +727,10 @@ export function getPrivate(state, playerId) {
     isSpectator: false,
     hole: me.hand[0] ?? null,
     trumps: me.trumps,
+    fullHand: revealHiddenCards(me.hand), // Reveal hidden cards (remove hidden flag) for the owner
     allHands: null,
     checkerResult: state.checkerResults?.[playerId] ?? null,
+    fortuneResult: state.fortuneResults?.[playerId] ?? null,
     personalNotifications,
   };
 }
@@ -719,6 +744,7 @@ export function applyPrivate(pub, priv, selfId) {
     return {
       ...pub,
       checkerResult: priv.checkerResult,
+      fortuneResult: priv.fortuneResult,
       personalNotifications: priv.personalNotifications,
       players: pub.players.map((p) => {
         const full = priv.allHands.find((h) => h.id === p.id);
@@ -732,10 +758,11 @@ export function applyPrivate(pub, priv, selfId) {
     };
   }
 
-  // Active player: reveal own hole card
+  // Active player: reveal own hole card and own hidden cards
   return {
     ...pub,
     checkerResult: priv.checkerResult,
+    fortuneResult: priv.fortuneResult,
     personalNotifications: priv.personalNotifications,
     players: pub.players.map((p) =>
       p.id !== selfId
@@ -743,9 +770,7 @@ export function applyPrivate(pub, priv, selfId) {
         : {
             ...p,
             trumps: priv.trumps,
-            hand: p.hand.map((c, i) =>
-              i === 0 && c.hidden && priv.hole ? priv.hole : c,
-            ),
+            hand: priv.fullHand || p.hand, // Use full hand from private packet
           },
     ),
   };

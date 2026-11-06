@@ -3,7 +3,11 @@ import Controls from "./Controls.jsx";
 import TopBar from "./components/TopBar.jsx";
 import OvalTable from "./components/OvalTable.jsx";
 import BottomPanel from "./components/BottomPanel.jsx";
-import { SpectatorBanner, CheckerBanner } from "./components/PanelBanners.jsx";
+import {
+  SpectatorBanner,
+  CheckerBanner,
+  FortuneBanner,
+} from "./components/PanelBanners.jsx";
 import PlayerInfo from "./components/PlayerInfo.jsx";
 import PlayerHand from "./components/PlayerHand.jsx";
 import StoodStatus from "./components/StoodStatus.jsx";
@@ -196,6 +200,12 @@ export default function Table({ game, onLeave }) {
       >
         {amSpectator && <SpectatorBanner />}
         {view.checkerResult && <CheckerBanner result={view.checkerResult} />}
+        {view.fortuneResult && (
+          <FortuneBanner
+            result={view.fortuneResult}
+            deckCount={view.deckCount}
+          />
+        )}
 
         <div className="flex flex-col sm:flex-row sm:items-stretch">
           <PlayerInfo me={me} phase={view.phase} amSpectator={amSpectator} />

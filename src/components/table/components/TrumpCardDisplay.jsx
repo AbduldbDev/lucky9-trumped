@@ -1,31 +1,9 @@
 import { useEffect, useState } from "react";
 import { TRUMP_CARDS_CATALOG } from "../../../config/trumpCards.config.js";
-
-const TRUMP_ICONS = {
-  BET_UP: "fa-arrow-trend-up",
-  BET_DOWN: "fa-arrow-trend-down",
-  DOUBLE_BET_UP: "fa-angles-up",
-  DOUBLE_BET_DOWN: "fa-angles-down",
-  SHUTTER: "fa-ban",
-  RETURN: "fa-rotate-left",
-  DISCARD: "fa-trash-can",
-  REFRESH: "fa-arrows-rotate",
-  EXCHANGE: "fa-right-left",
-  TARGET: "fa-location-crosshairs",
-  SELECT: "fa-hand-pointer",
-  DISABLE: "fa-eye-slash",
-  CHECKER: "fa-magnifying-glass",
-  FRIENDSHIP_CARD: "fa-people-group",
-  ANGEL_CARD: "fa-shield-halved",
-};
-
-const RARITY_COLOR = {
-  COMMON: "#8d99a8",
-  UNCOMMON: "#5fbf86",
-  RARE: "#6a9fd8",
-  LEGENDARY: "#b89b5e",
-  MYTHIC: "#a98bd6",
-};
+import {
+  RARITY_COLOR,
+  TRUMP_ICONS,
+} from "../../../config/trumpCards.config.js";
 
 /**
  * Displays a trump card on the table (center area).
@@ -51,7 +29,7 @@ function TrumpCardItem({ item, index }) {
   useEffect(() => {
     // Stagger entrance
     const enterTimer = setTimeout(() => setVisible(true), index * 100);
-    
+
     // Auto fade out after 5 seconds
     const exitTimer = setTimeout(() => setVisible(false), 5000 + index * 100);
 
@@ -87,10 +65,7 @@ function TrumpCardItem({ item, index }) {
           boxShadow: `inset 0 3px 0 ${color}`,
         }}
       >
-        <i
-          className={`fa-solid ${icon} text-3xl`}
-          style={{ color }}
-        />
+        <i className={`fa-solid ${icon} text-3xl`} style={{ color }} />
       </div>
 
       {/* Card name */}
