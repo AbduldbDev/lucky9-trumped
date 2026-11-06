@@ -579,9 +579,6 @@ const HANDLERS = {
 
   TRUMP(d, { by, trumpId, targetId, rank }) {
     const p = assertTurn(d, by);
-    // SRD §8.5: no trump plays after standing
-    if (p.stood)
-      throw new Error("You have already stood — cannot play Trump Cards.");
     const idx = p.trumps.indexOf(trumpId);
     if (idx === -1) throw new Error("You don't hold that Trump Card.");
     const msg = executeTrump(d, p, trumpId, { targetId, rank });
@@ -622,6 +619,14 @@ const HANDLERS = {
         targetId: targetId || null,
         timestamp: Date.now(),
       });
+    }
+
+    // Reset all stood flags when a trump card is played
+    // This gives all players another chance to act after trump effects
+    for (const pl of d.players) {
+      if (!pl.isEliminated && !pl.isSpectator && !pl.disabled) {
+        pl.stood = false;
+      }
     }
   },
 

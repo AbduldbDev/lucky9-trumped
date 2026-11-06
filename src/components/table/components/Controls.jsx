@@ -117,7 +117,7 @@ export function TrumpTray({
   const aimCfg = aiming ? TRUMP_CARDS_CATALOG[aiming] : null;
 
   const pick = (id) => {
-    if (!isMyTurn || me.stood) return;
+    if (!isMyTurn) return; // Only check if it's your turn, allow even if stood
     const cfg = TRUMP_CARDS_CATALOG[id];
     if (!cfg) return;
     if (cfg.targetType === "SINGLE_PLAYER" || cfg.targetType === "RANK_CHOICE")
@@ -241,7 +241,7 @@ export function TrumpTray({
 
                 <button
                   key={`${id}-${i}`}
-                  disabled={!isMyTurn || me.stood}
+                  disabled={!isMyTurn}
                   onClick={() => pick(id)}
                   title={`${cfg.name} (${rarity}) — ${cfg.description ?? ""}`}
                   aria-label={`${cfg.name}, ${rarity}. ${cfg.description ?? ""}`}
