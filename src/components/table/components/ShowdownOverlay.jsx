@@ -1,5 +1,18 @@
+import { useEffect } from "react";
+import { useAudio } from "../../../contexts/AudioContext.jsx";
+
 /** Full-screen 3-2-1 overlay shown while all players have stood. */
 export default function ShowdownOverlay({ countdown }) {
+  const audio = useAudio();
+
+  useEffect(() => {
+    if (countdown > 0) {
+      audio.playCountdownTick();
+    } else if (countdown === 0) {
+      audio.playCountdownGo();
+    }
+  }, [countdown, audio]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col items-center justify-center

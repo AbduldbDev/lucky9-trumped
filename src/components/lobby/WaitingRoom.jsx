@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
+import { useAudio } from "../../contexts/AudioContext.jsx";
+import { AUDIO_CONFIG } from "../../config/audio.config.js";
 
 export default function WaitingRoom({
   partyCode,
@@ -10,6 +12,7 @@ export default function WaitingRoom({
   onStart,
   onLeave,
 }) {
+  const audio = useAudio();
   const [copied, setCopied] = useState(false);
   const players = view?.players ?? [];
   const canStart = isHost && players.length >= GAME_CONFIG.MIN_PLAYERS;
@@ -18,8 +21,19 @@ export default function WaitingRoom({
     try {
       await navigator.clipboard.writeText(partyCode);
       setCopied(true);
+      audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
       setTimeout(() => setCopied(false), 2000);
     } catch {}
+  };
+
+  const handleStart = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.GAME_START);
+    onStart();
+  };
+
+  const handleLeave = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    onLeave();
   };
 
   return (
@@ -174,7 +188,7 @@ export default function WaitingRoom({
           {/* Actions */}
           <div className="flex gap-2 sm:gap-3">
             <button
-              onClick={onLeave}
+              onClick={handleLeave}
               className="flex-none rounded-2xl border border-gold/25 bg-black/30 px-4 py-3 text-xs font-semibold text-white/40 transition-all hover:border-gold/10 hover:bg-black/50 hover:text-white/70 active:scale-[0.98] sm:px-5 sm:py-4 sm:text-sm"
             >
               <i className="fa-solid fa-arrow-left-long mr-1.5 sm:mr-2" />
@@ -184,7 +198,7 @@ export default function WaitingRoom({
             {isHost ? (
               <button
                 disabled={!canStart}
-                onClick={onStart}
+                onClick={handleStart}
                 className="group relative flex-1 overflow-hidden rounded-2xl border border-gold/50 bg-gradient-to-b from-gold-faint/70 to-gold-faint/30 py-3 text-sm font-bold tracking-wide text-gold-light shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] transition-all hover:border-gold/80 hover:shadow-[0_8px_20px_-10px_rgba(212,175,55,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:py-4 sm:text-base"
               >
                 <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full" />

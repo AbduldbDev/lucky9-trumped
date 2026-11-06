@@ -2,6 +2,8 @@ import { useState } from "react";
 import { isSupabaseConfigured } from "../../services/supabaseClient.js";
 import { isValidPartyCode, normalizePartyCode } from "../../utils/partyCode.js";
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
+import { useAudio } from "../../contexts/AudioContext.jsx";
+import { AUDIO_CONFIG } from "../../config/audio.config.js";
 
 export default function Lobby({
   profile,
@@ -10,6 +12,7 @@ export default function Lobby({
   onJoin,
   onOpenShop,
 }) {
+  const audio = useAudio();
   const [name, setName] = useState(profile.username);
   const [code, setCode] = useState("");
   const [mode, setMode] = useState("create"); // 'create' | 'join'
@@ -23,6 +26,21 @@ export default function Lobby({
     } catch (e) {
       setError(e.message);
     }
+  };
+
+  const handleCreate = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    submit(onCreate);
+  };
+
+  const handleJoin = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    submit(() => onJoin(code));
+  };
+
+  const handleOpenShop = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    onOpenShop();
   };
 
   const winRate = profile.stats.totalMatches
@@ -211,7 +229,7 @@ export default function Lobby({
                   </p>
                   <button
                     disabled={!isSupabaseConfigured || !name.trim()}
-                    onClick={() => submit(onCreate)}
+                    onClick={handleCreate}
                     className="group relative w-full overflow-hidden rounded-2xl border border-gold/50 bg-gradient-to-b from-gold-faint/70 to-gold-faint/30 py-3 text-sm font-bold tracking-wide text-gold-light shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] transition-all hover:border-gold/80 hover:shadow-[0_8px_20px_-10px_rgba(212,175,55,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:py-4 sm:text-base"
                   >
                     <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
@@ -241,7 +259,7 @@ export default function Lobby({
                       !isValidPartyCode(code) ||
                       !name.trim()
                     }
-                    onClick={() => submit(() => onJoin(code))}
+                    onClick={handleJoin}
                     className="w-full rounded-2xl border border-white/15 bg-gradient-to-b from-felt-light/60 to-felt-light/30 py-3 text-sm font-bold tracking-wide text-ivory-DEFAULT transition-all hover:border-gold-DEFAULT/40 hover:from-felt-light/80 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 sm:py-4 sm:text-base"
                   >
                     <i className="fa-solid fa-arrow-right-to-bracket mr-2 sm:mr-2.5" />
@@ -268,7 +286,7 @@ export default function Lobby({
 
               {/* Secondary menu item: Shop */}
               <button
-                onClick={onOpenShop}
+                onClick={handleOpenShop}
                 className="group flex w-full items-center justify-between rounded-2xl border border-gold/25 bg-black/30 px-3.5 py-2.5 text-left transition-all hover:border-gold/10 hover:bg-black/50 active:scale-[0.98] sm:px-4 sm:py-3.5"
               >
                 <span className="flex items-center gap-2.5 sm:gap-3">

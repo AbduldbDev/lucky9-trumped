@@ -18,6 +18,7 @@ import {
   recordMatchResult,
   saveUsername,
 } from "./services/statsService.js";
+import { AudioProvider } from "./contexts/AudioContext.jsx";
 
 /** Mounted only while inside a room so every room gets a fresh game-state hook. */
 function Room({ room, profile, onProfile, onExit }) {
@@ -108,7 +109,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <AudioProvider>
       {room ? (
         <Room
           room={room}
@@ -137,6 +138,6 @@ export default function App() {
           onClose={() => setShopOpen(false)}
         />
       )}
-    </>
+    </AudioProvider>
   );
 }

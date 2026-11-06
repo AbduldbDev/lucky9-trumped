@@ -6,6 +6,8 @@ import {
   TRUMP_ICONS,
 } from "../../../config/trumpCards.config.js";
 import { SUMMONABLE_RANKS } from "../../../utils/deckEngine.js";
+import { useAudio } from "../../../contexts/AudioContext.jsx";
+import { AUDIO_CONFIG } from "../../../config/audio.config.js";
 
 const TAP =
   "touch-manipulation select-none transition-all duration-150 active:scale-[0.97] " +
@@ -18,6 +20,7 @@ export function ActionBar({
   actions,
   waitingForCounterResponse,
 }) {
+  const audio = useAudio();
   const max = GAME_CONFIG.MAX_CARDS_IN_HAND;
   const handFull = me.hand.length >= max;
 
@@ -25,6 +28,16 @@ export function ActionBar({
   const canHit =
     isMyTurn && !me.stood && !handFull && !waitingForCounterResponse;
   const canStand = isMyTurn && !me.stood && !waitingForCounterResponse;
+
+  const handleHit = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.CARD_DRAW);
+    actions.hit();
+  };
+
+  const handleStand = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    actions.stand();
+  };
 
   return (
     <div className="controls flex flex-col gap-1">
@@ -45,7 +58,7 @@ export function ActionBar({
         {/* Hit */}
         <button
           disabled={!canHit}
-          onClick={actions.hit}
+          onClick={handleHit}
           className={`ctl-btn ${TAP} group relative flex items-center justify-center gap-1.5
             rounded-2xl   border border-gold/20
             bg-felt-light/60 px-2.5
@@ -83,7 +96,7 @@ export function ActionBar({
         {/* Stand */}
         <button
           disabled={!canStand}
-          onClick={actions.stand}
+          onClick={handleStand}
           className={`ctl-btn ${TAP} group relative flex items-center justify-center gap-1.5
             overflow-hidden rounded-2xl
             border border-gold/20
@@ -152,6 +165,7 @@ export function TrumpTray({
   onCancelAim,
   waitingForCounterResponse,
 }) {
+  const audio = useAudio();
   const [rank, setRank] = useState("A");
   const aimCfg = aiming ? TRUMP_CARDS_CATALOG[aiming] : null;
 
@@ -159,9 +173,15 @@ export function TrumpTray({
     if (!isMyTurn) return; // Only check if it's your turn, allow even if stood
     const cfg = TRUMP_CARDS_CATALOG[id];
     if (!cfg) return;
+
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+
     if (cfg.targetType === "SINGLE_PLAYER" || cfg.targetType === "RANK_CHOICE")
       onAim(id);
-    else actions.playTrump(id);
+    else {
+      // Play trump immediately - sound will be played when trumpPlays updates
+      actions.playTrump(id);
+    }
   };
 
   if (me.trumps.length === 0 && !aimCfg) return null;
@@ -354,7 +374,8 @@ export function TrumpTray({
   );
 }
 export default function Controls(props) {
-  const { view } = props;
+  const { view, actions } = props;
+  const audio = useAudio();
   const waitingForCounterResponse = view?.waitingForCounterResponse ?? false;
 
   return (

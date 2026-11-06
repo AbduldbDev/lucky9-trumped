@@ -23,9 +23,12 @@ import { useTurnTimer } from "../../hooks/useTurnTimer.js";
 import { useRematchTimer } from "../../hooks/useRematchTimer.js";
 import { useShowdownCountdown } from "../../hooks/useShowdownCountdown.js";
 import { useAutoNextRound } from "../../hooks/useAutoNextRound.js";
+import { useAudio } from "../../contexts/AudioContext.jsx";
+import { AUDIO_CONFIG } from "../../config/audio.config.js";
 
 export default function Table({ game, onLeave }) {
   const { view, me, isMyTurn, isHost, turnKey, actions } = game;
+  const audio = useAudio();
   const [aiming, setAiming] = useState(null);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -38,6 +41,9 @@ export default function Table({ game, onLeave }) {
   // restart each round can't collide, and nothing needs resetting.
   const shownPersonalKeys = useRef(new Set());
   const personalSeeded = useRef(false);
+  const prevPhaseRef = useRef(null);
+  const prevRoundRef = useRef(null);
+  const prevTurnPlayerRef = useRef(null);
 
   const { secondsLeft } = useTurnTimer({
     active: isMyTurn,
@@ -61,6 +67,59 @@ export default function Table({ game, onLeave }) {
     if (!isMyTurn) setAiming(null);
   }, [isMyTurn]);
 
+  // Audio: Phase changes
+  useEffect(() => {
+    if (!view?.phase || prevPhaseRef.current === view.phase) return;
+    prevPhaseRef.current = view.phase;
+
+    switch (view.phase) {
+      case PHASES.PLAYING:
+        // Don't play GAME_START on first render, only on transitions back to PLAYING
+        if (prevRoundRef.current !== null) {
+          audio.playSfx(AUDIO_CONFIG.SFX.ROUND_START);
+        }
+        break;
+      case PHASES.COUNTDOWN:
+        audio.playSfx(AUDIO_CONFIG.SFX.SHOWDOWN);
+        break;
+      case PHASES.SHOWDOWN:
+        audio.playSfx(AUDIO_CONFIG.SFX.ROUND_END);
+        break;
+      case PHASES.GAMEOVER:
+        // Determine if local player won
+        const won = view.winnerId === me?.id;
+        audio.playSfx(won ? AUDIO_CONFIG.SFX.VICTORY : AUDIO_CONFIG.SFX.DEFEAT);
+        break;
+    }
+  }, [view?.phase, audio, me?.id]);
+
+  // Audio: Round changes
+  useEffect(() => {
+    if (!view?.round || prevRoundRef.current === view.round) return;
+    if (prevRoundRef.current !== null) {
+      audio.playSfx(AUDIO_CONFIG.SFX.ROUND_START);
+    }
+    prevRoundRef.current = view.round;
+  }, [view?.round, audio]);
+
+  // Audio: Turn changes
+  useEffect(() => {
+    if (!view?.turnIndex || !view?.players) return;
+    const currentTurnPlayer = view.players[view.turnIndex];
+    if (
+      !currentTurnPlayer ||
+      prevTurnPlayerRef.current === currentTurnPlayer.id
+    )
+      return;
+
+    prevTurnPlayerRef.current = currentTurnPlayer.id;
+
+    // Play turn start sound only if it's my turn
+    if (currentTurnPlayer.id === me?.id) {
+      audio.playSfx(AUDIO_CONFIG.SFX.TURN_START);
+    }
+  }, [view?.turnIndex, view?.players, audio, me?.id]);
+
   // Handle trump card plays - show notification and update display
   useEffect(() => {
     if (!view?.trumpPlays || view.trumpPlays.length === 0) {
@@ -76,6 +135,12 @@ export default function Table({ game, onLeave }) {
     if (!shownNotificationIds.has(latestPlay.id)) {
       setNotification(latestPlay);
       setShownNotificationIds((prev) => new Set([...prev, latestPlay.id]));
+
+      // Play trump card sound based on rarity
+      const trumpCard = TRUMP_CARDS_CATALOG[latestPlay.trumpId];
+      if (trumpCard) {
+        audio.playTrumpSfx(trumpCard.rarity);
+      }
     }
 
     // Update displayed trumps on table (filter out old ones)
@@ -84,7 +149,7 @@ export default function Table({ game, onLeave }) {
       (tp) => now - tp.timestamp < 6000,
     );
     setDisplayedTrumps(recentTrumps);
-  }, [view?.trumpPlays, shownNotificationIds]);
+  }, [view?.trumpPlays, shownNotificationIds, audio]);
 
   // Clear notification IDs and notification state when round changes
   useEffect(() => {
@@ -138,7 +203,12 @@ export default function Table({ game, onLeave }) {
 
     shownPersonalKeys.current.add(key);
     setPersonalNotification(latest);
-  }, [view?.personalNotifications, view?.round]);
+
+    // Play audio for personal notifications
+    if (latest.type === "NINE_HIT") {
+      audio.playSfx(AUDIO_CONFIG.SFX.NINE_HIT);
+    }
+  }, [view?.personalNotifications, view?.round, audio]);
 
   if (!view || !me) return null;
 

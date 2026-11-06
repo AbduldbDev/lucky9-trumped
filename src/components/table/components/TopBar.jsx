@@ -1,8 +1,10 @@
 import { useState } from "react";
 import TrumpGuideModal from "./TrumpGuideModal.jsx";
+import AudioSettings from "./AudioSettings.jsx";
 
 export default function TopBar({ view, bet, onLeave }) {
   const [showGuide, setShowGuide] = useState(false);
+  const [showAudioSettings, setShowAudioSettings] = useState(false);
 
   return (
     <>
@@ -27,6 +29,18 @@ export default function TopBar({ view, bet, onLeave }) {
           </span> */}
         </div>
         <div className="flex items-center gap-3 text-xs text-white/30">
+          {/* Audio Settings button */}
+          <button
+            onClick={() => setShowAudioSettings(true)}
+            className="flex items-center justify-center w-7 h-7 rounded-full
+              text-white/40 hover:text-white/80 hover:bg-white/10
+              transition-all"
+            title="Audio Settings"
+            aria-label="Open audio settings"
+          >
+            <i className="fa-solid fa-volume-high text-xs" />
+          </button>
+
           {/* Help button */}
           <button
             onClick={() => setShowGuide(true)}
@@ -53,6 +67,12 @@ export default function TopBar({ view, bet, onLeave }) {
 
       {/* Trump Guide Modal */}
       <TrumpGuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
+
+      {/* Audio Settings Modal */}
+      <AudioSettings
+        isOpen={showAudioSettings}
+        onClose={() => setShowAudioSettings(false)}
+      />
     </>
   );
 }
