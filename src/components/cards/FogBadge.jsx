@@ -20,7 +20,7 @@ export default function FogBadge({ hand, revealed = false, isSelf = false }) {
         className={`${baseClass}
           ${
             isNine
-              ? "bg-gold-DEFAULT/20 text-gold-light border border-gold/50"
+              ? "bg-gold-/20 text-gold-light border border-gold/50"
               : "bg-black/30 text-ivory-dim border border-white/10"
           }`}
         aria-label={`Score: ${score}`}
@@ -34,12 +34,12 @@ export default function FogBadge({ hand, revealed = false, isSelf = false }) {
   }
 
   return (
-    <span
+    <div
       className={`${baseClass} font-normal bg-black/40 text-white/40 border border-white/8`}
       aria-label={`Exposed: ${exp}`}
     >
-      <i className="fa-solid fa-eye-slash text-[7px] sm:text-[9px]" />
-      {exp}
-    </span>
+      <i className="fa-solid fa-eye-slash text-[5px] sm:text-[7px]" />
+      <span className="text-[7px] sm:text-[10px]">{exp}</span>
+    </div>
   );
 }

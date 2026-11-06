@@ -22,10 +22,9 @@ export default function TopBar({ view, bet, onLeave }) {
           <span className="text-gold-shimmer font-serif font-bold text-sm tracking-widest">
             LUCKY 9
           </span>
-          <span className="ml-2 text-[10px] text-white/20 font-mono">
-            {/* R{view.round} ·  */}
-            {view.partyCode}
-          </span>
+          {/* <span className="ml-2 text-[10px] text-white/20 font-mono">
+            R{view.round} ·{view.partyCode}
+          </span> */}
         </div>
         <div className="flex items-center gap-3 text-xs text-white/30">
           {/* Help button */}

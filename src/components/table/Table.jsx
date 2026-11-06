@@ -107,7 +107,11 @@ export default function Table({ game, onLeave }) {
   // triggered. The child hides it after 3s and calls onDismiss.
   useEffect(() => {
     if (!view) return;
-    const list = view.personalNotifications ?? [];
+
+    // Ensure personalNotifications is always an array
+    const list = Array.isArray(view.personalNotifications)
+      ? view.personalNotifications
+      : [];
 
     // First view we ever see: mark whatever already exists as "seen" so a
     // reload/reconnect doesn't replay an old popup.
@@ -126,6 +130,9 @@ export default function Table({ game, onLeave }) {
     }
 
     const latest = list[list.length - 1];
+    // Guard against undefined latest
+    if (!latest || !latest.id) return;
+
     const key = `${view.round}:${latest.id}`;
     if (shownPersonalKeys.current.has(key)) return;
 
