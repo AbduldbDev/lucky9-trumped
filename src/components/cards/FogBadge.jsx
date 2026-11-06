@@ -35,7 +35,7 @@ export default function FogBadge({ hand, revealed = false, isSelf = false }) {
 
   return (
     <div
-      className={`${baseClass} font-normal bg-black/40 text-white/40 border border-white/8`}
+      className={`${baseClass} font-normal bg-black/40 text-white/80 border border-white/8`}
       aria-label={`Exposed: ${exp}`}
     >
       <i className="fa-solid fa-eye-slash text-[5px] sm:text-[7px]" />

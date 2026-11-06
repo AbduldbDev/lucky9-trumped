@@ -11,11 +11,6 @@ import {
 } from "../../../utils/seatLayout.js";
 import { getActivePlayers } from "../../../utils/tableHelpers.js";
 
-/**
- * The felt oval, centre info, opponent seats and the turn timer.
- * The oval always fills the available area (so it shrinks when the bottom
- * panel is expanded) and seats are scaled/positioned from its real size.
- */
 export default function OvalTable({
   view,
   allPlayers,
@@ -45,7 +40,13 @@ export default function OvalTable({
       <div
         ref={areaRef}
         className="relative w-full h-full"
-        style={{ maxWidth: 1120, maxHeight: 740 }}
+        style={{
+          height: "100%",
+          maxHeight: 740,
+          minHeight: 500,
+          maxWidth: "min(100%, 700px)",
+          aspectRatio: "1.7 / 1", // widest the oval is allowed to get
+        }}
       >
         {/* Oval felt surface */}
         <div
