@@ -350,7 +350,7 @@ function checkMatchOver(d) {
 // SRD §8.3: only ONCE per round per player.
 // Also creates a personal notification for the player.
 // ---------------------------------------------------------------------------
-function checkLucky9(d, player) {
+export function checkLucky9(d, player) {
   if (!GAME_CONFIG.TRUMP_CARD_ON_TOTAL_NINE) return;
   if (player.lucky9Awarded) return;
   if (handScore(player.hand) === 9) {

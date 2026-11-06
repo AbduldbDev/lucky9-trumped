@@ -11,6 +11,7 @@ import {
   TRUMP_RARITIES,
 } from "../config/trumpCards.config.js";
 import { SUMMONABLE_RANKS } from "./deckEngine.js";
+import { checkLucky9 } from "./gameEngine.js";
 
 const randInt = (n) => Math.floor(Math.random() * n);
 
@@ -97,17 +98,22 @@ export const EFFECT_EXECUTORS = {
     actor.hand = [];
     // Draw exactly 2 new cards
     actor.hand.push(draft.deck.pop(), draft.deck.pop());
+    // Check for Lucky 9 after drawing new cards
+    checkLucky9(draft, actor);
     return `${actor.name} refreshed their hand with 2 new cards.`;
   },
 
   // ── EXCHANGE ─────────────────────────────────────────────────────────────
-  SWAP_LAST_CARDS({ actor, target }) {
+  SWAP_LAST_CARDS({ draft, actor, target }) {
     if (actor.hand.length < 1) throw new Error("You have no card to swap.");
     if (target.hand.length < 1) throw new Error("Target has no card to swap.");
     const myLast = actor.hand.pop();
     const theirLast = target.hand.pop();
     actor.hand.push(theirLast);
     target.hand.push(myLast);
+    // Check Lucky 9 for both players after swap
+    checkLucky9(draft, actor);
+    checkLucky9(draft, target);
     return `${actor.name} exchanged their last card with ${target.name}.`;
   },
 
@@ -119,6 +125,8 @@ export const EFFECT_EXECUTORS = {
       );
     if (!draft.deck.length) throw new Error("Deck is empty.");
     target.hand.push(draft.deck.pop());
+    // Check Lucky 9 for target after forced draw
+    checkLucky9(draft, target);
     return `${actor.name} forced ${target.name} to draw a card.`;
   },
 
@@ -133,6 +141,8 @@ export const EFFECT_EXECUTORS = {
     const idx = draft.deck.findIndex((c) => c.rank === ctx.rank);
     if (idx === -1) throw new Error(`No ${ctx.rank} remaining in the deck.`);
     actor.hand.push(draft.deck.splice(idx, 1)[0]);
+    // Check Lucky 9 after drawing selected card
+    checkLucky9(draft, actor);
     return `${actor.name} selected a ${ctx.rank} from the deck.`;
   },
 
@@ -163,6 +173,8 @@ export const EFFECT_EXECUTORS = {
       if (p.isEliminated) continue;
       if (p.hand.length < GAME_CONFIG.MAX_CARDS_IN_HAND && draft.deck.length) {
         p.hand.push(draft.deck.pop());
+        // Check Lucky 9 for each player who drew
+        checkLucky9(draft, p);
         drew++;
       }
     }
@@ -188,6 +200,8 @@ export const EFFECT_EXECUTORS = {
     // Mark the card as hidden so it won't be revealed to other players
     card.hidden = true;
     actor.hand.push(card);
+    // Check Lucky 9 after drawing hidden card
+    checkLucky9(draft, actor);
     return `${actor.name} drew a hidden card.`;
   },
 

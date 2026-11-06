@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const SHOW_MS = 20000;
+const SHOW_MS = 2000;
 const FADE_MS = 300;
 
 export default function PersonalNotification({ notification, onDismiss }) {
