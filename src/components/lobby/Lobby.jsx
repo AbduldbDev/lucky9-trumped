@@ -4,6 +4,7 @@ import { isValidPartyCode, normalizePartyCode } from "../../utils/partyCode.js";
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
 import { useAudio } from "../../contexts/AudioContext.jsx";
 import { AUDIO_CONFIG } from "../../config/audio.config.js";
+import HowToPlayModal from "./HowToPlayModal.jsx";
 
 export default function Lobby({
   profile,
@@ -17,6 +18,7 @@ export default function Lobby({
   const [code, setCode] = useState("");
   const [mode, setMode] = useState("create"); // 'create' | 'join'
   const [error, setError] = useState("");
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   const submit = async (fn) => {
     setError("");
@@ -41,6 +43,11 @@ export default function Lobby({
   const handleOpenShop = () => {
     audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
     onOpenShop();
+  };
+
+  const handleOpenHowToPlay = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    setShowHowToPlay(true);
   };
 
   const winRate = profile.stats.totalMatches
@@ -304,10 +311,37 @@ export default function Lobby({
                 </span>
                 <i className="fa-solid fa-chevron-right text-[10px] text-white/25 transition-transform group-hover:translate-x-1 group-hover:text-gold-DEFAULT sm:text-xs" />
               </button>
+
+              {/* How to Play button */}
+              <button
+                onClick={handleOpenHowToPlay}
+                className="group flex w-full items-center justify-between rounded-2xl border border-blue-500/25 bg-black/30 px-3.5 py-2.5 text-left transition-all hover:border-blue-500/40 hover:bg-black/50 active:scale-[0.98] sm:px-4 sm:py-3.5"
+              >
+                <span className="flex items-center gap-2.5 sm:gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full border border-blue-500/25 bg-blue-500/10 text-xs text-blue-400 sm:h-9 sm:w-9 sm:text-sm">
+                    <i className="fa-solid fa-book-open" />
+                  </span>
+                  <span>
+                    <span className="block text-xs font-semibold text-ivory sm:text-sm">
+                      How to Play?
+                    </span>
+                    <span className="block text-[11px] text-white/35 sm:text-xs">
+                      Learn the rules & trump cards
+                    </span>
+                  </span>
+                </span>
+                <i className="fa-solid fa-chevron-right text-[10px] text-white/25 transition-transform group-hover:translate-x-1 group-hover:text-blue-400 sm:text-xs" />
+              </button>
             </div>
           </section>
         </main>
       </div>
+
+      {/* How to Play Modal */}
+      <HowToPlayModal
+        isOpen={showHowToPlay}
+        onClose={() => setShowHowToPlay(false)}
+      />
     </div>
   );
 }
