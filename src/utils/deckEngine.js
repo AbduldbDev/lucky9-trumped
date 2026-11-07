@@ -37,12 +37,14 @@ export const SUMMONABLE_RANKS = [
 
 // Ace=1, 2-9=face value, 10/J/Q/K=0.
 export function cardValue(card) {
-  if (!card) return 0;
+  if (!card || !card.rank) return 0;
   // NOTE: hidden flag is for display only, not calculation
   // Hidden cards still count toward hand total
   if (card.rank === "A") return 1;
   if (["10", "J", "Q", "K"].includes(card.rank)) return 0;
-  return parseInt(card.rank, 10);
+  const val = parseInt(card.rank, 10);
+  // Guard against NaN from invalid rank
+  return Number.isNaN(val) ? 0 : val;
 }
 
 export function createDeck() {
@@ -69,9 +71,12 @@ export function handScore(hand) {
   return mod10(hand.reduce((sum, c) => sum + cardValue(c), 0));
 }
 
-/** What opponents see: sum of exposed (face-up) cards only (index 1+). */
+/** What opponents see: sum of exposed (face-up) cards only (index 1+).
+ * Excludes hidden cards (from HUSH trump). */
 export function exposedSum(hand) {
-  return mod10(hand.slice(1).reduce((sum, c) => sum + cardValue(c), 0));
+  const visibleCards = hand.slice(1).filter((c) => !c.hidden);
+  if (visibleCards.length === 0) return 0; // No visible cards yet
+  return mod10(visibleCards.reduce((sum, c) => sum + cardValue(c), 0));
 }
 
 /** A "natural" is a two-card hand totalling 8 or 9. */
