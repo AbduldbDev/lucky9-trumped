@@ -1,14 +1,29 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAudio } from "../../../contexts/AudioContext.jsx";
 
 /** Full-screen 3-2-1 overlay shown while all players have stood. */
 export default function ShowdownOverlay({ countdown }) {
   const audio = useAudio();
+  const playedCountdownRef = useRef(new Set());
+
+  // Reset played sounds when countdown resets (new showdown)
+  useEffect(() => {
+    if (countdown === 3) {
+      playedCountdownRef.current.clear();
+    }
+  }, [countdown]);
 
   useEffect(() => {
-    if (countdown > 0) {
+    // Prevent playing the same countdown number twice
+    if (playedCountdownRef.current.has(countdown)) {
+      return;
+    }
+
+    if (countdown > 0 && countdown <= 3) {
+      playedCountdownRef.current.add(countdown);
       audio.playCountdownTick();
-    } else if (countdown === 0) {
+    } else if (countdown === 0 && !playedCountdownRef.current.has(0)) {
+      playedCountdownRef.current.add(0);
       audio.playCountdownGo();
     }
   }, [countdown, audio]);
