@@ -123,6 +123,14 @@ export const TRUMP_CARDS_CATALOG = {
     counterable: true, // Can be blocked by SHUTTER
     effect: { type: "REMOVE_TARGET_LAST_CARD" },
   },
+  HUSH: {
+    id: "HUSH",
+    name: "Hush",
+    rarity: "UNCOMMON",
+    description: "Draw one card face-down. Other players cannot see its value.",
+    targetType: "NONE",
+    effect: { type: "DRAW_HIDDEN" },
+  },
 
   // ── RARE ────────────────────────────────────────────────────────────────
   REFRESH: {
@@ -153,14 +161,6 @@ export const TRUMP_CARDS_CATALOG = {
     targetType: "SINGLE_PLAYER",
     counterable: true, // Can be blocked by SHUTTER
     effect: { type: "FORCE_DRAW" },
-  },
-  HUSH: {
-    id: "HUSH",
-    name: "Hush",
-    rarity: "RARE",
-    description: "Draw one card face-down. Other players cannot see its value.",
-    targetType: "NONE",
-    effect: { type: "DRAW_HIDDEN" },
   },
 
   // ── LEGENDARY ───────────────────────────────────────────────────────────

@@ -35,9 +35,11 @@ export const SUMMONABLE_RANKS = [
   "K",
 ];
 
-/** Ace=1, 2-9=face value, 10/J/Q/K=0. */
+// Ace=1, 2-9=face value, 10/J/Q/K=0.
 export function cardValue(card) {
-  if (!card || card.hidden) return 0;
+  if (!card) return 0;
+  // NOTE: hidden flag is for display only, not calculation
+  // Hidden cards still count toward hand total
   if (card.rank === "A") return 1;
   if (["10", "J", "Q", "K"].includes(card.rank)) return 0;
   return parseInt(card.rank, 10);
