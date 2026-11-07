@@ -1,13 +1,9 @@
-// Shop inventory for purchasing and equipping custom card design skins.
-// Keep ids in sync with the `card_skins` seed in supabase/migrations/001_schema.sql
-// (the server reads prices from that table, not from the client).
-
 export const CARD_SKINS_SHOP = [
   {
     id: "classic_red",
     name: "Classic Velvet Red",
-    rarity: "Common",
-    price: 0, // Free / Default
+    rarity: "COMMON",
+    price: 0,
     unlockedByDefault: true,
     previewColor: "from-red-800 to-red-950",
     borderColor: "border-amber-300/60",
@@ -15,7 +11,7 @@ export const CARD_SKINS_SHOP = [
   {
     id: "cyberpunk_neon",
     name: "Cyberpunk Neon",
-    rarity: "Rare",
+    rarity: "RARE",
     price: 0,
     unlockedByDefault: false,
     previewColor: "from-cyan-900 to-fuchsia-950",
@@ -24,17 +20,16 @@ export const CARD_SKINS_SHOP = [
   {
     id: "dragon_gold",
     name: "Imperial Dragon Gold",
-    rarity: "Legendary",
+    rarity: "LEGENDARY",
     price: 0,
     unlockedByDefault: false,
     previewColor: "from-amber-700 to-yellow-950",
     borderColor: "border-yellow-400",
   },
-
   {
     id: "royal_purple",
     name: "Royal Amethyst",
-    rarity: "Rare",
+    rarity: "RARE",
     price: 0,
     unlockedByDefault: false,
     previewColor: "from-purple-800 to-indigo-950",
@@ -43,7 +38,7 @@ export const CARD_SKINS_SHOP = [
   {
     id: "emerald_luxe",
     name: "Emerald Dynasty",
-    rarity: "Rare",
+    rarity: "RARE",
     price: 0,
     unlockedByDefault: false,
     previewColor: "from-emerald-800 to-green-950",
@@ -52,7 +47,7 @@ export const CARD_SKINS_SHOP = [
   {
     id: "midnight_obsidian",
     name: "Midnight Obsidian",
-    rarity: "Epic",
+    rarity: "MYTHIC",
     price: 0,
     unlockedByDefault: false,
     previewColor: "from-slate-800 to-black",
@@ -61,7 +56,7 @@ export const CARD_SKINS_SHOP = [
   {
     id: "sakura_bliss",
     name: "Sakura Blossom",
-    rarity: "Epic",
+    rarity: "UNCOMMON",
     price: 0,
     unlockedByDefault: false,
     previewColor: "from-pink-700 to-rose-950",
@@ -70,7 +65,7 @@ export const CARD_SKINS_SHOP = [
   {
     id: "celestial_diamond",
     name: "Celestial Diamond",
-    rarity: "Legendary",
+    rarity: "LEGENDARY",
     price: 0,
     unlockedByDefault: false,
     previewColor: "from-sky-700 to-blue-950",

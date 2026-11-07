@@ -71,6 +71,7 @@ export default function OvalTable({
                 s={secondsLeft}
                 max={GAME_CONFIG.TURN_TIMER}
                 warn={GAME_CONFIG.TIMER_WARNING}
+                paused={view.waitingForCounterResponse}
               />
             )}
           </div>

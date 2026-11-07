@@ -1,7 +1,3 @@
-// SRD §3.2: 30-second turn timer with 10-second heartbeat warning.
-// Counts down while it is "my turn" during the PLAYING phase.
-// When the timer reaches 0, fires onTimeout so the caller can dispatch TIMEOUT.
-
 import { useEffect, useRef, useState } from "react";
 import { GAME_CONFIG } from "../config/gameRules.config.js";
 import { PHASES } from "../utils/gameEngine.js";
@@ -14,12 +10,19 @@ import { AUDIO_CONFIG } from "../config/audio.config.js";
  * @param {string}  params.phase      - current game phase
  * @param {string}  params.turnKey    - a key that changes every time the turn changes
  *                                      (e.g. `${round}-${turnIndex}`)
+ * @param {boolean} params.paused     - true to pause the timer (e.g., waiting for counter response)
  * @param {function} params.onTimeout - called with no args when the timer hits 0
  */
-export function useTurnTimer({ active, phase, turnKey, onTimeout }) {
+export function useTurnTimer({
+  active,
+  phase,
+  turnKey,
+  paused = false,
+  onTimeout,
+}) {
   const audio = useAudio();
-  const duration = GAME_CONFIG.TURN_TIMER; // 30 s
-  const warning = GAME_CONFIG.TIMER_WARNING; // 10 s
+  const duration = GAME_CONFIG.TURN_TIMER;
+  const warning = GAME_CONFIG.TIMER_WARNING;
 
   const [secondsLeft, setSecondsLeft] = useState(duration);
   const intervalRef = useRef(null);
@@ -39,7 +42,7 @@ export function useTurnTimer({ active, phase, turnKey, onTimeout }) {
   }, [turnKey, duration, audio]);
 
   useEffect(() => {
-    if (!active || !isPlaying) {
+    if (!active || !isPlaying || paused) {
       clearInterval(intervalRef.current);
       if (heartbeatActiveRef.current) {
         audio.stopHeartbeat();
@@ -88,8 +91,7 @@ export function useTurnTimer({ active, phase, turnKey, onTimeout }) {
         heartbeatActiveRef.current = false;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, isPlaying, turnKey, audio]);
+  }, [active, isPlaying, paused, turnKey, audio]);
 
   const isWarning =
     active && isPlaying && secondsLeft <= warning && secondsLeft > 0;

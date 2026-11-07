@@ -1,9 +1,10 @@
-export default function TimerRing({ s, max, warn }) {
+export default function TimerRing({ s, max, warn, paused = false }) {
   const r = 18;
   const circ = 2 * Math.PI * r;
   const pct = s / max;
-  const isW = s <= warn;
-  const clr = isW ? "#ef4444" : "#c9a84c";
+  const isW = s <= warn && !paused;
+  const clr = paused ? "#fbbf24" : isW ? "#ef4444" : "#c9a84c";
+
   return (
     <svg
       width="44"
@@ -33,17 +34,24 @@ export default function TimerRing({ s, max, warn }) {
         className="timer-circle"
         style={{ filter: `drop-shadow(0 0 3px ${clr})` }}
       />
-      <text
-        x="24"
-        y="28"
-        textAnchor="middle"
-        fill={clr}
-        fontSize="11"
-        fontWeight="700"
-        fontFamily="'JetBrains Mono',monospace"
-      >
-        {s}
-      </text>
+      {paused ? (
+        <g>
+          <rect x="18" y="16" width="3" height="16" fill={clr} rx="1" />
+          <rect x="27" y="16" width="3" height="16" fill={clr} rx="1" />
+        </g>
+      ) : (
+        <text
+          x="24"
+          y="28"
+          textAnchor="middle"
+          fill={clr}
+          fontSize="11"
+          fontWeight="700"
+          fontFamily="'JetBrains Mono',monospace"
+        >
+          {s}
+        </text>
+      )}
     </svg>
   );
 }

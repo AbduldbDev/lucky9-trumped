@@ -49,6 +49,7 @@ export default function Table({ game, onLeave }) {
     active: isMyTurn,
     phase: view?.phase,
     turnKey,
+    paused: view?.waitingForCounterResponse ?? false,
     onTimeout: actions.timeout,
   });
   const rematchLeft = useRematchTimer(view?.phase);
