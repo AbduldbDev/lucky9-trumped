@@ -157,6 +157,8 @@ function startRound(d, firstPlayerOverride = null) {
     if (p.isEliminated || p.isSpectator) continue;
     // Deal 2 cards: [hole card, up card]
     p.hand.push(d.deck.pop(), d.deck.pop());
+    // Check for Lucky 9 with initial cards
+    checkLucky9(d, p);
   }
 
   // Determine first player
