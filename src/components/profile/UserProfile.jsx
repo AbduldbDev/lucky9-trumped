@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../services/supabaseClient";
-import { CARD_SKINS_SHOP } from "../../config/cardSkins.config";
+import { CARD_SKINS_SHOP, getSkin } from "../../config/cardSkins.config";
+import { RARITY_COLOR } from "../../config/trumpCards.config.js";
+
+const FALLBACK_HEX = "#9ca3af";
 
 /**
  * Mobile-first sizing: base classes are compact, `sm:` restores roomier sizes.
- * Data loading and tab logic are unchanged; only the presentation is restyled.
+ * Data loading and tab logic are unchanged; the skin inventory now reads its
+ * look (previewColor, borderColor, rarity) from cardSkins.config.
  */
 export default function UserProfile({ profile, onClose, onEquipSkin }) {
   const [matchHistory, setMatchHistory] = useState([]);
@@ -49,9 +53,11 @@ export default function UserProfile({ profile, onClose, onEquipSkin }) {
       ? Math.round((profile.stats.totalWins / profile.stats.totalMatches) * 100)
       : 0;
 
-  const ownedSkins = CARD_SKINS_SHOP.filter((skin) =>
-    profile.owned.includes(skin.id),
+  // Owned = bought skins + anything unlocked by default in the config
+  const ownedSkins = CARD_SKINS_SHOP.filter(
+    (skin) => skin.unlockedByDefault || profile.owned.includes(skin.id),
   );
+  const equippedSkin = getSkin(profile.equippedSkinId);
 
   const tabs = [
     { id: "stats", label: "Statistics", short: "Stats", icon: "fa-chart-line" },
@@ -276,14 +282,26 @@ export default function UserProfile({ profile, onClose, onEquipSkin }) {
           {/* Inventory Tab */}
           {activeTab === "inventory" && (
             <div className="space-y-3">
-              <p className="text-[9px] uppercase tracking-[0.25em] text-ivory-dim/50 sm:text-[10px]">
-                {ownedSkins.length} skin{ownedSkins.length !== 1 ? "s" : ""}{" "}
-                owned
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[9px] uppercase tracking-[0.25em] text-ivory-dim/50 sm:text-[10px]">
+                  {ownedSkins.length} skin{ownedSkins.length !== 1 ? "s" : ""}{" "}
+                  owned
+                </p>
+                <p className="truncate text-[9px] uppercase tracking-[0.2em] text-ivory-dim/40 sm:text-[10px]">
+                  Using{" "}
+                  <span className="text-gold-light/80">
+                    {equippedSkin.name}
+                  </span>
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
                 {ownedSkins.map((skin) => {
                   const equipped = profile.equippedSkinId === skin.id;
                   const isEquipping = equipping === skin.id;
+                  const color =
+                    RARITY_COLOR[String(skin.rarity).toUpperCase()] ??
+                    FALLBACK_HEX;
                   return (
                     <div
                       key={skin.id}
@@ -300,21 +318,38 @@ export default function UserProfile({ profile, onClose, onEquipSkin }) {
                           : "none",
                       }}
                     >
-                      {equipped && (
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-gold-light/80 to-transparent"
-                        />
-                      )}
-                      <div className="flex items-center justify-between gap-2">
+                      {/* Rarity hairline */}
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-4 top-0 h-px"
+                        style={{
+                          background: `linear-gradient(90deg, transparent, ${color}99, transparent)`,
+                        }}
+                      />
+
+                      <div className="flex items-center gap-3">
+                        {/* Skin swatch — straight from cardSkins.config */}
+                        <SkinSwatch skin={skin} />
+
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-[12px] font-medium tracking-wide text-ivory sm:text-[13px]">
                             {skin.name}
                           </p>
-                          <p className="mt-0.5 text-[8px] uppercase tracking-[0.2em] text-ivory-dim/50 sm:text-[9px]">
+                          <p
+                            className="mt-1 flex items-center gap-1.5 text-[8px] uppercase tracking-[0.2em] sm:text-[9px]"
+                            style={{ color: `${color}cc` }}
+                          >
+                            <span
+                              className="h-1 w-1 rounded-full"
+                              style={{
+                                background: color,
+                                boxShadow: `0 0 6px ${color}`,
+                              }}
+                            />
                             {skin.rarity}
                           </p>
                         </div>
+
                         {equipped ? (
                           <span
                             className="flex-none rounded-full border border-gold/40 bg-gold/[0.08] px-2 py-0.5
@@ -359,6 +394,41 @@ export default function UserProfile({ profile, onClose, onEquipSkin }) {
 }
 
 /* ------------------------- Helper components ------------------------- */
+
+/**
+ * Mini card back built from the skin config:
+ *  - skin.previewColor -> gradient classes (e.g. "from-red-800 to-red-950")
+ *  - skin.borderColor  -> border color class (e.g. "border-amber-300/60")
+ * Make sure Tailwind's `content` globs include src/config/** so these
+ * class strings are not purged.
+ */
+function SkinSwatch({ skin }) {
+  const base =
+    "relative h-12 w-9 flex-none overflow-hidden rounded-md shadow-[0_6px_14px_-6px_rgba(0,0,0,0.9)] sm:h-14 sm:w-10";
+
+  return (
+    <div
+      className={`${base} bg-gradient-to-br ${skin.previewColor} border border-white/10`}
+      aria-hidden="true"
+    >
+      {/* Diamond trellis pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.12]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)",
+          backgroundSize: "8px 8px",
+        }}
+      />
+      {/* Center pip */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <i className="fa-solid fa-diamond text-white/20 text-sm sm:text-base" />
+      </div>
+      {/* Shine */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
+    </div>
+  );
+}
 
 function QuickStat({ label, value, icon, valueClass }) {
   return (

@@ -26,13 +26,13 @@ export default function Shop({ profile, onBuy, onEquip, onClose }) {
       role="dialog"
       aria-modal="true"
       aria-label="Card shop"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 backdrop-blur-md
-        animate-fadeIn sm:items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md
+        animate-fadeIn"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-t-2xl border border-gold/25
-          bg-ink/95 pb-[env(safe-area-inset-bottom)] animate-fadeUp sm:rounded-2xl sm:pb-0"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-gold/25
+          bg-ink/95 animate-fadeUp"
         style={{
           boxShadow:
             "0 30px 80px -16px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05)",
@@ -76,7 +76,7 @@ export default function Shop({ profile, onBuy, onEquip, onClose }) {
         </div>
 
         {/* Skins grid */}
-        <ul className="grid max-h-[62vh] grid-cols-2 gap-2.5 overflow-y-auto overscroll-contain p-3 sm:gap-3 sm:p-4">
+        <ul className="grid max-h-[62dvh] grid-cols-2 gap-2.5 overflow-y-auto overscroll-contain p-3 sm:gap-3 sm:p-4">
           {CARD_SKINS_SHOP.map((skin) => {
             const owned = profile.owned.includes(skin.id);
             const equipped = profile.equippedSkinId === skin.id;
