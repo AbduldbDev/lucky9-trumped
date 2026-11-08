@@ -87,7 +87,7 @@ export const GAME_CONFIG = {
 
   // GAME TABLE SETTINGS
   // TABLE_LAYOUT: "circular",
-  TABLE_BACKGROUND: "red", // "green" | "purple" | "blue" | "red" | "black"
+  TABLE_BACKGROUND: "black", // "green" | "purple" | "blue" | "red" | "black"
   // DEFAULT_TABLE_BACKGROUND: "green",
   // PLAYER_SKIN_VISIBLE_TO_ALL: true,
 
