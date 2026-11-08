@@ -236,9 +236,10 @@ export async function recordMatchResult(
     matchCode,
     totalRounds,
     durationSeconds,
+    winnerId,
   },
 ) {
-  // Record match result and update stats
+  // Record match result and update stats for current player
   const { data: newChips, error } = await supabase.rpc("record_match", {
     p_won: won,
     p_chips: chipsEarned,
@@ -247,22 +248,26 @@ export async function recordMatchResult(
   });
   if (error) throw new Error(error.message);
 
-  // Save match history entry for both winners and losers
+  // Save match history for this player
   if (matchCode) {
-    await supabase
+    const { error: historyError } = await supabase
       .from("match_history")
       .insert({
         match_code: matchCode,
-        winner_id: won ? profile.id : null, // null if lost
-        player_id: profile.id, // Always save who played
+        winner_id: winnerId,
+        player_id: profile.id,
         won: won,
         total_rounds: totalRounds || 1,
         duration_seconds: durationSeconds || 0,
         chips_rewarded: won ? chipsEarned : 0,
-      })
-      .catch((err) => {
-        console.warn("[Lucky9] Could not save match history:", err.message);
       });
+
+    if (historyError) {
+      console.warn(
+        "[Lucky9] Could not save match history:",
+        historyError.message,
+      );
+    }
   }
 
   // Reload fresh stats and chips from database to ensure sync

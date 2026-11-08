@@ -39,6 +39,26 @@ function Room({ room, profile, onProfile, onExit }) {
   });
   const { view, me, actions } = game;
   const settled = useRef(false);
+  const startedAt = useRef(null);
+  const startKey = `lucky9.matchStart.${room.partyCode}`;
+
+  useEffect(() => {
+    const phase = view?.phase;
+    if (!phase) return;
+
+    if (phase === PHASES.LOBBY) {
+      // Back in lobby (new match / rematch): clear the timer.
+      startedAt.current = null;
+      sessionStorage.removeItem(startKey);
+      return;
+    }
+
+    if (startedAt.current == null) {
+      const saved = Number(sessionStorage.getItem(startKey));
+      startedAt.current = saved > 0 ? saved : Date.now();
+      sessionStorage.setItem(startKey, String(startedAt.current));
+    }
+  }, [view?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist stats + chips once when the match ends.
   useEffect(() => {
@@ -47,6 +67,11 @@ function Room({ room, profile, onProfile, onExit }) {
     const won = view.winnerId === me.id;
     const chipsEarned = calcMatchChips({ won });
 
+    const durationSeconds = startedAt.current
+      ? Math.max(0, Math.floor((Date.now() - startedAt.current) / 1000))
+      : 0;
+
+    // Each player saves their own match result
     recordMatchResult(profile, {
       won,
       chipsEarned,
@@ -54,15 +79,14 @@ function Room({ room, profile, onProfile, onExit }) {
       naturals: me.stats.naturals,
       matchCode: room.partyCode,
       totalRounds: view.round || 1,
-      durationSeconds: Math.floor(
-        (Date.now() - (view.startTime || Date.now())) / 1000,
-      ),
+      durationSeconds,
+      winnerId: view.winnerId,
     })
       .then(onProfile)
       .catch((e) =>
         console.warn("[Lucky9] Could not save match result:", e.message),
       );
-  }, [view?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [view?.phase, view?.round]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset settled flag on rematch (back to lobby)
   useEffect(() => {
@@ -242,6 +266,7 @@ function LobbyContainer({ intro }) {
           }
           onJoin={(code) => setRoom({ partyCode: code, isHost: false })}
           onOpenShop={() => setShopOpen(true)}
+          onEquipSkin={async (id) => setProfile(await equipSkin(profile, id))}
         />
       )}
       {shopOpen && (
