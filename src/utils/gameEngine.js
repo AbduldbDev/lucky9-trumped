@@ -258,8 +258,14 @@ function resolveShowdown(d) {
   const withBest = active.filter((p) => scores[p.id] === best);
   const minCards = Math.min(...withBest.map((p) => p.hand.length));
   const winners = withBest.filter((p) => p.hand.length === minCards);
-  const losers = active.filter((p) => !winners.some((w) => w.id === p.id));
 
+  // Check if it's a draw among the winners
+  // When 2+ winners have same score AND same card count, they draw
+  // Losers still lose lives, but winners don't gain lives when tied
+  const isDraw =
+    winners.length > 1 &&
+    winners.every((w) => w.hand.length === winners[0].hand.length);
+  const losers = active.filter((p) => !winners.some((w) => w.id === p.id));
   const bet = computeBetTotal(d.betModifiers, d.round);
   const naturalIds = active.filter((p) => isNatural(p.hand)).map((p) => p.id);
 
@@ -268,7 +274,8 @@ function resolveShowdown(d) {
   });
 
   const eliminatedIds = [];
-  // Process losers - deduct lives and check for permanent elimination
+
+  // Process losers - they always lose lives (even in a winners' draw)
   for (const l of losers) {
     const loss = Math.min(bet, l.lives);
     l.lives -= loss;
@@ -290,20 +297,32 @@ function resolveShowdown(d) {
     }
   }
 
-  // SRD §3.2: winner receives chips 100–120 per win
-  // The bet is also added to the winner's hearts (can exceed STARTING_LIVES).
-  // On a draw (no losers) no lives are exchanged.
+  // Winners only gain lives if it's NOT a draw among winners
+  // On a draw: winners get no lives, but losers still lose lives
   const payoutEach =
-    winners.length && losers.length
+    !isDraw && winners.length && losers.length
       ? Math.floor((bet * losers.length) / winners.length)
       : 0;
   let livesLostTotal = 0;
-  for (const l of losers)
-    livesLostTotal += Math.min(bet, GAME_CONFIG.STARTING_LIVES);
-  for (const w of winners) {
-    if (losers.length > 0) w.lives += bet;
-    w.score += payoutEach;
-    w.stats.livesTaken += Math.floor(livesLostTotal / winners.length);
+
+  if (!isDraw) {
+    for (const l of losers)
+      livesLostTotal += Math.min(bet, GAME_CONFIG.STARTING_LIVES);
+    for (const w of winners) {
+      w.lives += bet; // Winners gain lives
+      w.score += payoutEach;
+      w.stats.livesTaken += Math.floor(livesLostTotal / winners.length);
+    }
+  } else {
+    // Winners don't gain lives on draw, but still get score from losers if any
+    for (const l of losers)
+      livesLostTotal += Math.min(bet, GAME_CONFIG.STARTING_LIVES);
+    if (losers.length > 0) {
+      const scorePerWinner = Math.floor((bet * losers.length) / winners.length);
+      for (const w of winners) {
+        w.score += scorePerWinner;
+      }
+    }
   }
 
   d.lastResult = {
@@ -314,8 +333,8 @@ function resolveShowdown(d) {
     loserIds: losers.map((l) => l.id),
     eliminatedIds,
     naturalIds,
-    payoutEach,
-    draw: winners.length === active.length, // full tie
+    payoutEach: isDraw ? 0 : payoutEach,
+    draw: isDraw, // Draw when winners are tied
   };
 
   d.turnIndex = -1;
@@ -323,12 +342,24 @@ function resolveShowdown(d) {
   d.phase = PHASES.SHOWDOWN;
 
   const wNames = winners.map((w) => w.name).join(" & ");
-  pushLog(
-    d,
-    losers.length
-      ? `${wNames} won round ${d.round} with ${best}. Winners +${bet}♥, losers -${bet}♥.`
-      : `Round ${d.round}: Everyone tied on ${best} — no lives lost.`,
-  );
+
+  if (isDraw && losers.length > 0) {
+    // Partial draw: winners tied, but there are losers
+    pushLog(
+      d,
+      `${wNames} tied on ${best} (${losers.length} loser(s) lost ${bet}♥)`,
+    );
+  } else if (isDraw) {
+    // Full draw: everyone tied
+    pushLog(d, `Round ${d.round}: Everyone tied on ${best} — no lives lost.`);
+  } else {
+    // Clear winner(s)
+    pushLog(
+      d,
+      `${wNames} won round ${d.round} with ${best}. Winners +${bet}♥, losers -${bet}♥.`,
+    );
+  }
+
   eliminatedIds.forEach((id) =>
     pushLog(d, `${d.players.find((p) => p.id === id)?.name} was eliminated!`),
   );
