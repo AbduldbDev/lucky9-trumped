@@ -37,28 +37,32 @@ export default function BrandHero({ showTagline = true, showRules = true }) {
         <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gold-DEFAULT/40" />
       </div>
 
-      {showTagline && (
-        <p className="mt-6 hidden max-w-sm text-sm leading-relaxed text-white/40 lg:block">
-          Take a seat at the private table. Bring your friends, play your cards
-          wisely, and outlast the house.
-        </p>
-      )}
+      <p className="mt-6 hidden max-w-sm text-sm leading-relaxed text-white/40 lg:block">
+        Take a seat at the private table. Bring your friends, play your cards
+        wisely, and outlast the house.
+      </p>
 
-      {showRules && (
-        <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:mt-6 sm:gap-2 lg:justify-start">
-          {rules.map(([ic, lb]) => (
-            <span
-              key={lb}
-              className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-black/30 px-2.5 py-1 text-[10px] text-white/60 backdrop-blur sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-xs"
-            >
-              <i
-                className={`fa-solid ${ic} text-[9px] text-gold/70 sm:text-[10px]`}
-              />
-              {lb}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Rules summary */}
+      <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:mt-6 sm:gap-2 lg:justify-start">
+        {[
+          [
+            "fa-users",
+            `${GAME_CONFIG.MIN_PLAYERS}–${GAME_CONFIG.MAX_PLAYERS} Players`,
+          ],
+          ["fa-heart", `${GAME_CONFIG.STARTING_LIVES} Lives`],
+          ["fa-clone", `Up to ${GAME_CONFIG.MAX_CARDS_IN_HAND} Cards`],
+        ].map(([ic, lb]) => (
+          <span
+            key={lb}
+            className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-black/30 px-2.5 py-1 text-[10px] text-white/60 backdrop-blur sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-xs"
+          >
+            <i
+              className={`fa-solid ${ic} text-[9px] text-gold/70 sm:text-[10px]`}
+            />
+            {lb}
+          </span>
+        ))}
+      </div>
     </header>
   );
 }

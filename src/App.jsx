@@ -11,6 +11,7 @@ import WaitingRoom from "./components/lobby/WaitingRoom.jsx";
 import Table from "./components/table/Table.jsx";
 import Shop from "./components/shop/Shop.jsx";
 import ProfilePage from "./components/profile/ProfilePage.jsx";
+import Leaderboard from "./components/leaderboard/Leaderboard.jsx";
 import SplashScreen from "./components/intro/SplashScreen.jsx";
 import WelcomeScreen from "./components/intro/WelcomeScreen.jsx";
 import LobbySkeleton from "./components/intro/LobbySkeleton.jsx";
@@ -206,6 +207,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <ProfileContainer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leaderboard"
+        element={
+          <ProtectedRoute>
+            <Leaderboard />
           </ProtectedRoute>
         }
       />
