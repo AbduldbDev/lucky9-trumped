@@ -167,7 +167,7 @@ export const TRUMP_CARDS_CATALOG = {
   SELECT: {
     id: "SELECT",
     name: "Select",
-    rarity: "COMMON",
+    rarity: "LEGENDARY",
     description:
       "Choose and draw a specific card rank (Ace through 10) from remaining deck.",
     targetType: "RANK_CHOICE",
@@ -197,7 +197,7 @@ export const TRUMP_CARDS_CATALOG = {
   FRIENDSHIP_CARD: {
     id: "FRIENDSHIP_CARD",
     name: "Friendship Card",
-    rarity: "COMMON",
+    rarity: "MYTHIC",
     description:
       "All non-eliminated players (including yourself) draw one additional card.",
     targetType: "ALL_PLAYERS",

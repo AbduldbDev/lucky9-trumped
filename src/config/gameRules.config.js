@@ -52,7 +52,7 @@ export const GAME_CONFIG = {
 
   // TRUMP CARD SETTINGS
   // No inventory cap — trump cards are unlimited per SRD clarification.
-  STARTING_TRUMP_CARDS: 1, // trump cards granted at match start
+  STARTING_TRUMP_CARDS: 2, // trump cards granted at match start
   TRUMP_CARDS_PER_ROUND: 1, // trump card drawn after each round
   TRUMP_CARD_ON_TOTAL_NINE: true, // bonus trump card when hand first hits 9
   ALLOW_MULTIPLE_TRUMP_CARDS_PER_TURN: true,
@@ -87,7 +87,7 @@ export const GAME_CONFIG = {
 
   // GAME TABLE SETTINGS
   // TABLE_LAYOUT: "circular",
-  TABLE_BACKGROUND: "purple", // "green" | "purple" | "blue" | "red" | "black"
+  TABLE_BACKGROUND: "red", // "green" | "purple" | "blue" | "red" | "black"
   // DEFAULT_TABLE_BACKGROUND: "green",
   // PLAYER_SKIN_VISIBLE_TO_ALL: true,
 
