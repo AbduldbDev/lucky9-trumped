@@ -5,28 +5,60 @@ import { useAudio } from "../../../contexts/AudioContext.jsx";
 export default function ShowdownOverlay({ countdown }) {
   const audio = useAudio();
   const playedCountdownRef = useRef(new Set());
+  const lastCountdownRef = useRef(null);
+  const isInitializedRef = useRef(false);
 
-  // Reset played sounds when countdown resets (new showdown)
+  // Reset on mount and when countdown resets to 3
   useEffect(() => {
-    if (countdown === 3) {
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+      playedCountdownRef.current.clear();
+      lastCountdownRef.current = null;
+    }
+
+    if (countdown === 3 && lastCountdownRef.current !== 3) {
       playedCountdownRef.current.clear();
     }
+
+    lastCountdownRef.current = countdown;
   }, [countdown]);
 
+  // Play audio only when countdown changes to a new valid value
   useEffect(() => {
-    // Prevent playing the same countdown number twice
-    if (playedCountdownRef.current.has(countdown)) {
+    // Skip if already played or invalid countdown
+    if (
+      playedCountdownRef.current.has(countdown) ||
+      countdown > 3 ||
+      countdown < 0
+    ) {
       return;
     }
 
-    if (countdown > 0 && countdown <= 3) {
-      playedCountdownRef.current.add(countdown);
-      audio.playCountdownTick();
-    } else if (countdown === 0 && !playedCountdownRef.current.has(0)) {
-      playedCountdownRef.current.add(0);
-      audio.playCountdownGo();
-    }
+    // Use a small delay to ensure we don't double-trigger on rapid updates
+    const timeoutId = setTimeout(() => {
+      // Double-check we haven't played this yet
+      if (!playedCountdownRef.current.has(countdown)) {
+        playedCountdownRef.current.add(countdown);
+
+        if (countdown > 0 && countdown <= 3) {
+          audio.playCountdownTick();
+        } else if (countdown === 0) {
+          audio.playCountdownGo();
+        }
+      }
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
   }, [countdown, audio]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isInitializedRef.current = false;
+      playedCountdownRef.current.clear();
+      lastCountdownRef.current = null;
+    };
+  }, []);
 
   return (
     <div

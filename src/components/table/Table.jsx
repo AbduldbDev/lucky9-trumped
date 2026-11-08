@@ -81,6 +81,8 @@ export default function Table({ game, onLeave }) {
         }
         break;
       case PHASES.COUNTDOWN:
+        // Play showdown audio only once when entering COUNTDOWN phase
+        // The countdown ticks are handled by ShowdownOverlay component
         audio.playSfx(AUDIO_CONFIG.SFX.SHOWDOWN);
         break;
       case PHASES.SHOWDOWN:
