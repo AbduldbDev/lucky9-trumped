@@ -1,188 +1,118 @@
-import { useState, useEffect } from "react";
-import { CARD_SKINS_SHOP } from "../../config/cardSkins.config.js";
+import { useState, useEffect, useRef } from "react";
+import { preloadAllAssets, getCacheStats } from "../../utils/assetCache.js";
 
-// Progress ring geometry
-const RING_R = 52;
-const RING_C = 2 * Math.PI * RING_R; // circumference
+// Progress ring geometry (matches the 120x120 viewBox)
+const RING_R = 54;
+const RING_C = 2 * Math.PI * RING_R;
 
 /**
- * AssetLoader - Preloads all game assets before starting
- * Shows a loading screen with progress indication
+ * AssetLoader - Preloads all game assets before starting.
+ * Shows a loading screen with a progress ring, using the centralized asset cache.
+ *
+ * `selectedSkinId` is kept for API compatibility; it no longer re-triggers loading.
  */
-export default function AssetLoader({
-  onComplete,
-  selectedSkinId = "classic_red",
-}) {
+export default function AssetLoader({ onComplete }) {
   const [progress, setProgress] = useState(0);
   const [loadedCount, setLoadedCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
   const [currentAsset, setCurrentAsset] = useState("");
   const [error, setError] = useState(null);
 
+  // Animated 0-100 value shown in the ring and the number.
+  // `progress` is the real target; `display` eases toward it every frame.
+  const [display, setDisplay] = useState(0);
+  const displayRef = useRef(0);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    )?.matches;
+
+    if (reduceMotion) {
+      displayRef.current = progress;
+      setDisplay(progress);
+      return;
+    }
+
+    let raf;
+    const tick = () => {
+      const diff = progress - displayRef.current;
+      if (Math.abs(diff) < 0.1) {
+        displayRef.current = progress;
+        setDisplay(progress);
+        return;
+      }
+      // Ease out, but never slower than 0.25% per frame so it always finishes
+      const step = Math.sign(diff) * Math.max(Math.abs(diff) * 0.1, 0.25);
+      displayRef.current += Math.abs(step) > Math.abs(diff) ? diff : step;
+      setDisplay(displayRef.current);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [progress]);
+
+  // Keep the latest onComplete without re-running the loading effect
+  // when the parent passes a new function on every render.
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   useEffect(() => {
     let cancelled = false;
+    let finished = false;
+    const timers = [];
+
+    const wait = (ms) =>
+      new Promise((resolve) => {
+        timers.push(setTimeout(resolve, ms));
+      });
+
+    const finish = () => {
+      if (cancelled || finished) return;
+      finished = true;
+      onCompleteRef.current?.();
+    };
 
     const loadAssets = async () => {
       try {
-        // Collect all assets to load
-        const assetsToLoad = [];
-
-        // 1. Add all card skin SVGs (prioritize selected skin)
-        const selectedSkin = CARD_SKINS_SHOP.find(
-          (s) => s.id === selectedSkinId,
-        );
-        const otherSkins = CARD_SKINS_SHOP.filter(
-          (s) => s.id !== selectedSkinId,
-        );
-
-        // Load selected skin first
-        if (selectedSkin?.backSvg) {
-          assetsToLoad.push({
-            type: "image",
-            url: selectedSkin.backSvg,
-            name: `${selectedSkin.name} (back)`,
-            critical: true,
-          });
-        }
-        if (selectedSkin?.frontSvg) {
-          assetsToLoad.push({
-            type: "image",
-            url: selectedSkin.frontSvg,
-            name: `${selectedSkin.name} (front)`,
-            critical: true,
-          });
+        // Already cached: show 100% briefly and continue
+        const stats = getCacheStats();
+        if (stats.isFullyLoaded) {
+          setProgress(100);
+          setLoadedCount(stats.totalLoaded);
+          setTotalCount(stats.totalLoaded);
+          setCurrentAsset("Ready");
+          await wait(1100); // let the 0 -> 100 animation play
+          finish();
+          return;
         }
 
-        // Then load other skins
-        otherSkins.forEach((skin) => {
-          if (skin.backSvg) {
-            assetsToLoad.push({
-              type: "image",
-              url: skin.backSvg,
-              name: `${skin.name} (back)`,
-              critical: false,
-            });
-          }
-          if (skin.frontSvg) {
-            assetsToLoad.push({
-              type: "image",
-              url: skin.frontSvg,
-              name: `${skin.name} (front)`,
-              critical: false,
-            });
-          }
-        });
-
-        // 2. Add sound effects (optional - non-critical)
-        const sfxFiles = [
-          "game_start",
-          "card_draw",
-          "turn_start",
-          "countdown_tick",
-          "countdown_go",
-          "nine_hit",
-          "victory",
-          "defeat",
-          "ui_click",
-        ];
-
-        sfxFiles.forEach((sfx) => {
-          assetsToLoad.push({
-            type: "audio",
-            url: `/sfx/${sfx}.mp3`,
-            name: sfx,
-            critical: false, // Audio is optional
-          });
-        });
-
-        setTotalCount(assetsToLoad.length);
-
-        // Helper to preload an image
-        const preloadImage = (url) => {
-          return new Promise((resolve, reject) => {
-            const img = new Image();
-            const timeout = setTimeout(() => {
-              reject(new Error(`Timeout loading ${url}`));
-            }, 5000); // 5 second timeout per image
-
-            img.onload = () => {
-              clearTimeout(timeout);
-              resolve();
-            };
-            img.onerror = () => {
-              clearTimeout(timeout);
-              reject(new Error(`Failed to load ${url}`));
-            };
-            img.src = url;
-          });
-        };
-
-        // Helper to preload audio
-        const preloadAudio = (url) => {
-          return new Promise((resolve) => {
-            const audio = new Audio();
-            const timeout = setTimeout(() => {
-              resolve(); // Audio is optional, don't fail
-            }, 3000); // 3 second timeout per audio
-
-            audio.oncanplaythrough = () => {
-              clearTimeout(timeout);
-              resolve();
-            };
-            audio.onerror = () => {
-              clearTimeout(timeout);
-              resolve(); // Audio is optional, don't fail
-            };
-            audio.src = url;
-          });
-        };
-
-        // Load assets sequentially to show smooth progress
-        let loaded = 0;
-        for (const asset of assetsToLoad) {
+        await preloadAllAssets((loaded, total, currentUrl, phase) => {
           if (cancelled) return;
 
-          setCurrentAsset(asset.name);
-
-          try {
-            if (asset.type === "image") {
-              await preloadImage(asset.url);
-            } else if (asset.type === "audio") {
-              await preloadAudio(asset.url);
-            }
-          } catch (err) {
-            // If it's a critical asset, log the error but continue
-            if (asset.critical) {
-              console.warn(
-                `[AssetLoader] Failed to load critical asset: ${asset.name}`,
-                err,
-              );
-            }
-            // Non-critical assets fail silently
-          }
-
-          loaded++;
           setLoadedCount(loaded);
-          setProgress(Math.round((loaded / assetsToLoad.length) * 100));
+          setTotalCount(total);
+          setProgress(total > 0 ? Math.round((loaded / total) * 100) : 0);
 
-          // Small delay to prevent UI freezing
-          await new Promise((resolve) => setTimeout(resolve, 20));
-        }
+          if (currentUrl) {
+            setCurrentAsset(currentUrl.split("/").pop());
+          } else if (phase === "complete") {
+            setCurrentAsset("Ready");
+          }
+        });
 
-        if (!cancelled) {
-          // Wait a moment before completing to show 100%
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          onComplete();
-        }
+        if (cancelled) return;
+        setProgress(100);
+        await wait(600); // let the ring finish easing to 100
+        finish();
       } catch (err) {
-        if (!cancelled) {
-          console.error("[AssetLoader] Asset loading failed:", err);
-          setError(err.message);
-          // Complete anyway after a short delay
-          setTimeout(() => {
-            if (!cancelled) onComplete();
-          }, 1500);
-        }
+        if (cancelled) return;
+        console.error("[AssetLoader] Asset loading failed:", err);
+        setError(err.message || "Unknown error");
+        await wait(1500);
+        finish();
       }
     };
 
@@ -190,8 +120,9 @@ export default function AssetLoader({
 
     return () => {
       cancelled = true;
+      timers.forEach(clearTimeout);
     };
-  }, [onComplete, selectedSkinId]);
+  }, []);
 
   return (
     <div
@@ -272,8 +203,7 @@ export default function AssetLoader({
               strokeWidth="2"
               strokeLinecap="round"
               strokeDasharray={RING_C}
-              strokeDashoffset={RING_C * (1 - progress / 100)}
-              style={{ transition: "stroke-dashoffset 300ms ease-out" }}
+              strokeDashoffset={RING_C * (1 - display / 100)}
             />
           </svg>
 
@@ -289,7 +219,7 @@ export default function AssetLoader({
 
           <div className="relative flex flex-col items-center leading-none">
             <span className="font-serif text-3xl font-medium tabular-nums text-gold-light sm:text-4xl">
-              {progress}
+              {Math.round(display)}
               <span className="text-base text-gold/70 sm:text-lg">%</span>
             </span>
             <span className="mt-1.5 font-mono text-[9px] tabular-nums tracking-wider text-ivory-dim/60 sm:text-[10px]">

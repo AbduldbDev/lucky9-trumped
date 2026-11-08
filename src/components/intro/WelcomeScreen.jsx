@@ -1,16 +1,42 @@
 import { useEffect, useRef, useState } from "react";
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
 import Backdrop from "./Backdrop.jsx";
+import { preloadAllAssets, getCacheStats } from "../../utils/assetCache.js";
 
 const FADE_MS = 350;
 
 export default function WelcomeScreen({ profile, isFirstVisit, onEnter }) {
   const [entered, setEntered] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [assetsReady, setAssetsReady] = useState(false);
+  const [loadingAssets, setLoadingAssets] = useState(false);
   const timer = useRef(null);
 
   useEffect(() => {
     const t = setTimeout(() => setEntered(true), 50);
+
+    // Check if assets are already loaded
+    const stats = getCacheStats();
+    if (stats.isFullyLoaded) {
+      setAssetsReady(true);
+    } else {
+      // Load assets in background if not already loaded
+      setLoadingAssets(true);
+      preloadAllAssets(() => {
+        // Silent loading, no progress needed
+      })
+        .then(() => {
+          setAssetsReady(true);
+          setLoadingAssets(false);
+        })
+        .catch((err) => {
+          console.error("[WelcomeScreen] Asset loading failed:", err);
+          // Allow entry anyway
+          setAssetsReady(true);
+          setLoadingAssets(false);
+        });
+    }
+
     return () => {
       clearTimeout(t);
       clearTimeout(timer.current);
@@ -18,7 +44,7 @@ export default function WelcomeScreen({ profile, isFirstVisit, onEnter }) {
   }, []);
 
   const enter = () => {
-    if (leaving) return;
+    if (leaving || !assetsReady) return;
     setLeaving(true);
     timer.current = setTimeout(onEnter, FADE_MS);
   };
@@ -119,12 +145,28 @@ export default function WelcomeScreen({ profile, isFirstVisit, onEnter }) {
 
             <button
               onClick={enter}
-              className="group relative w-full overflow-hidden rounded-2xl border border-gold/50 bg-gradient-to-b from-gold-faint/70 to-gold-faint/30 py-3 text-sm font-bold tracking-wide text-gold-light shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] transition-all hover:border-gold/80 hover:shadow-[0_8px_20px_-10px_rgba(212,175,55,0.3)] active:scale-[0.98] sm:py-4 sm:text-base"
+              disabled={!assetsReady}
+              className="group relative w-full overflow-hidden rounded-2xl border border-gold/50 bg-gradient-to-b from-gold-faint/70 to-gold-faint/30 py-3 text-sm font-bold tracking-wide text-gold-light shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] transition-all hover:border-gold/80 hover:shadow-[0_8px_20px_-10px_rgba(212,175,55,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-gold/50 disabled:hover:shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] sm:py-4 sm:text-base"
             >
               <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              Enter the Casino
-              <i className="fa-solid fa-arrow-right-long ml-2.5 text-xs" />
+              {loadingAssets ? (
+                <>
+                  <i className="fa-solid fa-spinner fa-spin mr-2.5 text-xs" />
+                  Loading Assets...
+                </>
+              ) : (
+                <>
+                  Enter the Casino
+                  <i className="fa-solid fa-arrow-right-long ml-2.5 text-xs" />
+                </>
+              )}
             </button>
+
+            {loadingAssets && (
+              <p className="text-center text-[10px] text-white/40 animate-pulse">
+                Preparing card skins and sounds...
+              </p>
+            )}
           </div>
         </section>
       </div>

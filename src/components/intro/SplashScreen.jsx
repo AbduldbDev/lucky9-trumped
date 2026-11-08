@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Backdrop from "./Backdrop.jsx";
+import { preloadAllAssets } from "../../utils/assetCache.js";
 
-const SHOW_MS = 1900;
+const MIN_SHOW_MS = 2000; // Minimum time to show splash
 const FADE_MS = 400;
 
 const SUITS = [
@@ -14,16 +15,68 @@ const SUITS = [
 export default function SplashScreen({ onDone }) {
   const [entered, setEntered] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [loadingText, setLoadingText] = useState("Shuffling the deck");
 
   const doneRef = useRef(onDone);
+  const startTime = useRef(Date.now());
   doneRef.current = onDone;
 
   useEffect(() => {
-    const t1 = setTimeout(() => setEntered(true), 50);
-    const t2 = setTimeout(() => setLeaving(true), SHOW_MS);
-    const t3 = setTimeout(() => doneRef.current?.(), SHOW_MS + FADE_MS);
+    let mounted = true;
 
-    return () => [t1, t2, t3].forEach(clearTimeout);
+    const loadAssets = async () => {
+      // Show entered state
+      setTimeout(() => {
+        if (mounted) setEntered(true);
+      }, 50);
+
+      try {
+        await preloadAllAssets((loaded, total, currentAsset, phase) => {
+          if (!mounted) return;
+
+          const percent = Math.round((loaded / total) * 100);
+          setProgress(percent);
+
+          // Update loading text based on phase
+          if (phase === "images") {
+            setLoadingText("Loading card skins");
+          } else if (phase === "sounds") {
+            setLoadingText("Loading sound effects");
+          } else if (phase === "complete") {
+            setLoadingText("Ready to play");
+          }
+        });
+
+        // Ensure minimum show time
+        const elapsed = Date.now() - startTime.current;
+        const remaining = Math.max(0, MIN_SHOW_MS - elapsed);
+
+        setTimeout(() => {
+          if (!mounted) return;
+          setLeaving(true);
+          setTimeout(() => {
+            if (mounted) doneRef.current?.();
+          }, FADE_MS);
+        }, remaining);
+      } catch (error) {
+        console.error("[SplashScreen] Asset loading failed:", error);
+        // Continue anyway after a short delay
+        setTimeout(() => {
+          if (!mounted) return;
+          setLeaving(true);
+          setTimeout(() => {
+            if (mounted) doneRef.current?.();
+          }, FADE_MS);
+        }, 1000);
+      }
+    };
+
+    loadAssets();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
@@ -70,20 +123,22 @@ export default function SplashScreen({ onDone }) {
           </div>
 
           {/* Progress bar */}
-          <div className="mt-8 h-0.5 w-40 overflow-hidden rounded-full bg-white/10 sm:mt-10 sm:w-56">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-gold/40 via-gold-light to-gold/40 ease-in-out"
-              style={{
-                width: entered ? "100%" : "0%",
-                transitionProperty: "width",
-                transitionDuration: `${SHOW_MS - 150}ms`,
-              }}
-            />
+          <div className="mt-8 w-56 space-y-2 sm:mt-10 sm:w-64">
+            <div className="h-1 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-gold/40 via-gold-light to-gold/40 transition-all duration-300 ease-out"
+                style={{
+                  width: `${progress}%`,
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[10px]">
+              <p className="uppercase tracking-[0.3em] text-white/25">
+                {loadingText}
+              </p>
+              <p className="font-mono text-gold/50">{progress}%</p>
+            </div>
           </div>
-
-          <p className="mt-3 text-[9px] uppercase tracking-[0.3em] text-white/25 sm:text-[10px]">
-            Shuffling the deck
-          </p>
         </div>
 
         {/* Developer Credit */}
