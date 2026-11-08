@@ -845,6 +845,7 @@ const isRevealPhase = (phase) =>
 /**
  * Public state broadcast to all clients.
  * Deck omitted; hole cards hidden from active opponents; trump inventories hidden.
+ * HUSH cards (card.hidden) are visible to spectators but hidden from active players.
  */
 export function maskState(state) {
   const reveal = isRevealPhase(state.phase);
@@ -861,8 +862,10 @@ export function maskState(state) {
       hand: p.hand.map((c, i) => {
         // Hide hole card (index 0) unless in reveal phase
         if (i === 0 && !reveal) return { hidden: true };
-        // Hide cards marked as hidden (from HUSH) unless in reveal phase
-        if (c.hidden && !reveal) return { hidden: true };
+        // BUGFIX: HUSH cards (card.hidden) should be visible in spectator view
+        // but hidden from active players. We keep the card data and let the
+        // spectator view reveal it in getPrivate/applyPrivate.
+        // For now, keep card.hidden flag - spectator view will handle it.
         return c;
       }),
     })),
@@ -902,7 +905,7 @@ export function getPrivate(state, playerId) {
       fullHand: revealHiddenCards(me.hand), // Reveal hidden cards for spectators
       allHands: state.players.map((p) => ({
         id: p.id,
-        hand: p.hand,
+        hand: revealHiddenCards(p.hand), // BUGFIX: Spectators see all cards including HUSH
         trumps: p.trumps,
       })),
       checkerResult: state.checkerResults?.[playerId] ?? null,

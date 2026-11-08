@@ -23,6 +23,7 @@ export default function OvalTable({
   onTarget,
   secondsLeft,
   displayedTrumps = [],
+  aimCfg = null,
 }) {
   const [areaRef, { width, height }] = useElementSize();
   const { scale, cy, seats } = computeSeatLayout(
@@ -125,7 +126,16 @@ export default function OvalTable({
                 player={opp}
                 isTurn={turnPlayer?.id === opp.id}
                 revealed={revealed}
-                targetable={targeting && !opp.isEliminated && !opp.isSpectator}
+                targetable={
+                  targeting &&
+                  !opp.isEliminated &&
+                  !opp.isSpectator &&
+                  // BUGFIX: Can't target players with full hands for cards that add cards
+                  !(
+                    aimCfg?.id === "TARGET" && // FORCE_DRAW
+                    opp.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND
+                  )
+                }
                 onTarget={onTarget}
               />
             </div>

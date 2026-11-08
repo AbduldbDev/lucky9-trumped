@@ -39,11 +39,18 @@ export const EFFECT_EXECUTORS = {
   CANCEL_LAST_TRUMP({ draft, actor }) {
     // Find the most recent trump log entry placed by someone else this round
     // We track a trumpLog array on the state for this purpose.
-    if (!draft.trumpLog || draft.trumpLog.length === 0)
-      throw new Error("No unresolved Trump Card to cancel.");
+
+    // BUGFIX: Return message instead of throwing error
+    if (!draft.trumpLog || draft.trumpLog.length === 0) {
+      return `${actor.name} tried to use Shatter, but there are no trump cards to cancel.`;
+    }
+
     const last = draft.trumpLog[draft.trumpLog.length - 1];
-    if (last.playerId === actor.id)
-      throw new Error("You can only cancel another player's Trump Card.");
+
+    if (last.playerId === actor.id) {
+      return `${actor.name} tried to use Shatter, but can only cancel another player's trump card.`;
+    }
+
     draft.trumpLog.pop();
     // Reverse the effect that was logged
     if (last.betDelta !== undefined) {
@@ -73,8 +80,11 @@ export const EFFECT_EXECUTORS = {
 
   // ── RETURN ───────────────────────────────────────────────────────────────
   REMOVE_SELF_LAST_CARD({ draft, actor }) {
-    if (actor.hand.length < 2)
-      throw new Error("No drawn card to return (hole card stays).");
+    // BUGFIX: Return message instead of throwing error
+    if (actor.hand.length < 2) {
+      return `${actor.name} tried to return a card, but only has their hole card remaining.`;
+    }
+
     const card = actor.hand.pop();
     returnToDeck(draft, card);
     return `${actor.name} returned their last drawn card to the deck.`;
@@ -87,8 +97,11 @@ export const EFFECT_EXECUTORS = {
       return `${actor.name} tried to discard ${target.name}'s card, but ${target.name} countered with SHATTER!`;
     }
 
-    if (target.hand.length < 2)
-      throw new Error("Target has no drawn card to discard (only hole card).");
+    // BUGFIX: Return message instead of throwing error
+    if (target.hand.length < 2) {
+      return `${actor.name} tried to discard ${target.name}'s card, but ${target.name} only has their hole card remaining.`;
+    }
+
     const card = target.hand.pop();
     returnToDeck(draft, card);
     return `${actor.name} discarded ${target.name}'s last drawn card.`;
@@ -96,8 +109,11 @@ export const EFFECT_EXECUTORS = {
 
   // ── REFRESH ──────────────────────────────────────────────────────────────
   REFRESH_HAND({ draft, actor }) {
-    if (draft.deck.length < 2)
-      throw new Error("Not enough cards in deck to refresh.");
+    // BUGFIX: Check deck availability
+    if (draft.deck.length < 2) {
+      return `${actor.name} tried to refresh their hand, but not enough cards remain in the deck.`;
+    }
+
     // Return all current cards to deck
     for (const c of actor.hand) returnToDeck(draft, c);
     actor.hand = [];
@@ -115,8 +131,15 @@ export const EFFECT_EXECUTORS = {
       return `${actor.name} tried to exchange cards with ${target.name}, but ${target.name} countered with SHATTER!`;
     }
 
-    if (actor.hand.length < 1) throw new Error("You have no card to swap.");
-    if (target.hand.length < 1) throw new Error("Target has no card to swap.");
+    // BUGFIX: Return message instead of throwing error
+    if (actor.hand.length < 1) {
+      return `${actor.name} tried to exchange cards, but has no cards to swap.`;
+    }
+
+    if (target.hand.length < 1) {
+      return `${actor.name} tried to exchange cards with ${target.name}, but ${target.name} has no cards to swap.`;
+    }
+
     const myLast = actor.hand.pop();
     const theirLast = target.hand.pop();
     actor.hand.push(theirLast);
@@ -134,11 +157,15 @@ export const EFFECT_EXECUTORS = {
       return `${actor.name} tried to force ${target.name} to draw, but ${target.name} countered with SHATTER!`;
     }
 
-    if (target.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
-      throw new Error(
-        `${target.name}'s hand is already full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`,
-      );
-    if (!draft.deck.length) throw new Error("Deck is empty.");
+    // BUGFIX: Don't crash if target has max cards - just fail gracefully
+    if (target.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND) {
+      return `${actor.name} tried to force ${target.name} to draw, but ${target.name}'s hand is already full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards).`;
+    }
+
+    if (!draft.deck.length) {
+      return `${actor.name} tried to force ${target.name} to draw, but the deck is empty.`;
+    }
+
     target.hand.push(draft.deck.pop());
     // Check Lucky 9 for target after forced draw
     checkLucky9(draft, target);
@@ -147,14 +174,20 @@ export const EFFECT_EXECUTORS = {
 
   // ── SELECT ───────────────────────────────────────────────────────────────
   DRAW_RANK({ draft, actor, ctx }) {
-    if (actor.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
-      throw new Error(
-        `Your hand is full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`,
-      );
-    if (!SUMMONABLE_RANKS.includes(ctx?.rank))
-      throw new Error("Choose a rank from Ace to 10.");
+    // BUGFIX: Return message instead of throwing error
+    if (actor.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND) {
+      return `${actor.name} tried to select a card, but their hand is already full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards).`;
+    }
+
+    if (!SUMMONABLE_RANKS.includes(ctx?.rank)) {
+      return `${actor.name} tried to select an invalid rank.`;
+    }
+
     const idx = draft.deck.findIndex((c) => c.rank === ctx.rank);
-    if (idx === -1) throw new Error(`No ${ctx.rank} remaining in the deck.`);
+    if (idx === -1) {
+      return `${actor.name} tried to select a ${ctx.rank}, but none remain in the deck.`;
+    }
+
     actor.hand.push(draft.deck.splice(idx, 1)[0]);
     // Check Lucky 9 after drawing selected card
     checkLucky9(draft, actor);
@@ -168,7 +201,11 @@ export const EFFECT_EXECUTORS = {
       return `${actor.name} tried to disable ${target.name}, but ${target.name} countered with SHATTER!`;
     }
 
-    if (target.isEliminated) throw new Error("Target is already eliminated.");
+    // BUGFIX: Return message instead of throwing error
+    if (target.isEliminated) {
+      return `${actor.name} tried to disable ${target.name}, but ${target.name} is already eliminated.`;
+    }
+
     target.disabled = true;
     target.stood = true; // treated as stood so advanceTurn skips them
     return `${actor.name} disabled ${target.name} for the rest of this round.`;
@@ -176,8 +213,11 @@ export const EFFECT_EXECUTORS = {
 
   // ── CHECKER ──────────────────────────────────────────────────────────────
   INSPECT_DECK({ draft, actor, ctx }) {
-    if (!SUMMONABLE_RANKS.includes(ctx?.rank))
-      throw new Error("Choose a rank from Ace to 10.");
+    // BUGFIX: Return message instead of throwing error
+    if (!SUMMONABLE_RANKS.includes(ctx?.rank)) {
+      return `${actor.name} tried to check the deck for an invalid rank.`;
+    }
+
     const count = draft.deck.filter((c) => c.rank === ctx.rank).length;
     // Store the result on a per-player checker field visible only to actor
     if (!draft.checkerResults) draft.checkerResults = {};
@@ -188,6 +228,7 @@ export const EFFECT_EXECUTORS = {
   // ── FRIENDSHIP CARD ──────────────────────────────────────────────────────
   MASS_DRAW_ALL({ draft, actor, ctx }) {
     let drew = 0;
+    let skipped = 0;
     const countered = ctx?.countered || [];
 
     for (const p of draft.players) {
@@ -199,7 +240,13 @@ export const EFFECT_EXECUTORS = {
         continue;
       }
 
-      if (p.hand.length < GAME_CONFIG.MAX_CARDS_IN_HAND && draft.deck.length) {
+      // BUGFIX: Check for full hand before attempting to draw
+      if (p.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND) {
+        skipped++;
+        continue;
+      }
+
+      if (draft.deck.length > 0) {
         p.hand.push(draft.deck.pop());
         // Check Lucky 9 for each player who drew
         checkLucky9(draft, p);
@@ -212,24 +259,34 @@ export const EFFECT_EXECUTORS = {
     if (counteredCount > 0) {
       msg += ` ${counteredCount} player(s) countered with SHATTER.`;
     }
+    if (skipped > 0) {
+      msg += ` ${skipped} player(s) had full hands.`;
+    }
     return msg;
   },
 
   // ── ANGEL CARD ───────────────────────────────────────────────────────────
   DEATH_PROTECTION({ actor }) {
-    if (actor.angelProtected)
-      throw new Error("Angel Card protection is already active.");
+    // BUGFIX: Return message instead of throwing error
+    if (actor.angelProtected) {
+      return `${actor.name} tried to activate Angel Card, but protection is already active.`;
+    }
+
     actor.angelProtected = true;
     return `${actor.name} activated Angel Card — protected from death by life loss!`;
   },
 
   // ── HUSH ─────────────────────────────────────────────────────────────────
   DRAW_HIDDEN({ draft, actor }) {
-    if (actor.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
-      throw new Error(
-        `Your hand is full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards max).`,
-      );
-    if (!draft.deck.length) throw new Error("Deck is empty.");
+    // BUGFIX: Return message instead of throwing error
+    if (actor.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND) {
+      return `${actor.name} tried to draw a hidden card, but their hand is already full (${GAME_CONFIG.MAX_CARDS_IN_HAND} cards).`;
+    }
+
+    if (!draft.deck.length) {
+      return `${actor.name} tried to draw a hidden card, but the deck is empty.`;
+    }
+
     const card = draft.deck.pop();
     // Mark the card as hidden so it won't be revealed to other players
     card.hidden = true;
@@ -242,7 +299,11 @@ export const EFFECT_EXECUTORS = {
   // ── FORTUNE TELLER ───────────────────────────────────────────────────────
   PEEK_DECK({ draft, actor }) {
     const peekCount = Math.min(3, draft.deck.length);
-    if (peekCount === 0) throw new Error("Deck is empty.");
+
+    // BUGFIX: Return message instead of throwing error
+    if (peekCount === 0) {
+      return `${actor.name} tried to peek at the deck, but it is empty.`;
+    }
 
     // Get the next cards that would be drawn (last cards in deck array)
     const nextCards = draft.deck.slice(-peekCount).reverse();

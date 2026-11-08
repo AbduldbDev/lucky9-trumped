@@ -227,6 +227,18 @@ export default function Table({ game, onLeave }) {
 
   const onTarget = (p) => {
     if (!targeting || p.isEliminated || p.isSpectator) return;
+
+    // BUGFIX: Prevent targeting players with full hands for cards that would add cards
+    const MAX_CARDS = 5; // GAME_CONFIG.MAX_CARDS_IN_HAND
+
+    // List of trump cards that add cards to target's hand
+    const cardsAddingToTarget = ["TARGET"]; // FORCE_DRAW
+
+    if (cardsAddingToTarget.includes(aiming) && p.hand.length >= MAX_CARDS) {
+      // Player has full hand, can't target them
+      return;
+    }
+
     actions.playTrump(aiming, { targetId: p.id });
     setAiming(null);
   };
@@ -278,6 +290,7 @@ export default function Table({ game, onLeave }) {
         onTarget={onTarget}
         secondsLeft={secondsLeft}
         displayedTrumps={displayedTrumps}
+        aimCfg={aimCfg}
       />
 
       <BottomPanel
