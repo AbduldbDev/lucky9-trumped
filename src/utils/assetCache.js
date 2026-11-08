@@ -28,7 +28,7 @@ export function preloadImage(url, timeout = 8000) {
 
   return new Promise((resolve, reject) => {
     const img = new Image();
-    
+
     const timeoutId = setTimeout(() => {
       img.src = ""; // Cancel loading
       reject(new Error(`Image load timeout: ${url}`));
@@ -63,7 +63,7 @@ export function preloadAudio(url, timeout = 5000) {
 
   return new Promise((resolve) => {
     const audio = new Audio();
-    
+
     const timeoutId = setTimeout(() => {
       // Audio is optional, resolve anyway
       resolve(null);
@@ -91,7 +91,7 @@ export function preloadAudio(url, timeout = 5000) {
  */
 export function getAllCardSkinUrls() {
   const urls = [];
-  
+
   CARD_SKINS_SHOP.forEach((skin) => {
     if (skin.backSvg) {
       urls.push(skin.backSvg);
@@ -138,7 +138,7 @@ export async function preloadAllCardSkins(onProgress) {
 
   for (let i = 0; i < urls.length; i++) {
     const url = urls[i];
-    
+
     if (onProgress) {
       onProgress(i, urls.length, url);
     }
@@ -178,7 +178,7 @@ export async function preloadEssentialSounds(onProgress) {
 
   for (let i = 0; i < urls.length; i++) {
     const url = urls[i];
-    
+
     if (onProgress) {
       onProgress(i, urls.length, url);
     }
@@ -209,12 +209,21 @@ export async function preloadAllAssets(onProgress) {
   if (assetCache.loaded) {
     console.log("[AssetCache] Assets already loaded from cache");
     if (onProgress) {
-      const total = getAllCardSkinUrls().length + getEssentialSoundUrls().length;
+      const total =
+        getAllCardSkinUrls().length + getEssentialSoundUrls().length;
       onProgress(total, total, null, "complete");
     }
     return {
-      images: { success: assetCache.images.size, failed: 0, total: assetCache.images.size },
-      sounds: { success: assetCache.audio.size, failed: 0, total: assetCache.audio.size },
+      images: {
+        success: assetCache.images.size,
+        failed: 0,
+        total: assetCache.images.size,
+      },
+      sounds: {
+        success: assetCache.audio.size,
+        failed: 0,
+        total: assetCache.audio.size,
+      },
     };
   }
 
@@ -249,11 +258,6 @@ export async function preloadAllAssets(onProgress) {
 
   assetCache.loaded = true;
   assetCache.loading = false;
-
-  console.log("[AssetCache] All assets loaded:", {
-    images: imageResults,
-    sounds: soundResults,
-  });
 
   if (onProgress) {
     onProgress(totalAssets, totalAssets, null, "complete");

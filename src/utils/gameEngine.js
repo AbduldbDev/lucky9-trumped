@@ -431,7 +431,10 @@ function checkMatchOver(d) {
 export function checkLucky9(d, player) {
   if (!GAME_CONFIG.TRUMP_CARD_ON_TOTAL_NINE) return;
   if (player.lucky9Awarded) return;
-  if (handScore(player.hand) === 9) {
+
+  const score = handScore(player.hand);
+
+  if (score === 9) {
     player.lucky9Awarded = true;
     grantTrump(player);
     pushLog(d, `⭐ ${player.name} hit 9! Bonus Trump Card awarded.`);
