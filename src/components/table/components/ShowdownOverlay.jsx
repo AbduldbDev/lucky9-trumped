@@ -4,68 +4,25 @@ import { useAudio } from "../../../contexts/AudioContext.jsx";
 /** Full-screen 3-2-1 overlay shown while all players have stood. */
 export default function ShowdownOverlay({ countdown }) {
   const audio = useAudio();
-  const playedCountdownRef = useRef(new Set());
-  const lastCountdownRef = useRef(null);
-  const isInitializedRef = useRef(false);
   const audioRef = useRef(audio);
+  const lastPlayedRef = useRef(null);
 
-  // Keep audio ref updated without triggering re-renders
+  // Always call the latest audio fns without making them effect deps
   useEffect(() => {
     audioRef.current = audio;
   }, [audio]);
 
-  // Reset on mount and when countdown resets to 3
+  // Play exactly once per distinct countdown value.
+  // Refs survive StrictMode's double-invoke, so no double play,
+  // and no timeout means no cancelled ticks.
   useEffect(() => {
-    if (!isInitializedRef.current) {
-      isInitializedRef.current = true;
-      playedCountdownRef.current.clear();
-      lastCountdownRef.current = null;
-    }
+    if (countdown == null || countdown < 0 || countdown > 3) return;
+    if (lastPlayedRef.current === countdown) return;
+    lastPlayedRef.current = countdown;
 
-    if (countdown === 3 && lastCountdownRef.current !== 3) {
-      playedCountdownRef.current.clear();
-    }
-
-    lastCountdownRef.current = countdown;
+    if (countdown > 0) audioRef.current.playCountdownTick();
+    else audioRef.current.playCountdownGo();
   }, [countdown]);
-
-  // Play audio only when countdown changes to a new valid value
-  useEffect(() => {
-    // Skip if already played or invalid countdown
-    if (
-      playedCountdownRef.current.has(countdown) ||
-      countdown > 3 ||
-      countdown < 0
-    ) {
-      return;
-    }
-
-    // Use a larger delay for countdown to prevent double-triggering
-    // This accounts for rapid state updates and fallback audio issues
-    const timeoutId = setTimeout(() => {
-      // Double-check we haven't played this yet
-      if (!playedCountdownRef.current.has(countdown)) {
-        playedCountdownRef.current.add(countdown);
-
-        if (countdown > 0 && countdown <= 3) {
-          audioRef.current.playCountdownTick();
-        } else if (countdown === 0) {
-          audioRef.current.playCountdownGo();
-        }
-      }
-    }, 150); // Increased from 50ms to 150ms to prevent doubles
-
-    return () => clearTimeout(timeoutId);
-  }, [countdown]); // Removed 'audio' dependency to prevent double-triggering
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isInitializedRef.current = false;
-      playedCountdownRef.current.clear();
-      lastCountdownRef.current = null;
-    };
-  }, []);
 
   return (
     <div
