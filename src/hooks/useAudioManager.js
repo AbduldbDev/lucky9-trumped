@@ -28,7 +28,7 @@ export function useAudioManager() {
     const audioFallbacks = {
       showdown_reveal: "nine_hit",
       round_end: "round_start",
-      countdown_go: "countdown_tick",
+      countdown_go: "countdown_go",
       trump_play: "card_draw",
       trump_rare: "card_draw",
       trump_legendary: "card_draw",
@@ -88,10 +88,12 @@ export function useAudioManager() {
     (key, options = {}) => {
       if (!sfxEnabled || !key) return;
 
-      // Debounce: prevent same sound from playing within 100ms
+      // Debounce: prevent same sound from playing within specified time
+      // Countdown sounds get longer debounce to prevent doubles
+      const debounceTime = key.includes("countdown") ? 200 : 100;
       const now = Date.now();
       const lastPlay = lastPlayTimes.current.get(key) || 0;
-      if (now - lastPlay < 100) {
+      if (now - lastPlay < debounceTime) {
         return;
       }
       lastPlayTimes.current.set(key, now);

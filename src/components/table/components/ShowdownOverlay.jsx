@@ -7,6 +7,12 @@ export default function ShowdownOverlay({ countdown }) {
   const playedCountdownRef = useRef(new Set());
   const lastCountdownRef = useRef(null);
   const isInitializedRef = useRef(false);
+  const audioRef = useRef(audio);
+
+  // Keep audio ref updated without triggering re-renders
+  useEffect(() => {
+    audioRef.current = audio;
+  }, [audio]);
 
   // Reset on mount and when countdown resets to 3
   useEffect(() => {
@@ -34,22 +40,23 @@ export default function ShowdownOverlay({ countdown }) {
       return;
     }
 
-    // Use a small delay to ensure we don't double-trigger on rapid updates
+    // Use a larger delay for countdown to prevent double-triggering
+    // This accounts for rapid state updates and fallback audio issues
     const timeoutId = setTimeout(() => {
       // Double-check we haven't played this yet
       if (!playedCountdownRef.current.has(countdown)) {
         playedCountdownRef.current.add(countdown);
 
         if (countdown > 0 && countdown <= 3) {
-          audio.playCountdownTick();
+          audioRef.current.playCountdownTick();
         } else if (countdown === 0) {
-          audio.playCountdownGo();
+          audioRef.current.playCountdownGo();
         }
       }
-    }, 50);
+    }, 150); // Increased from 50ms to 150ms to prevent doubles
 
     return () => clearTimeout(timeoutId);
-  }, [countdown, audio]);
+  }, [countdown]); // Removed 'audio' dependency to prevent double-triggering
 
   // Cleanup on unmount
   useEffect(() => {
