@@ -64,35 +64,44 @@ CREATE TABLE IF NOT EXISTS public.card_skins (
 );
 
 -- Insert default card skins
+
+-- DELETE FROM public.card_skins;
 INSERT INTO public.card_skins (id, name, rarity, price) VALUES
     -- COMMON
-    ('classic_red', 'Classic Velvet Red', 'COMMON', 0),
+    ('classic_red', 'Default Card', 'COMMON', 0),
+    ('common_red', 'Default Red', 'COMMON', 100),
+    ('common_purple', 'Default Purple', 'COMMON', 100),
+    ('common_yellow', 'Default Yellow', 'COMMON', 100),
+    ('common_pink', 'Default Pink', 'COMMON', 100),
+    ('common_blue', 'Default Blue', 'COMMON', 100),
 
     -- UNCOMMON
-    ('sakura_bliss', 'Sakura Blossom', 'UNCOMMON', 500),
+    ('the_devil', 'The Devil', 'UNCOMMON', 300),
+    ('the_castle', 'The Castle', 'UNCOMMON', 300),
 
     -- RARE
-    ('cyberpunk_neon', 'Cyberpunk Neon', 'RARE', 1000),
-    ('royal_purple', 'Royal Amethyst', 'RARE', 1000),
-    ('emerald_luxe', 'Emerald Dynasty', 'RARE', 1000),
+    ('silent_origin', 'Silent Origin', 'RARE', 1000),
+    ('azure_horizon', 'Azure Horizon', 'RARE', 1000),
 
     -- EPIC
-    ('frozen_dominion', 'Frozen Dominion', 'EPIC', 2000),
-    ('crimson_reaper', 'Crimson Reaper', 'EPIC', 2000),
+    ('celestial_reverie', 'Celestial Reverie', 'EPIC', 2000),
+    ('velvet_moon', 'Eclipse of the Velvet Moon', 'EPIC', 2000),
+    ('heavenly_ascendance', 'Heavenly Ascendance', 'EPIC', 2000),
+    ('petal_whispers', 'Petal Whispers', 'EPIC', 2000),
 
     -- LEGENDARY
-    ('dragon_gold', 'Imperial Dragon Gold', 'LEGENDARY', 3500),
-    ('celestial_diamond', 'Celestial Diamond', 'LEGENDARY', 3500),
-    ('phoenix_ascendant', 'Phoenix Ascendant', 'LEGENDARY', 3500),
-
-    -- MYTHIC
-    ('midnight_obsidian', 'Midnight Obsidian', 'MYTHIC', 6000),
-    ('void_emperor', 'Void Emperor', 'MYTHIC', 6000)
+    ('abyssal_sovereign', 'Abyssal Sovereign', 'LEGENDARY', 3500),
+    ('crimson_requiem', 'Crimson Requiem', 'LEGENDARY', 3500),
+    ('void_empero', 'Void Emperor', 'LEGENDARY', 3500),
+    ('obsidian_sovereign', 'Obsidian Sovereign', 'LEGENDARY', 3500),
+    ('eternal_void', 'Eternal Void', 'LEGENDARY', 3500),
+    ('celestial_ascension', 'Celestial Ascension', 'LEGENDARY', 3500)
 
 ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     rarity = EXCLUDED.rarity,
     price = EXCLUDED.price;
+
 
 
 -- Game rooms table

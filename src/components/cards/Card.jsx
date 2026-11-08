@@ -1,5 +1,6 @@
 import { getSkin } from "../../config/cardSkins.config.js";
 import { isRed } from "../../utils/deckEngine.js";
+import { useState } from "react";
 
 const SIZES = {
   xs: {
@@ -49,11 +50,29 @@ export default function Card({
   const skin = getSkin(skinId);
   const s = SIZES[size] ?? SIZES.md;
   const down = faceDown || !card || card.hidden;
+  const [imgError, setImgError] = useState(false);
 
   const base = `playing-card relative shrink-0 select-none overflow-hidden
     ${s.w} ${s.h} ${dim ? "opacity-40" : ""}`;
 
+  // Render card back
   if (down) {
+    // Try to use custom SVG back if available and no error
+    if (skin.backSvg && !imgError) {
+      return (
+        <div className={`${base} bg-gray-900 border border-white/10`}>
+          <img
+            src={skin.backSvg}
+            alt="Card back"
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+            draggable={false}
+          />
+        </div>
+      );
+    }
+
+    // Fallback to gradient pattern
     return (
       <div
         className={`${base} bg-gradient-to-br ${skin.previewColor} border border-white/10`}
@@ -81,9 +100,26 @@ export default function Card({
     );
   }
 
+  // Render card face
   const red = isRed(card);
   const color = red ? "text-red-600" : "text-gray-900";
 
+  // Try to use custom SVG front if available and no error
+  if (skin.frontSvg && !imgError) {
+    return (
+      <div className={`${base} bg-white border border-gray-200`}>
+        <img
+          src={skin.frontSvg}
+          alt={`${card.rank}${card.suit}`}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+          draggable={false}
+        />
+      </div>
+    );
+  }
+
+  // Default card face rendering
   return (
     <div className={`${base} bg-white border border-gray-200 ${color}`}>
       {/* Top-left */}

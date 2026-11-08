@@ -13,6 +13,7 @@ import Shop from "./components/shop/Shop.jsx";
 import SplashScreen from "./components/intro/SplashScreen.jsx";
 import WelcomeScreen from "./components/intro/WelcomeScreen.jsx";
 import LobbySkeleton from "./components/intro/LobbySkeleton.jsx";
+import AssetLoader from "./components/intro/AssetLoader.jsx";
 import AuthScreen from "./components/auth/AuthScreen.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import { useAuth, AuthProvider } from "./contexts/AuthContext.jsx";
@@ -32,6 +33,7 @@ import { AudioProvider } from "./contexts/AudioContext.jsx";
 
 /** Mounted only while inside a room so every room gets a fresh game-state hook. */
 function Room({ room, profile, onProfile, onExit }) {
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
   const game = useGameState({
     partyCode: room.partyCode,
     isHost: room.isHost,
@@ -41,6 +43,7 @@ function Room({ room, profile, onProfile, onExit }) {
   const settled = useRef(false);
   const startedAt = useRef(null);
   const startKey = `lucky9.matchStart.${room.partyCode}`;
+  const showLoader = useRef(false);
 
   useEffect(() => {
     const phase = view?.phase;
@@ -90,7 +93,20 @@ function Room({ room, profile, onProfile, onExit }) {
 
   // Reset settled flag on rematch (back to lobby)
   useEffect(() => {
-    if (view?.phase === PHASES.LOBBY) settled.current = false;
+    if (view?.phase === PHASES.LOBBY) {
+      settled.current = false;
+      // Reset asset loader flag when back in lobby
+      showLoader.current = false;
+      setAssetsLoaded(false);
+    }
+  }, [view?.phase]);
+
+  // Trigger asset loading when game starts (phase changes from LOBBY)
+  useEffect(() => {
+    if (view?.phase && view.phase !== PHASES.LOBBY && !showLoader.current) {
+      showLoader.current = true;
+      setAssetsLoaded(false);
+    }
   }, [view?.phase]);
 
   // Handle rematch failure - return all players to lobby
@@ -110,6 +126,7 @@ function Room({ room, profile, onProfile, onExit }) {
     onExit();
   };
 
+  // Show waiting room in lobby phase
   if (!view || view.phase === PHASES.LOBBY) {
     return (
       <WaitingRoom
@@ -125,6 +142,18 @@ function Room({ room, profile, onProfile, onExit }) {
       />
     );
   }
+
+  // Show asset loader when game starts and assets not loaded yet
+  if (!assetsLoaded) {
+    return (
+      <AssetLoader
+        selectedSkinId={profile.equippedSkin}
+        onComplete={() => setAssetsLoaded(true)}
+      />
+    );
+  }
+
+  // Show table when assets are loaded
   return <Table game={game} onLeave={leave} />;
 }
 
