@@ -10,6 +10,7 @@ import Lobby from "./components/lobby/Lobby.jsx";
 import WaitingRoom from "./components/lobby/WaitingRoom.jsx";
 import Table from "./components/table/Table.jsx";
 import Shop from "./components/shop/Shop.jsx";
+import ProfilePage from "./components/profile/ProfilePage.jsx";
 import SplashScreen from "./components/intro/SplashScreen.jsx";
 import WelcomeScreen from "./components/intro/WelcomeScreen.jsx";
 import LobbySkeleton from "./components/intro/LobbySkeleton.jsx";
@@ -28,6 +29,7 @@ import {
   purchaseSkin,
   recordMatchResult,
   refreshProfile,
+  setTableColor,
 } from "./services/statsService.js";
 import { AudioProvider } from "./contexts/AudioContext.jsx";
 
@@ -154,7 +156,13 @@ function Room({ room, profile, onProfile, onExit }) {
   }
 
   // Show table when assets are loaded
-  return <Table game={game} onLeave={leave} />;
+  return (
+    <Table
+      game={game}
+      onLeave={leave}
+      tableColor={profile.tableColor || "blue"}
+    />
+  );
 }
 
 /** Main App component with routing */
@@ -190,6 +198,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <LobbyContainer intro={intro} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfileContainer />
           </ProtectedRoute>
         }
       />
@@ -308,6 +324,35 @@ function LobbyContainer({ intro }) {
           onClose={() => setShopOpen(false)}
         />
       )}
+    </AudioProvider>
+  );
+}
+
+/** Profile container */
+function ProfileContainer() {
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    initProfile()
+      .then(setProfile)
+      .catch((err) => {
+        console.error("[Lucky9] Failed to load profile:", err);
+      });
+  }, []);
+
+  if (!profile) {
+    return <LobbySkeleton />;
+  }
+
+  return (
+    <AudioProvider>
+      <ProfilePage
+        profile={profile}
+        onEquipSkin={async (id) => setProfile(await equipSkin(profile, id))}
+        onSetTableColor={async (color) =>
+          setProfile(await setTableColor(profile, color))
+        }
+      />
     </AudioProvider>
   );
 }

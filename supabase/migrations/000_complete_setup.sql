@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     level           INT         DEFAULT 1,
     current_rank    VARCHAR(30) DEFAULT 'Rookie',
     equipped_skin_id VARCHAR(50) DEFAULT 'default_green',
+    table_color     VARCHAR(20) DEFAULT 'blue' CHECK (table_color IN ('green', 'purple', 'blue', 'red', 'black')),
     created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -29,7 +29,7 @@ import { useTrumpTargeting } from "../../hooks/useTrumpTargeting.js";
 import { useTrumpNotifications } from "../../hooks/useTrumpNotifications.js";
 import { useTableDerived } from "../../hooks/useTableDerived.js";
 
-export default function Table({ game, onLeave }) {
+export default function Table({ game, onLeave, tableColor = "blue" }) {
   const { view, me, isMyTurn, isHost, turnKey, actions } = game;
   const [panelCollapsed, setPanelCollapsed] = useState(false);
 
@@ -269,6 +269,7 @@ export default function Table({ game, onLeave }) {
         zoom={zoom}
         panX={panX}
         panY={panY}
+        tableColor={tableColor}
       />
 
       <BottomPanel

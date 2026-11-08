@@ -27,6 +27,7 @@ export default function OvalTable({
   zoom = 1,
   panX = 0,
   panY = 0,
+  tableColor = "blue", // Player's preferred table color
 }) {
   const [areaRef, { width, height }] = useElementSize();
   const { scale, cy, seats } = computeSeatLayout(
@@ -71,7 +72,7 @@ export default function OvalTable({
             }}
           >
             <div
-              className={`felt-surface felt-${GAME_CONFIG.TABLE_BACKGROUND} table-border w-full h-full`}
+              className={`felt-surface felt-${tableColor} table-border w-full h-full`}
               style={{
                 borderRadius: "50%",
                 // Semi-transparent green felt

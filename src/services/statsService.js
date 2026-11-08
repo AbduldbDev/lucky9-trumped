@@ -55,6 +55,7 @@ async function loadCloud() {
         id: uid,
         username,
         chips: 1000,
+        table_color: "blue", // Set default table color
       });
 
       if (profError && profError.code !== "23505") {
@@ -112,6 +113,7 @@ async function loadCloud() {
       level: prof.level ?? 1,
       currentRank: prof.current_rank ?? "Rookie",
       equippedSkinId: prof.equipped_skin_id,
+      tableColor: prof.table_color ?? "blue",
       owned: (inv ?? []).map((r) => r.item_id),
       stats: st
         ? {
@@ -155,6 +157,7 @@ export async function refreshProfile(currentProfile) {
       level: prof.level ?? 1,
       currentRank: prof.current_rank ?? "Rookie",
       equippedSkinId: prof.equipped_skin_id,
+      tableColor: prof.table_color ?? "blue",
       owned: (inv ?? []).map((r) => r.item_id),
       stats: st
         ? {
@@ -208,6 +211,36 @@ export async function equipSkin(profile, itemId) {
   if (error) throw new Error(error.message);
 
   return { ...profile, equippedSkinId: itemId };
+}
+
+export async function setTableColor(profile, color) {
+  console.log("[statsService] setTableColor called with:", {
+    profileId: profile.id,
+    color,
+    currentTableColor: profile.tableColor,
+  });
+
+  const validColors = ["green", "purple", "blue", "red", "black"];
+  if (!validColors.includes(color)) {
+    console.error("[statsService] Invalid color:", color);
+    throw new Error("Invalid table color.");
+  }
+
+  console.log("[statsService] Updating database...");
+  const { error } = await supabase
+    .from("profiles")
+    .update({ table_color: color })
+    .eq("id", profile.id);
+
+  if (error) {
+    console.error("[statsService] Database error:", error);
+    throw new Error(error.message);
+  }
+
+  console.log("[statsService] Database updated successfully");
+  const updatedProfile = { ...profile, tableColor: color };
+  console.log("[statsService] Returning updated profile:", updatedProfile);
+  return updatedProfile;
 }
 
 /**

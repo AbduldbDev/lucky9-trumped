@@ -7,7 +7,6 @@ import { useAudio } from "../../contexts/AudioContext.jsx";
 import { AUDIO_CONFIG } from "../../config/audio.config.js";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import HowToPlayModal from "./HowToPlayModal.jsx";
-import UserProfile from "../profile/UserProfile.jsx";
 
 export default function Lobby({
   profile,
@@ -23,7 +22,6 @@ export default function Lobby({
   const [mode, setMode] = useState("create"); // 'create' | 'join'
   const [error, setError] = useState("");
   const [showHowToPlay, setShowHowToPlay] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
 
   const submit = async (fn) => {
     setError("");
@@ -62,7 +60,7 @@ export default function Lobby({
 
   const handleOpenProfile = () => {
     audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
-    setShowProfile(true);
+    navigate("/profile");
   };
 
   const winRate = profile.stats.totalMatches
@@ -361,15 +359,6 @@ export default function Lobby({
         isOpen={showHowToPlay}
         onClose={() => setShowHowToPlay(false)}
       />
-
-      {/* User Profile Modal */}
-      {showProfile && (
-        <UserProfile
-          profile={profile}
-          onClose={() => setShowProfile(false)}
-          onEquipSkin={onEquipSkin}
-        />
-      )}
     </div>
   );
 }
