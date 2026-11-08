@@ -61,8 +61,25 @@ export function useGameState({ partyCode, isHost, profile }) {
             updated_at: new Date().toISOString(),
           })
           .then(({ error }) => {
-            if (error)
-              console.warn("[Lucky9] DB persist error:", error.message);
+            if (error) {
+              console.error("[Lucky9] DB persist error:", error.message);
+              // Try again once if it failed
+              supabase
+                .from("game_rooms")
+                .upsert({
+                  party_code: partyCode,
+                  host_id: selfId,
+                  full_state: next,
+                  public_state: masked,
+                  updated_at: new Date().toISOString(),
+                })
+                .catch((retryError) => {
+                  console.error(
+                    "[Lucky9] DB persist retry failed:",
+                    retryError,
+                  );
+                });
+            }
           });
       }
     },
@@ -73,8 +90,33 @@ export function useGameState({ partyCode, isHost, profile }) {
     (action) => {
       const cur = fullRef.current;
       if (!cur) return;
+
+      // Special handling for JOIN: always ensure player gets state
+      if (action.type === "JOIN") {
+        const next = gameReducer(cur, action);
+        const isReconnect = next === cur;
+
+        // Commit for new joins
+        if (!isReconnect) {
+          commit(next);
+        } else {
+          // For reconnects, manually broadcast state to the rejoining player
+          const rt = rtRef.current;
+          if (rt) {
+            const masked = maskState(cur);
+            rt.broadcastState(masked);
+            // Send private data to all players (including the reconnecting one)
+            cur.players.forEach((p) => {
+              rt.sendPrivate(getPrivate(cur, p.id));
+            });
+          }
+        }
+        return;
+      }
+
+      // Normal action handling
       const next = gameReducer(cur, action);
-      if (next !== cur || action.type === "JOIN") commit(next);
+      if (next !== cur) commit(next);
     },
     [commit],
   );
@@ -111,11 +153,28 @@ export function useGameState({ partyCode, isHost, profile }) {
         .select("full_state")
         .eq("party_code", partyCode)
         .maybeSingle()
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn("[Lucky9] Failed to load room state:", error.message);
+            // Create fresh state on error
+            commit(
+              createInitialState({ partyCode, hostPlayer: createPlayer(me) }),
+            );
+            return;
+          }
+
           if (data?.full_state) {
             // Resume existing game
             fullRef.current = data.full_state;
             setView(viewFor(data.full_state, selfId));
+            // Immediately broadcast to any waiting clients
+            if (rt.status === "SUBSCRIBED") {
+              const masked = maskState(data.full_state);
+              rt.broadcastState(masked);
+              data.full_state.players.forEach((p) => {
+                rt.sendPrivate(getPrivate(data.full_state, p.id));
+              });
+            }
           } else {
             // No existing room — create fresh
             commit(
@@ -133,13 +192,36 @@ export function useGameState({ partyCode, isHost, profile }) {
   // ── Host: re-broadcast state once realtime connects (handles refresh) ─────
   // After a page refresh the host loads state from DB, then this effect
   // fires when the realtime channel comes online, pushing state to all guests.
+  // In LOBBY phase, re-broadcast periodically to ensure all guests stay synced.
   useEffect(() => {
-    if (!isHost || !fullRef.current || rt.status !== "SUBSCRIBED") return;
-    const masked = maskState(fullRef.current);
-    rt.broadcastState(masked);
-    fullRef.current.players.forEach((p) => {
-      rt.sendPrivate(getPrivate(fullRef.current, p.id));
-    });
+    if (!isHost || !fullRef.current || rt.status !== "SUBSCRIBED")
+      return undefined;
+
+    // Immediate broadcast when connection is established
+    const broadcast = () => {
+      if (!fullRef.current) return;
+      const masked = maskState(fullRef.current);
+      rt.broadcastState(masked);
+      fullRef.current.players.forEach((p) => {
+        rt.sendPrivate(getPrivate(fullRef.current, p.id));
+      });
+    };
+
+    broadcast();
+
+    // In LOBBY phase, re-broadcast every 3 seconds to handle race conditions
+    // Stop once game starts
+    if (fullRef.current.phase === PHASES.LOBBY) {
+      const intervalId = setInterval(() => {
+        if (fullRef.current?.phase === PHASES.LOBBY) {
+          broadcast();
+        }
+      }, 3000);
+
+      return () => clearInterval(intervalId);
+    }
+
+    return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, rt.status]);
 
@@ -155,7 +237,12 @@ export function useGameState({ partyCode, isHost, profile }) {
         .select("public_state")
         .eq("party_code", partyCode)
         .maybeSingle()
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) {
+            console.warn("[Lucky9] Failed to load room state:", error.message);
+            return;
+          }
+
           if (data?.public_state) {
             publicRef.current = data.public_state;
             setView(
@@ -170,12 +257,27 @@ export function useGameState({ partyCode, isHost, profile }) {
   // ── Guest: announce ourselves once the channel is live ────────────────────
   // JOIN is a no-op if we're already in the game (reconnect), but it triggers
   // the host to re-broadcast state + our private packet.
+  // We retry every 2 seconds until we receive state to handle race conditions.
   useEffect(() => {
-    if (!isHost && rt.status === "SUBSCRIBED") {
+    if (isHost || rt.status !== "SUBSCRIBED") return undefined;
+
+    // Send initial JOIN immediately
+    rt.sendAction({ type: "JOIN", player: me });
+
+    // Set up retry interval in case the host missed it or wasn't ready
+    const retryInterval = setInterval(() => {
+      // Stop retrying once we have a valid view with players
+      if (view?.players?.length > 0) {
+        clearInterval(retryInterval);
+        return;
+      }
+      // Re-send JOIN to ensure host knows about us
       rt.sendAction({ type: "JOIN", player: me });
-    }
+    }, 2000);
+
+    return () => clearInterval(retryInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHost, rt.status]);
+  }, [isHost, rt.status, view?.players?.length]);
 
   // ── Guest: tell the host we're leaving if the tab closes ──────────────────
   useEffect(() => {
