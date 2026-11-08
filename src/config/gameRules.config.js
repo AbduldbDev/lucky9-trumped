@@ -52,11 +52,13 @@ export const GAME_CONFIG = {
 
   // TRUMP CARD SETTINGS
   // No inventory cap — trump cards are unlimited per SRD clarification.
-  STARTING_TRUMP_CARDS: 2, // trump cards granted at match start
-  TRUMP_CARDS_PER_ROUND: 1, // trump card drawn after each round
+  STARTING_TRUMP_CARDS: 5, // trump cards granted at match start
+  TRUMP_CARDS_FOR_WINNER: 2, // trump cards awarded to round winner(s)
+  TRUMP_CARDS_FOR_LOSER: 1, // trump cards awarded to round loser(s)
   TRUMP_CARD_ON_TOTAL_NINE: true, // bonus trump card when hand first hits 9
-  ALLOW_MULTIPLE_TRUMP_CARDS_PER_TURN: true,
-  TRUMP_CARD_DRAW_PRIVATE: true,
+
+  // ALLOW_MULTIPLE_TRUMP_CARDS_PER_TURN: true,
+  // TRUMP_CARD_DRAW_PRIVATE: true,
 
   // TRUMP CARD RARITY DROP PROBABILITIES (total = 100 %)
   TRUMP_RARITY: {

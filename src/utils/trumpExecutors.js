@@ -37,45 +37,59 @@ export const EFFECT_EXECUTORS = {
 
   // ── SHATTER ──────────────────────────────────────────────────────────────
   CANCEL_LAST_TRUMP({ draft, actor }) {
-    // Find the most recent trump log entry placed by someone else this round
+    // Find the most recent BET MODIFIER (BET_UP/DOWN/DOUBLE_*) placed by an opponent
     // We track a trumpLog array on the state for this purpose.
 
-    // BUGFIX: Return message instead of throwing error
     if (!draft.trumpLog || draft.trumpLog.length === 0) {
       return `${actor.name} tried to use Shatter, but there are no trump cards to cancel.`;
     }
 
-    const last = draft.trumpLog[draft.trumpLog.length - 1];
-
-    if (last.playerId === actor.id) {
-      return `${actor.name} tried to use Shatter, but can only cancel another player's trump card.`;
+    // Find the most recent bet modifier from opponents (iterate backwards)
+    let targetLogIndex = -1;
+    for (let i = draft.trumpLog.length - 1; i >= 0; i--) {
+      const entry = draft.trumpLog[i];
+      // Check if it's a bet modifier AND placed by someone else
+      if (entry.betDelta !== undefined && entry.playerId !== actor.id) {
+        targetLogIndex = i;
+        break;
+      }
     }
 
-    draft.trumpLog.pop();
-    // Reverse the effect that was logged
-    if (last.betDelta !== undefined) {
-      draft.betModifiers -= last.betDelta;
+    // No bet modifier found from opponents
+    if (targetLogIndex === -1) {
+      return `${actor.name} used Shatter, but there are no opponent bet modifications to cancel.`;
+    }
+
+    const targetEntry = draft.trumpLog[targetLogIndex];
+
+    // Remove the entry from trumpLog
+    draft.trumpLog.splice(targetLogIndex, 1);
+
+    // Reverse the bet effect
+    if (targetEntry.betDelta !== undefined) {
+      draft.betModifiers -= targetEntry.betDelta;
     }
 
     // Remove from active trump effects if it was persistent
     if (draft.activeTrumpEffects) {
-      const cancelledCardId = last.cardId;
-      const cancelledPlayerId = last.playerId;
-      // Remove the most recent matching active effect from that player
-      const matchingIdx = [...draft.activeTrumpEffects]
-        .reverse()
-        .findIndex(
-          (e) =>
-            e.trumpId === cancelledCardId && e.playerId === cancelledPlayerId,
-        );
+      const cancelledCardId = targetEntry.cardId;
+      const cancelledPlayerId = targetEntry.playerId;
+
+      // Find and remove the specific effect that matches
+      const matchingIdx = draft.activeTrumpEffects.findIndex(
+        (e) =>
+          e.trumpId === cancelledCardId &&
+          e.playerId === cancelledPlayerId &&
+          (e.timestamp === targetEntry.timestamp ||
+            Math.abs(e.timestamp - (targetEntry.timestamp || 0)) < 100), // Match by timestamp
+      );
 
       if (matchingIdx !== -1) {
-        const actualIdx = draft.activeTrumpEffects.length - 1 - matchingIdx;
-        draft.activeTrumpEffects.splice(actualIdx, 1);
+        draft.activeTrumpEffects.splice(matchingIdx, 1);
       }
     }
 
-    return `${actor.name} used Shatter! Cancelled ${last.playerName}'s ${last.cardName}.`;
+    return `${actor.name} used Shatter! Cancelled ${targetEntry.playerName}'s ${targetEntry.cardName}.`;
   },
 
   // ── RETURN ───────────────────────────────────────────────────────────────
@@ -366,6 +380,7 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
     cardId: trumpId,
     cardName: card.name,
     betDelta,
+    timestamp: Date.now(), // Add timestamp for precise tracking
   });
 
   return msg;

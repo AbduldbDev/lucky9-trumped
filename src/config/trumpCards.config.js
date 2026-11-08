@@ -84,7 +84,7 @@ export const TRUMP_CARDS_CATALOG = {
     name: "Shatter",
     rarity: "COMMON",
     description:
-      "Remove the most recently played unresolved Trump Card by another player.",
+      "Destroy a Trump Card on the table or counter an opponent's Trump Card, canceling its effect.",
     targetType: "NONE",
     effect: { type: "CANCEL_LAST_TRUMP" },
   },
@@ -152,12 +152,12 @@ export const TRUMP_CARDS_CATALOG = {
     counterable: true, // Can be blocked by SHATTER
     effect: { type: "SWAP_LAST_CARDS" },
   },
+
   TARGET: {
     id: "TARGET",
     name: "Target",
     rarity: "RARE",
-    description:
-      "Force a selected player to draw 1 additional card (up to 3 max).",
+    description: "Force a selected player to draw 1 additional card.",
     targetType: "SINGLE_PLAYER",
     counterable: true, // Can be blocked by SHATTER
     effect: { type: "FORCE_DRAW" },

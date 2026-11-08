@@ -157,8 +157,6 @@ function startRound(d, firstPlayerOverride = null) {
     if (p.isEliminated || p.isSpectator) continue;
     // Deal 2 cards: [hole card, up card]
     p.hand.push(d.deck.pop(), d.deck.pop());
-    // SRD §3.2: 1 trump card per round (TRUMP_CARDS_PER_ROUND)
-    for (let i = 0; i < GAME_CONFIG.TRUMP_CARDS_PER_ROUND; i++) grantTrump(p);
   }
 
   // Determine first player
@@ -346,6 +344,23 @@ function resolveShowdown(d) {
     draw: isDraw, // Draw when winners are tied
   };
 
+  // Award trump cards after round resolution
+  // Winners get TRUMP_CARDS_FOR_WINNER, losers get TRUMP_CARDS_FOR_LOSER
+  for (const w of winners) {
+    for (let i = 0; i < GAME_CONFIG.TRUMP_CARDS_FOR_WINNER; i++) {
+      grantTrump(w);
+    }
+  }
+
+  for (const l of losers) {
+    // Only award trump cards to losers who are still in the game (not eliminated)
+    if (!l.isEliminated) {
+      for (let i = 0; i < GAME_CONFIG.TRUMP_CARDS_FOR_LOSER; i++) {
+        grantTrump(l);
+      }
+    }
+  }
+
   d.turnIndex = -1;
   d.betModifiers = 0;
   d.phase = PHASES.SHOWDOWN;
@@ -358,15 +373,32 @@ function resolveShowdown(d) {
       d,
       `${wNames} tied on ${best} (${losers.length} loser(s) lost ${bet}♥)`,
     );
+    pushLog(
+      d,
+      `Winners: +${GAME_CONFIG.TRUMP_CARDS_FOR_WINNER} Trump Cards | Losers: +${GAME_CONFIG.TRUMP_CARDS_FOR_LOSER} Trump Card`,
+    );
   } else if (isDraw) {
     // Full draw: everyone tied
     pushLog(d, `Round ${d.round}: Everyone tied on ${best} — no lives lost.`);
+    pushLog(
+      d,
+      `All players: +${GAME_CONFIG.TRUMP_CARDS_FOR_WINNER} Trump Cards`,
+    );
   } else {
     // Clear winner(s)
     pushLog(
       d,
       `${wNames} won round ${d.round} with ${best}. Winners +${bet}♥, losers -${bet}♥.`,
     );
+    const loserNotEliminated = losers.filter((l) => !l.isEliminated);
+    if (loserNotEliminated.length > 0) {
+      pushLog(
+        d,
+        `Winners: +${GAME_CONFIG.TRUMP_CARDS_FOR_WINNER} Trump Cards | Losers: +${GAME_CONFIG.TRUMP_CARDS_FOR_LOSER} Trump Card`,
+      );
+    } else {
+      pushLog(d, `Winners: +${GAME_CONFIG.TRUMP_CARDS_FOR_WINNER} Trump Cards`);
+    }
   }
 
   eliminatedIds.forEach((id) =>
