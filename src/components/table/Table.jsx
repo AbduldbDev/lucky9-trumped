@@ -365,7 +365,7 @@ export default function Table({ game, onLeave }) {
         }}
       />
 
-      {/* Counter prompt (SHUTTER response) */}
+      {/* Counter prompt (SHATTER response) */}
       {view.counterRequest && (
         <CounterPrompt
           counterRequest={view.counterRequest}

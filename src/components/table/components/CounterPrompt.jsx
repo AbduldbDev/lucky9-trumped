@@ -146,12 +146,12 @@ export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
           </div>
         </div>
 
-        {/* Shutter card indicator */}
-        {counterRequest.hasShutter && (
+        {/* Shatter card indicator */}
+        {counterRequest.hasShatter && (
           <div className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/[0.06] px-2.5 py-1 sm:gap-2 sm:px-3.5 sm:py-1.5">
             <i className="fa-solid fa-ban text-[8px] text-gold-light sm:text-[10px]" />
             <span className="text-[8px] font-medium uppercase tracking-[0.15em] text-gold-light sm:text-[10px] sm:tracking-[0.2em]">
-              Shutter blocks this effect
+              Shatter blocks this effect
             </span>
           </div>
         )}
@@ -174,7 +174,7 @@ export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
           </button>
           <button
             onClick={handleAccept}
-            disabled={responded || !counterRequest.hasShutter}
+            disabled={responded || !counterRequest.hasShatter}
             className="flex items-center justify-center gap-1.5 rounded-md border border-gold-light/50
               bg-gradient-to-b from-gold/25 to-gold/10 px-2 py-2
               text-[9px] font-semibold uppercase tracking-[0.2em] text-gold-light
@@ -185,19 +185,19 @@ export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
               active:scale-[0.98]
               sm:gap-2 sm:rounded-lg sm:px-4 sm:py-2.5 sm:text-[11px] sm:tracking-[0.25em]"
             style={{
-              boxShadow: counterRequest.hasShutter
+              boxShadow: counterRequest.hasShatter
                 ? "0 0 24px -8px rgba(217, 194, 138, 0.5)"
                 : "none",
             }}
           >
             <i className="fa-solid fa-shield text-[8px] sm:text-[10px]" />
-            Use Shutter
+            Use Shatter
           </button>
         </div>
 
-        {!counterRequest.hasShutter && (
+        {!counterRequest.hasShatter && (
           <p className="text-center text-[8px] uppercase tracking-[0.15em] text-ivory-dim/40 sm:text-[10px] sm:tracking-[0.2em]">
-            No Shutter card available
+            No Shatter card available
           </p>
         )}
       </div>

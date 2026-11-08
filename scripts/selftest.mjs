@@ -63,7 +63,7 @@ const EXPECTED = [
   "BET_DOWN",
   "DOUBLE_BET_UP",
   "DOUBLE_BET_DOWN",
-  "SHUTTER",
+  "SHATTER",
   "RETURN",
   "DISCARD",
   "REFRESH",

@@ -209,8 +209,8 @@ export function useGameState({ partyCode, isHost, profile }) {
     resolveShowdown: () => dispatch({ type: "RESOLVE_SHOWDOWN" }),
     playTrump: (trumpId, opts = {}) =>
       dispatch({ type: "TRUMP", trumpId, ...opts }),
-    respondCounter: (requestId, useShutter) =>
-      dispatch({ type: "RESPOND_COUNTER", requestId, useShutter }),
+    respondCounter: (requestId, useShatter) =>
+      dispatch({ type: "RESPOND_COUNTER", requestId, useShatter }),
     rematchVote: (accept) => dispatch({ type: "REMATCH_VOTE", accept }),
     reset: () => dispatch({ type: "RESET" }),
     leave: () => dispatch({ type: "LEAVE", id: selfId }),

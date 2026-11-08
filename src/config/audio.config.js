@@ -47,7 +47,7 @@ export const AUDIO_CONFIG = {
     TRUMP_RARE: "trump_rare",
     TRUMP_LEGENDARY: "trump_legendary",
     TRUMP_MYTHIC: "trump_mythic",
-    TRUMP_BLOCKED: "trump_blocked", // shutter / disabled effect
+    TRUMP_BLOCKED: "trump_blocked", // shatter / disabled effect
     TRUMP_DISCARD: "trump_discard",
     ANGEL_ACTIVATE: "angel_activate",
 
@@ -83,5 +83,7 @@ export const AUDIO_CONFIG = {
 
 /** Returns the sound key to play when a trump card of the given rarity is used. */
 export function getTrumpPlaySfx(rarity) {
-  return AUDIO_CONFIG.TRUMP_PLAY_BY_RARITY[rarity] || AUDIO_CONFIG.SFX.TRUMP_PLAY;
+  return (
+    AUDIO_CONFIG.TRUMP_PLAY_BY_RARITY[rarity] || AUDIO_CONFIG.SFX.TRUMP_PLAY
+  );
 }

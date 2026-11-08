@@ -17,7 +17,7 @@
 
 - 🎴 **2-6 Player Multiplayer** — Real-time gameplay with Supabase Realtime
 - 🃏 **17 Unique Trump Cards** — 5 rarity tiers from Common to Mythic
-- 🛡️ **Counter System** — Reactive defense mechanics with SHUTTER card
+- 🛡️ **Counter System** — Reactive defense mechanics with SHATTER card
 - 🎭 **Fog-of-War** — Hidden hole cards and strategic information control
 - 💰 **Economy System** — Coins, shop, and 8 unlockable card skins
 - ⚡ **Host-Authoritative Architecture** — Secure game state management
@@ -198,7 +198,7 @@ Be the last player standing by winning rounds and preserving your lives.
 | ------------------- | ---------------------------------------------------- | ----------- |
 | **Double Bet Up**   | Increase total bet by 2                              | ❌          |
 | **Double Bet Down** | Decrease total bet by 2 (min: 0)                     | ❌          |
-| **Shutter**         | Counter targeted trump effects (10s decision window) | ❌          |
+| **Shatter**         | Counter targeted trump effects (10s decision window) | ❌          |
 | **Return**          | Remove your own last drawn card                      | ❌          |
 | **Discard**         | Remove target player's last drawn card               | ✅          |
 
@@ -236,10 +236,10 @@ Be the last player standing by winning rounds and preserving your lives.
 
 2. **Counter Prompt Appears**
    - Player 3 sees a **10-second timer** popup
-   - Options: **Accept** (use SHUTTER) or **Decline**
+   - Options: **Accept** (use SHATTER) or **Decline**
 
 3. **Resolution**
-   - **Accept:** SHUTTER is consumed, original trump has no effect
+   - **Accept:** SHATTER is consumed, original trump has no effect
    - **Decline:** Original trump effect executes normally
    - **Timeout:** Treated as Decline
 
@@ -367,7 +367,7 @@ Runs **300 simulated matches** with:
 
 - [ ] Create and join rooms
 - [ ] All 17 trump cards function correctly
-- [ ] Counter system (SHUTTER) works with 10s timer
+- [ ] Counter system (SHATTER) works with 10s timer
 - [ ] Lucky 9 bonus triggers properly
 - [ ] Fog-of-war hides appropriate information
 - [ ] Spectator mode after elimination
@@ -404,7 +404,7 @@ MY_CARD: {
   rarity: "RARE",
   description: "Does something awesome",
   targetType: "NONE", // or SINGLE_PLAYER, ALL_PLAYERS, RANK_CHOICE
-  counterable: false, // true if can be blocked by SHUTTER
+  counterable: false, // true if can be blocked by SHATTER
   effect: { type: "MY_EFFECT", ...params }
 }
 ```

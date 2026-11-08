@@ -18,7 +18,7 @@ const RARITY_COLOR = {
 
 /**
  * Displays active persistent trump effects (bet modifiers, angel cards)
- * in the center info cluster. These remain until cancelled by Shutter.
+ * in the center info cluster. These remain until cancelled by Shatter.
  */
 export default function ActiveEffects({ effects = [] }) {
   if (!effects || effects.length === 0) return null;
@@ -57,23 +57,15 @@ function ActiveEffectBadge({ effect }) {
           backgroundColor: `${color}20`,
         }}
       >
-        <i
-          className={`fa-solid ${icon} text-xs`}
-          style={{ color }}
-        />
+        <i className={`fa-solid ${icon} text-xs`} style={{ color }} />
       </div>
 
       {/* Info */}
       <div className="flex flex-col leading-none">
-        <span
-          className="text-[9px] font-bold"
-          style={{ color }}
-        >
+        <span className="text-[9px] font-bold" style={{ color }}>
           {card.name}
         </span>
-        <span className="text-[8px] text-white/50">
-          {effect.playerName}
-        </span>
+        <span className="text-[8px] text-white/50">{effect.playerName}</span>
       </div>
     </div>
   );

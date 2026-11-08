@@ -340,7 +340,7 @@ function TrumpsTab() {
             effect="Draw a card that opponents can't see"
           />
           <TrumpExample
-            name="Shutter"
+            name="Shatter"
             rarity="LEGENDARY"
             effect="Counter another player's trump card"
           />

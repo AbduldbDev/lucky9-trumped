@@ -35,7 +35,7 @@ export const EFFECT_EXECUTORS = {
     return `${actor.name} changed the bet pool (${sign}${effect.amount}).`;
   },
 
-  // ── SHUTTER ──────────────────────────────────────────────────────────────
+  // ── SHATTER ──────────────────────────────────────────────────────────────
   CANCEL_LAST_TRUMP({ draft, actor }) {
     // Find the most recent trump log entry placed by someone else this round
     // We track a trumpLog array on the state for this purpose.
@@ -68,7 +68,7 @@ export const EFFECT_EXECUTORS = {
       }
     }
 
-    return `${actor.name} used Shutter! Cancelled ${last.playerName}'s ${last.cardName}.`;
+    return `${actor.name} used Shatter! Cancelled ${last.playerName}'s ${last.cardName}.`;
   },
 
   // ── RETURN ───────────────────────────────────────────────────────────────
@@ -82,9 +82,9 @@ export const EFFECT_EXECUTORS = {
 
   // ── DISCARD ──────────────────────────────────────────────────────────────
   REMOVE_TARGET_LAST_CARD({ draft, actor, target, ctx }) {
-    // Check if target countered with SHUTTER
+    // Check if target countered with SHATTER
     if (ctx?.countered && ctx.countered.includes(target.id)) {
-      return `${actor.name} tried to discard ${target.name}'s card, but ${target.name} countered with SHUTTER!`;
+      return `${actor.name} tried to discard ${target.name}'s card, but ${target.name} countered with SHATTER!`;
     }
 
     if (target.hand.length < 2)
@@ -110,9 +110,9 @@ export const EFFECT_EXECUTORS = {
 
   // ── EXCHANGE ─────────────────────────────────────────────────────────────
   SWAP_LAST_CARDS({ draft, actor, target, ctx }) {
-    // Check if target countered with SHUTTER
+    // Check if target countered with SHATTER
     if (ctx?.countered && ctx.countered.includes(target.id)) {
-      return `${actor.name} tried to exchange cards with ${target.name}, but ${target.name} countered with SHUTTER!`;
+      return `${actor.name} tried to exchange cards with ${target.name}, but ${target.name} countered with SHATTER!`;
     }
 
     if (actor.hand.length < 1) throw new Error("You have no card to swap.");
@@ -129,9 +129,9 @@ export const EFFECT_EXECUTORS = {
 
   // ── TARGET ───────────────────────────────────────────────────────────────
   FORCE_DRAW({ draft, target, actor, ctx }) {
-    // Check if target countered with SHUTTER
+    // Check if target countered with SHATTER
     if (ctx?.countered && ctx.countered.includes(target.id)) {
-      return `${actor.name} tried to force ${target.name} to draw, but ${target.name} countered with SHUTTER!`;
+      return `${actor.name} tried to force ${target.name} to draw, but ${target.name} countered with SHATTER!`;
     }
 
     if (target.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND)
@@ -163,9 +163,9 @@ export const EFFECT_EXECUTORS = {
 
   // ── DISABLE ──────────────────────────────────────────────────────────────
   SKIP_TURNS_ROUND({ target, actor, ctx }) {
-    // Check if target countered with SHUTTER
+    // Check if target countered with SHATTER
     if (ctx?.countered && ctx.countered.includes(target.id)) {
-      return `${actor.name} tried to disable ${target.name}, but ${target.name} countered with SHUTTER!`;
+      return `${actor.name} tried to disable ${target.name}, but ${target.name} countered with SHATTER!`;
     }
 
     if (target.isEliminated) throw new Error("Target is already eliminated.");
@@ -194,7 +194,7 @@ export const EFFECT_EXECUTORS = {
       // Skip only eliminated players (stood players can still draw)
       if (p.isEliminated) continue;
 
-      // Skip players who countered with SHUTTER
+      // Skip players who countered with SHATTER
       if (countered.includes(p.id)) {
         continue;
       }
@@ -210,7 +210,7 @@ export const EFFECT_EXECUTORS = {
     const counteredCount = countered.length;
     let msg = `${actor.name} played Friendship Card! ${drew} player(s) drew a card.`;
     if (counteredCount > 0) {
-      msg += ` ${counteredCount} player(s) countered with SHUTTER.`;
+      msg += ` ${counteredCount} player(s) countered with SHATTER.`;
     }
     return msg;
   },
@@ -290,12 +290,12 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
     if (!target) throw new Error("Choose a valid opponent.");
   }
 
-  // For SHUTTER we record the bet delta of the last log entry before calling
+  // For SHATTER we record the bet delta of the last log entry before calling
   if (!draft.trumpLog) draft.trumpLog = [];
 
   const msg = exec({ draft, actor, target, card, effect: card.effect, ctx });
 
-  // Record this trump in the log (used by SHUTTER)
+  // Record this trump in the log (used by SHATTER)
   const betDelta =
     card.effect.type === "MODIFY_BET" ? card.effect.amount : undefined;
 

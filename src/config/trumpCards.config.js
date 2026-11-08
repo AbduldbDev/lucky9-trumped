@@ -13,7 +13,7 @@ export const TRUMP_ICONS = {
   BET_DOWN: "fa-arrow-trend-down",
   DOUBLE_BET_UP: "fa-angles-up",
   DOUBLE_BET_DOWN: "fa-angles-down",
-  SHUTTER: "fa-ban",
+  SHATTER: "fa-ban",
   RETURN: "fa-rotate-left",
   DISCARD: "fa-trash-can",
   REFRESH: "fa-arrows-rotate",
@@ -79,9 +79,9 @@ export const TRUMP_CARDS_CATALOG = {
     targetType: "NONE",
     effect: { type: "MODIFY_BET", amount: -1 },
   },
-  SHUTTER: {
-    id: "SHUTTER",
-    name: "Shutter",
+  SHATTER: {
+    id: "SHATTER",
+    name: "Shatter",
     rarity: "COMMON",
     description:
       "Remove the most recently played unresolved Trump Card by another player.",
@@ -120,7 +120,7 @@ export const TRUMP_CARDS_CATALOG = {
     rarity: "UNCOMMON",
     description: "Remove the most recently drawn card of a selected player.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHUTTER
+    counterable: true, // Can be blocked by SHATTER
     effect: { type: "REMOVE_TARGET_LAST_CARD" },
   },
   HUSH: {
@@ -149,7 +149,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Swap your last drawn card with a selected player's last drawn card.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHUTTER
+    counterable: true, // Can be blocked by SHATTER
     effect: { type: "SWAP_LAST_CARDS" },
   },
   TARGET: {
@@ -159,7 +159,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Force a selected player to draw 1 additional card (up to 3 max).",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHUTTER
+    counterable: true, // Can be blocked by SHATTER
     effect: { type: "FORCE_DRAW" },
   },
 
@@ -180,7 +180,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Prevent a selected player from taking turns for the remainder of the round.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHUTTER
+    counterable: true, // Can be blocked by SHATTER
     effect: { type: "SKIP_TURNS_ROUND" },
   },
   CHECKER: {
@@ -201,7 +201,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "All non-eliminated players (including yourself) draw one additional card.",
     targetType: "ALL_PLAYERS",
-    counterable: true, // Can be blocked by SHUTTER (each player decides)
+    counterable: true, // Can be blocked by SHATTER (each player decides)
     effect: { type: "MASS_DRAW_ALL" },
   },
   ANGEL_CARD: {

@@ -68,7 +68,7 @@ export function createInitialState({ partyCode, hostPlayer }) {
     players: [hostPlayer],
     turnIndex: -1,
     betModifiers: 0,
-    trumpLog: [], // for SHUTTER tracking
+    trumpLog: [], // for SHATTER tracking
     trumpPlays: [], // recent trump card plays for display (id, trumpId, playerName, timestamp)
     activeTrumpEffects: [], // persistent trump effects (bet modifiers, angel, etc.)
     personalNotifications: {}, // per-player notifications (playerId -> array of notifications)
@@ -766,7 +766,7 @@ const HANDLERS = {
   },
 
   // Player responds to a counter request
-  RESPOND_COUNTER(d, { by, requestId, useShutter }) {
+  RESPOND_COUNTER(d, { by, requestId, useShatter }) {
     if (!d.counterRequests || !d.counterRequests[requestId]) {
       throw new Error("Invalid counter request.");
     }
@@ -785,23 +785,23 @@ const HANDLERS = {
 
     const responder = d.players.find((p) => p.id === by);
 
-    // If using shutter, check if they have it
-    if (useShutter) {
-      const shutterIdx = responder.trumps.indexOf("SHUTTER");
-      if (shutterIdx === -1) {
-        throw new Error("You don't have a SHUTTER card.");
+    // If using shatter, check if they have it
+    if (useShatter) {
+      const shatterIdx = responder.trumps.indexOf("SHATTER");
+      if (shatterIdx === -1) {
+        throw new Error("You don't have a SHATTER card.");
       }
 
-      // Remove SHUTTER from their inventory
-      responder.trumps.splice(shutterIdx, 1);
+      // Remove SHATTER from their inventory
+      responder.trumps.splice(shatterIdx, 1);
       responder.stats.trumpsPlayed += 1;
     }
 
     // Record response
-    request.responses[by] = useShutter;
+    request.responses[by] = useShatter;
     pushLog(
       d,
-      `${responder.name} ${useShutter ? "used SHUTTER to counter" : "declined to counter"}.`,
+      `${responder.name} ${useShatter ? "used SHATTER to counter" : "declined to counter"}.`,
     );
 
     // Check if all responses are in
@@ -938,9 +938,9 @@ function getCounterRequestForPlayer(state, playerId) {
       // Check if they already responded
       if (request.responses[playerId] !== undefined) continue;
 
-      // Check if they have SHUTTER
+      // Check if they have SHATTER
       const player = state.players.find((p) => p.id === playerId);
-      const hasShutter = player && player.trumps.includes("SHUTTER");
+      const hasShatter = player && player.trumps.includes("SHATTER");
 
       // Check if targeted directly
       const isTargeted = request.targetId === playerId;
@@ -951,7 +951,7 @@ function getCounterRequestForPlayer(state, playerId) {
         attackerName: request.attackerName,
         trumpId: request.trumpId,
         trumpName: request.trumpName,
-        hasShutter,
+        hasShatter,
         isTargeted,
         expiresAt: request.expiresAt,
       };
