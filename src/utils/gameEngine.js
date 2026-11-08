@@ -583,9 +583,18 @@ const HANDLERS = {
     const allPlayers = d.players; // all players (not just active) vote
     const yesCount = Object.values(d.rematchVotes).filter(Boolean).length;
     const noCount = Object.values(d.rematchVotes).filter((v) => !v).length;
+
+    const playerName = d.players.find((p) => p.id === by)?.name;
+
     if (noCount > 0) {
-      pushLog(d, "Rematch rejected — a player declined.");
-      return; // leave as gameover
+      pushLog(
+        d,
+        `${playerName} declined rematch. Voting failed — returning to lobby.`,
+      );
+      // Set flag to destroy room and return all players to lobby
+      d.rematchFailed = true;
+      d.rematchTimerEnd = null; // Stop timer
+      return;
     }
     if (yesCount === allPlayers.length) {
       // Unanimous — reset for rematch
@@ -618,16 +627,35 @@ const HANDLERS = {
         personalNotifications: {},
         rematchVotes: {},
         rematchTimerEnd: null,
+        rematchFailed: false,
         lastResult: null,
         winnerId: null,
         log: [],
       });
-      pushLog(d, "Rematch! Room reset — waiting for host to start.");
+      pushLog(d, "Rematch accepted! Room reset — waiting for host to start.");
     } else {
       pushLog(
         d,
-        `${d.players.find((p) => p.id === by)?.name} accepted rematch (${yesCount}/${allPlayers.length}).`,
+        `${playerName} ${accept ? "accepted" : "declined"} rematch (${yesCount}/${allPlayers.length}).`,
       );
+    }
+  },
+
+  // Check rematch timer expiration (called by host)
+  CHECK_REMATCH_TIMER(d, { by }) {
+    assertHost(d, by);
+    if (d.phase !== PHASES.GAMEOVER) return false;
+    if (!d.rematchTimerEnd) return false;
+    if (Date.now() < d.rematchTimerEnd) return false; // Timer not expired yet
+
+    const allPlayers = d.players;
+    const yesCount = Object.values(d.rematchVotes).filter(Boolean).length;
+
+    // Timer expired without unanimous vote
+    if (yesCount < allPlayers.length) {
+      pushLog(d, "Rematch voting timed out — returning to lobby.");
+      d.rematchFailed = true;
+      d.rematchTimerEnd = null;
     }
   },
 
@@ -661,6 +689,7 @@ const HANDLERS = {
       personalNotifications: {},
       rematchVotes: {},
       rematchTimerEnd: null,
+      rematchFailed: false,
       lastResult: null,
       winnerId: null,
       log: [],

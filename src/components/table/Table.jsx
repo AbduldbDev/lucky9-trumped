@@ -52,7 +52,11 @@ export default function Table({ game, onLeave }) {
     paused: view?.waitingForCounterResponse ?? false,
     onTimeout: actions.timeout,
   });
-  const rematchLeft = useRematchTimer(view?.phase);
+  const rematchLeft = useRematchTimer(
+    view?.phase,
+    isHost,
+    actions.checkRematchTimer,
+  );
   const countdown = useShowdownCountdown({
     view,
     isHost,
@@ -371,6 +375,8 @@ export default function Table({ game, onLeave }) {
                   rematchLeft={rematchLeft}
                   isHost={isHost}
                   actions={actions}
+                  view={view}
+                  me={me}
                 />
               )}
             </div>

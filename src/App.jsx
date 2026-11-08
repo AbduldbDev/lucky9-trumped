@@ -1,4 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 import Lobby from "./components/lobby/Lobby.jsx";
 import WaitingRoom from "./components/lobby/WaitingRoom.jsx";
 import Table from "./components/table/Table.jsx";
@@ -6,6 +13,9 @@ import Shop from "./components/shop/Shop.jsx";
 import SplashScreen from "./components/intro/SplashScreen.jsx";
 import WelcomeScreen from "./components/intro/WelcomeScreen.jsx";
 import LobbySkeleton from "./components/intro/LobbySkeleton.jsx";
+import AuthScreen from "./components/auth/AuthScreen.jsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
+import { useAuth, AuthProvider } from "./contexts/AuthContext.jsx";
 import { useGameState } from "./hooks/useGameState.js";
 import { PHASES } from "./utils/gameEngine.js";
 import { generatePartyCode } from "./utils/partyCode.js";
@@ -16,7 +26,7 @@ import {
   initProfile,
   purchaseSkin,
   recordMatchResult,
-  saveUsername,
+  refreshProfile,
 } from "./services/statsService.js";
 import { AudioProvider } from "./contexts/AudioContext.jsx";
 
@@ -36,11 +46,17 @@ function Room({ room, profile, onProfile, onExit }) {
     settled.current = true;
     const won = view.winnerId === me.id;
     const chipsEarned = calcMatchChips({ won });
+
     recordMatchResult(profile, {
       won,
       chipsEarned,
       trumpsPlayed: me.stats.trumpsPlayed,
       naturals: me.stats.naturals,
+      matchCode: room.partyCode,
+      totalRounds: view.round || 1,
+      durationSeconds: Math.floor(
+        (Date.now() - (view.startTime || Date.now())) / 1000,
+      ),
     })
       .then(onProfile)
       .catch((e) =>
@@ -53,8 +69,20 @@ function Room({ room, profile, onProfile, onExit }) {
     if (view?.phase === PHASES.LOBBY) settled.current = false;
   }, [view?.phase]);
 
+  // Handle rematch failure - return all players to lobby
+  useEffect(() => {
+    if (view?.rematchFailed) {
+      // Clear room and return to lobby
+      leave();
+    }
+  }, [view?.rematchFailed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const leave = () => {
     actions.leave();
+    // Refresh profile when leaving to get latest stats/chips
+    refreshProfile(profile)
+      .then(onProfile)
+      .catch((e) => console.warn("[Lucky9] Could not refresh profile:", e));
     onExit();
   };
 
@@ -74,25 +102,114 @@ function Room({ room, profile, onProfile, onExit }) {
   return <Table game={game} onLeave={leave} />;
 }
 
-export default function App() {
+/** Main App component with routing */
+function AppContent() {
   const [intro] = useState(getIntroState); // { isFirstVisit, showIntro }
-  const [profile, setProfile] = useState(null);
-  const [room, setRoom] = useState(null); // { partyCode, isHost }
-  const [shopOpen, setShopOpen] = useState(false);
   const [splashDone, setSplashDone] = useState(!intro.showIntro);
-  const [welcomed, setWelcomed] = useState(!intro.showIntro);
+  const navigate = useNavigate();
 
   useEffect(() => {
     stampVisit();
   }, []);
 
+  // Show splash screen first time
+  if (!splashDone) {
+    return (
+      <SplashScreen
+        onDone={() => {
+          setSplashDone(true);
+          navigate("/auth");
+        }}
+      />
+    );
+  }
+
+  return (
+    <Routes>
+      {/* Auth route - public */}
+      <Route path="/auth" element={<AuthScreen />} />
+
+      {/* Protected routes */}
+      <Route
+        path="/lobby"
+        element={
+          <ProtectedRoute>
+            <LobbyContainer intro={intro} />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Redirect root to lobby if authenticated, otherwise to auth */}
+      <Route path="/" element={<RootRedirect />} />
+
+      {/* Catch all - redirect to root */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+/** Root redirect based on auth status */
+function RootRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LobbySkeleton />;
+  }
+
+  return <Navigate to={user ? "/lobby" : "/auth"} replace />;
+}
+
+/** Lobby container with game state */
+function LobbyContainer({ intro }) {
+  const [profile, setProfile] = useState(null);
+  const [room, setRoom] = useState(null); // { partyCode, isHost }
+  const [shopOpen, setShopOpen] = useState(false);
+  const [welcomed, setWelcomed] = useState(!intro.showIntro);
+
   useEffect(() => {
-    initProfile().then(setProfile);
+    initProfile()
+      .then(setProfile)
+      .catch((err) => {
+        console.error("[Lucky9] Failed to load profile:", err);
+        // If profile load fails, user might not be authenticated
+        // This will be handled by ProtectedRoute
+      });
   }, []);
 
-  if (!splashDone) {
-    return <SplashScreen onDone={() => setSplashDone(true)} />;
-  }
+  // Refresh profile data when returning to lobby (no active room)
+  useEffect(() => {
+    if (!room && profile) {
+      refreshProfile(profile)
+        .then(setProfile)
+        .catch((err) =>
+          console.warn("[Lucky9] Could not refresh profile:", err),
+        );
+    }
+  }, [room]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Load active room from sessionStorage on mount (persist across refreshes)
+  useEffect(() => {
+    try {
+      const savedRoom = sessionStorage.getItem("lucky9.activeRoom");
+      if (savedRoom) {
+        const parsed = JSON.parse(savedRoom);
+        if (parsed.partyCode) {
+          setRoom(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn("[Lucky9] Could not restore room:", e);
+    }
+  }, []);
+
+  // Save room to sessionStorage whenever it changes
+  useEffect(() => {
+    if (room) {
+      sessionStorage.setItem("lucky9.activeRoom", JSON.stringify(room));
+    } else {
+      sessionStorage.removeItem("lucky9.activeRoom");
+    }
+  }, [room]);
 
   if (!profile) {
     return <LobbySkeleton />;
@@ -120,9 +237,6 @@ export default function App() {
       ) : (
         <Lobby
           profile={profile}
-          onRename={async (name) =>
-            setProfile(await saveUsername(profile, name))
-          }
           onCreate={() =>
             setRoom({ partyCode: generatePartyCode(), isHost: true })
           }
@@ -139,5 +253,15 @@ export default function App() {
         />
       )}
     </AudioProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

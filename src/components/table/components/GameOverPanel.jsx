@@ -5,7 +5,24 @@ export default function GameOverPanel({
   rematchLeft,
   isHost,
   actions,
+  view,
+  me,
 }) {
+  const allPlayers = view?.players || [];
+  const rematchVotes = view?.rematchVotes || {};
+  const myVote = rematchVotes[me?.id];
+  const hasVoted = myVote !== undefined;
+
+  // Count votes
+  const yesCount = Object.values(rematchVotes).filter(Boolean).length;
+  const totalPlayers = allPlayers.length;
+
+  // Get list of players who voted
+  const votedPlayerIds = Object.keys(rematchVotes);
+  const votedPlayers = votedPlayerIds
+    .map((id) => allPlayers.find((p) => p.id === id))
+    .filter(Boolean);
+
   return (
     <div className="rounded-lg border border-gold/30 bg-gold-faint/20 p-3 text-center space-y-3">
       <div className="font-serif font-bold text-lg text-gold-light">
@@ -19,6 +36,11 @@ export default function GameOverPanel({
             <span>
               <i className="fa-solid fa-rotate-right mr-1" />
               Rematch vote
+              {votedPlayerIds.length > 0 && (
+                <span className="ml-1 text-gold font-semibold">
+                  {yesCount}/{totalPlayers}
+                </span>
+              )}
             </span>
             <span
               className={`font-mono ${rematchLeft <= 10 ? "text-red-400 animate-beat" : "text-gold"}`}
@@ -26,23 +48,50 @@ export default function GameOverPanel({
               {rematchLeft}s
             </span>
           </div>
+
+          {/* Show who has voted */}
+          {votedPlayers.length > 0 && (
+            <div className="text-[10px] text-white/30 space-y-1">
+              {votedPlayers.map((p) => {
+                const vote = rematchVotes[p.id];
+                return (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-center gap-1.5"
+                  >
+                    <span className="truncate max-w-[120px]">{p.name}</span>
+                    {vote ? (
+                      <i className="fa-solid fa-check text-emerald-400 text-xs" />
+                    ) : (
+                      <i className="fa-solid fa-xmark text-red-400 text-xs" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <button
-              disabled={rematchLeft === 0}
+              disabled={rematchLeft === 0 || hasVoted}
               onClick={() => actions.rematchVote(true)}
-              className="min-h-[44px] rounded-md text-xs font-semibold uppercase tracking-widest
+              className={`min-h-[44px] rounded-md text-xs font-semibold uppercase tracking-widest
                         bg-emerald-900/50 border border-emerald-700/40 text-emerald-300
-                        hover:bg-emerald-900/70 disabled:cursor-not-allowed disabled:opacity-30 transition touch-manipulation"
+                        hover:bg-emerald-900/70 transition touch-manipulation
+                        disabled:cursor-not-allowed disabled:opacity-30
+                        ${hasVoted && myVote ? "ring-2 ring-emerald-500/50" : ""}`}
             >
               <i className="fa-solid fa-check mr-1" />
               Accept
             </button>
             <button
-              disabled={rematchLeft === 0}
+              disabled={rematchLeft === 0 || hasVoted}
               onClick={() => actions.rematchVote(false)}
-              className="min-h-[44px] rounded-md text-xs font-semibold uppercase tracking-widest
+              className={`min-h-[44px] rounded-md text-xs font-semibold uppercase tracking-widest
                         bg-black/30 border border-white/10 text-white/50
-                        hover:border-white/25 disabled:cursor-not-allowed disabled:opacity-30 hover:text-white/70 transition touch-manipulation"
+                        hover:border-white/25 hover:text-white/70 transition touch-manipulation
+                        disabled:cursor-not-allowed disabled:opacity-30
+                        ${hasVoted && !myVote ? "ring-2 ring-red-500/50" : ""}`}
             >
               <i className="fa-solid fa-xmark mr-1" />
               Decline

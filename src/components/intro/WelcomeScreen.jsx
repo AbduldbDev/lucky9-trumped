@@ -109,7 +109,7 @@ export default function WelcomeScreen({ profile, isFirstVisit, onEnter }) {
                   <i className="fa-solid fa-coins" />
                 </span>
                 <span className="text-xs font-semibold text-ivory sm:text-sm">
-                  {isFirstVisit ? "Starting stack" : "Your stack"}
+                  Your Balance
                 </span>
               </span>
               <span className="font-mono text-sm font-semibold text-gold-light sm:text-lg">

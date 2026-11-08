@@ -1,16 +1,12 @@
 // Profile, chips, shop purchases, and lifetime stats.
-// SRD §1: winners earn 100-120 chips per match; starting chips = 0.
+// SRD §1: winners earn 100-120 chips per match; starting chips = 1000.
 // SRD §9: Supabase tables — profiles, user_inventory, player_stats, match_history.
 //
-// Two modes:
-//   "cloud" — Supabase anonymous auth + tables from 001_schema.sql
-//   "local" — localStorage fallback when Supabase isn't configured
+// Cloud-only mode: requires authenticated Supabase user
 
 import { GAME_CONFIG } from "../config/gameRules.config.js";
 import { CARD_SKINS_SHOP } from "../config/cardSkins.config.js";
-import { supabase } from "./supabaseClient.js";
-
-const LOCAL_KEY = "lucky9.profile.v2";
+import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
 
 const emptyStats = () => ({
   totalMatches: 0,
@@ -21,65 +17,91 @@ const emptyStats = () => ({
   favoriteTrumpCard: "BET_UP",
 });
 
-// ─── LOCAL MODE ─────────────────────────────────────────────────────────────
-function readLocal() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(LOCAL_KEY));
-    if (raw?.id) return raw;
-  } catch {
-    /* ignore */
-  }
-
-  const id = crypto.randomUUID();
-  const fresh = {
-    id,
-    username: "Player" + id.slice(0, 4).toUpperCase(),
-    avatarUrl: "default_avatar.png",
-    chips: GAME_CONFIG.STARTING_CHIPS, // SRD: 0
-    level: 1,
-    currentRank: "Rookie",
-    equippedSkinId: "classic_red",
-    owned: CARD_SKINS_SHOP.filter((s) => s.unlockedByDefault).map((s) => s.id),
-    stats: emptyStats(),
-  };
-  writeLocal(fresh);
-  return fresh;
-}
-
-function writeLocal(p) {
-  try {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(p));
-  } catch {
-    /* ignore */
-  }
-}
-
 // ─── CLOUD MODE ─────────────────────────────────────────────────────────────
 async function loadCloud() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error("Supabase not configured");
+  }
+
   try {
     const { data: auth } = await supabase.auth.getSession();
-    let session = auth.session;
+    const session = auth.session;
+
     if (!session) {
-      const { data, error } = await supabase.auth.signInAnonymously();
-      if (error) {
-        // Handle captcha error specifically
-        if (error.message?.includes("captcha")) {
-          console.debug(
-            "[Lucky9] Captcha protection enabled on Supabase, falling back to local mode",
-          );
-        }
-        throw error;
-      }
-      session = data.session;
+      throw new Error("Not authenticated");
     }
+
     const uid = session.user.id;
 
     const [{ data: prof, error: e1 }, { data: inv }, { data: st }] =
       await Promise.all([
-        supabase.from("profiles").select("*").eq("id", uid).single(),
+        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
         supabase.from("user_inventory").select("item_id").eq("user_id", uid),
-        supabase.from("player_stats").select("*").eq("user_id", uid).single(),
+        supabase
+          .from("player_stats")
+          .select("*")
+          .eq("user_id", uid)
+          .maybeSingle(),
       ]);
+
+    // If profile doesn't exist, create it (handle_new_user trigger might have failed)
+    if (!prof) {
+      console.log("[Lucky9] Profile not found, creating manually...");
+      const username =
+        session.user.user_metadata?.username || "player_" + uid.slice(0, 8);
+
+      // Create profile
+      const { error: profError } = await supabase.from("profiles").insert({
+        id: uid,
+        username,
+        chips: 1000,
+      });
+
+      if (profError && profError.code !== "23505") {
+        // Ignore duplicate key errors
+        throw profError;
+      }
+
+      // Add default skin
+      await supabase
+        .from("user_inventory")
+        .insert({
+          user_id: uid,
+          item_id: "classic_red",
+          item_type: "CARD_SKIN",
+        })
+        .catch(() => {}); // Ignore if already exists
+
+      // Create stats
+      await supabase
+        .from("player_stats")
+        .insert({
+          user_id: uid,
+        })
+        .catch(() => {}); // Ignore if already exists
+
+      // Reload profile
+      const { data: newProf, error: newError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", uid)
+        .single();
+
+      if (newError) throw newError;
+
+      return {
+        id: uid,
+        username: newProf.username,
+        avatarUrl: newProf.avatar_url,
+        chips: newProf.chips,
+        level: newProf.level ?? 1,
+        currentRank: newProf.current_rank ?? "Rookie",
+        equippedSkinId: newProf.equipped_skin_id,
+        owned: ["classic_red"],
+        stats: emptyStats(),
+      };
+    }
+
     if (e1) throw e1;
 
     return {
@@ -103,66 +125,66 @@ async function loadCloud() {
         : emptyStats(),
     };
   } catch (error) {
-    // Log captcha errors as debug only
-    if (error.message?.includes("captcha")) {
-      console.debug(
-        "[Lucky9] Supabase captcha protection enabled, using local mode",
-      );
-    } else {
-      console.warn(
-        "[Lucky9] Supabase unavailable, using local mode:",
-        error.message ?? error,
-      );
-    }
+    console.error("[Lucky9] Failed to load profile:", error.message ?? error);
     throw error;
   }
 }
 
 // ─── PUBLIC API ──────────────────────────────────────────────────────────────
-let mode = "cloud";
-
 export async function initProfile() {
-  if (supabase) {
-    try {
-      const p = await loadCloud();
-      mode = "cloud";
-      return { ...p, mode };
-    } catch (err) {
-      // Captcha errors are expected in production - don't spam console
-      if (err.message?.includes("captcha")) {
-        console.debug(
-          "[Lucky9] Using local profile (Supabase captcha protection enabled)",
-        );
-      } else {
-        console.warn(
-          "[Lucky9] Supabase unavailable, using local profile:",
-          err.message ?? err,
-        );
-      }
-    }
-  }
-  mode = "local";
-  return { ...readLocal(), mode };
+  const p = await loadCloud();
+  return { ...p, mode: "cloud" };
 }
 
-export const getMode = () => mode;
+export async function refreshProfile(currentProfile) {
+  try {
+    // Reload profile from database to get latest data
+    const uid = currentProfile.id;
+
+    const [{ data: prof }, { data: inv }, { data: st }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", uid).single(),
+      supabase.from("user_inventory").select("item_id").eq("user_id", uid),
+      supabase.from("player_stats").select("*").eq("user_id", uid).single(),
+    ]);
+
+    return {
+      ...currentProfile,
+      username: prof.username,
+      avatarUrl: prof.avatar_url,
+      chips: prof.chips,
+      level: prof.level ?? 1,
+      currentRank: prof.current_rank ?? "Rookie",
+      equippedSkinId: prof.equipped_skin_id,
+      owned: (inv ?? []).map((r) => r.item_id),
+      stats: st
+        ? {
+            totalMatches: st.total_matches,
+            totalWins: st.total_wins,
+            totalLosses: st.total_losses,
+            currentWinStreak: st.current_win_streak,
+            highestWinStreak: st.highest_win_streak,
+            favoriteTrumpCard: st.favorite_trump_card ?? "BET_UP",
+          }
+        : currentProfile.stats,
+    };
+  } catch (error) {
+    console.error("[Lucky9] Failed to refresh profile:", error);
+    return currentProfile; // Return current profile if refresh fails
+  }
+}
 
 export async function saveUsername(profile, username) {
   const name = String(username).trim().slice(0, 20);
   if (!name) return profile;
-  if (mode === "cloud") {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ username: name })
-      .eq("id", profile.id);
-    if (error)
-      throw new Error(
-        error.code === "23505" ? "That name is taken." : error.message,
-      );
-    return { ...profile, username: name };
-  }
-  const next = { ...readLocal(), username: name };
-  writeLocal(next);
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ username: name })
+    .eq("id", profile.id);
+  if (error)
+    throw new Error(
+      error.code === "23505" ? "That name is taken." : error.message,
+    );
   return { ...profile, username: name };
 }
 
@@ -172,30 +194,19 @@ export async function purchaseSkin(profile, itemId) {
   if (profile.owned.includes(itemId)) throw new Error("Already owned.");
   if (profile.chips < skin.price) throw new Error("Not enough chips.");
 
-  if (mode === "cloud") {
-    const { data, error } = await supabase.rpc("purchase_skin", {
-      p_item_id: itemId,
-    });
-    if (error) throw new Error(error.message);
-    return { ...profile, chips: data, owned: [...profile.owned, itemId] };
-  }
-  const next = {
-    ...readLocal(),
-    chips: profile.chips - skin.price,
-    owned: [...profile.owned, itemId],
-  };
-  writeLocal(next);
-  return { ...profile, chips: next.chips, owned: next.owned };
+  const { data, error } = await supabase.rpc("purchase_skin", {
+    p_item_id: itemId,
+  });
+  if (error) throw new Error(error.message);
+  return { ...profile, chips: data, owned: [...profile.owned, itemId] };
 }
 
 export async function equipSkin(profile, itemId) {
   if (!profile.owned.includes(itemId)) throw new Error("Skin not owned.");
-  if (mode === "cloud") {
-    const { error } = await supabase.rpc("equip_skin", { p_item_id: itemId });
-    if (error) throw new Error(error.message);
-  } else {
-    writeLocal({ ...readLocal(), equippedSkinId: itemId });
-  }
+
+  const { error } = await supabase.rpc("equip_skin", { p_item_id: itemId });
+  if (error) throw new Error(error.message);
+
   return { ...profile, equippedSkinId: itemId };
 }
 
@@ -217,32 +228,67 @@ export function calcMatchChips({ won }) {
 /** Persist a finished match and return the updated profile. */
 export async function recordMatchResult(
   profile,
-  { won, chipsEarned, trumpsPlayed, naturals },
+  {
+    won,
+    chipsEarned,
+    trumpsPlayed,
+    naturals,
+    matchCode,
+    totalRounds,
+    durationSeconds,
+  },
 ) {
-  if (mode === "cloud") {
-    const { data, error } = await supabase.rpc("record_match", {
-      p_won: won,
-      p_chips: chipsEarned,
-      p_trumps: trumpsPlayed,
-      p_naturals: naturals,
-    });
-    if (error) throw new Error(error.message);
-    const next = {
-      ...profile,
-      chips: data,
-      stats: bumpStats(profile.stats, { won }),
-    };
-    return next;
+  // Record match result and update stats
+  const { data: newChips, error } = await supabase.rpc("record_match", {
+    p_won: won,
+    p_chips: chipsEarned,
+    p_trumps: trumpsPlayed,
+    p_naturals: naturals,
+  });
+  if (error) throw new Error(error.message);
+
+  // Save match history entry for both winners and losers
+  if (matchCode) {
+    await supabase
+      .from("match_history")
+      .insert({
+        match_code: matchCode,
+        winner_id: won ? profile.id : null, // null if lost
+        player_id: profile.id, // Always save who played
+        won: won,
+        total_rounds: totalRounds || 1,
+        duration_seconds: durationSeconds || 0,
+        chips_rewarded: won ? chipsEarned : 0,
+      })
+      .catch((err) => {
+        console.warn("[Lucky9] Could not save match history:", err.message);
+      });
   }
 
-  const local = readLocal();
-  const next = {
-    ...local,
-    chips: local.chips + chipsEarned,
-    stats: bumpStats(local.stats, { won }),
+  // Reload fresh stats and chips from database to ensure sync
+  const [{ data: freshStats }, { data: freshProfile }] = await Promise.all([
+    supabase
+      .from("player_stats")
+      .select("*")
+      .eq("user_id", profile.id)
+      .maybeSingle(),
+    supabase.from("profiles").select("chips").eq("id", profile.id).single(),
+  ]);
+
+  return {
+    ...profile,
+    chips: freshProfile?.chips ?? newChips,
+    stats: freshStats
+      ? {
+          totalMatches: freshStats.total_matches,
+          totalWins: freshStats.total_wins,
+          totalLosses: freshStats.total_losses,
+          currentWinStreak: freshStats.current_win_streak,
+          highestWinStreak: freshStats.highest_win_streak,
+          favoriteTrumpCard: freshStats.favorite_trump_card ?? "BET_UP",
+        }
+      : bumpStats(profile.stats, { won }),
   };
-  writeLocal(next);
-  return { ...profile, chips: next.chips, stats: next.stats };
 }
 
 function bumpStats(s, { won }) {

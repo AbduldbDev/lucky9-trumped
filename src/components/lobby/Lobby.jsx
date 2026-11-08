@@ -1,29 +1,27 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { isSupabaseConfigured } from "../../services/supabaseClient.js";
 import { isValidPartyCode, normalizePartyCode } from "../../utils/partyCode.js";
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
 import { useAudio } from "../../contexts/AudioContext.jsx";
 import { AUDIO_CONFIG } from "../../config/audio.config.js";
+import { useAuth } from "../../contexts/AuthContext.jsx";
 import HowToPlayModal from "./HowToPlayModal.jsx";
+import UserProfile from "../profile/UserProfile.jsx";
 
-export default function Lobby({
-  profile,
-  onRename,
-  onCreate,
-  onJoin,
-  onOpenShop,
-}) {
+export default function Lobby({ profile, onCreate, onJoin, onOpenShop }) {
   const audio = useAudio();
-  const [name, setName] = useState(profile.username);
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [code, setCode] = useState("");
   const [mode, setMode] = useState("create"); // 'create' | 'join'
   const [error, setError] = useState("");
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   const submit = async (fn) => {
     setError("");
     try {
-      if (name.trim() !== profile.username) await onRename(name);
       fn();
     } catch (e) {
       setError(e.message);
@@ -48,6 +46,17 @@ export default function Lobby({
   const handleOpenHowToPlay = () => {
     audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
     setShowHowToPlay(true);
+  };
+
+  const handleLogout = async () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    await signOut();
+    navigate("/auth");
+  };
+
+  const handleOpenProfile = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    setShowProfile(true);
   };
 
   const winRate = profile.stats.totalMatches
@@ -150,21 +159,29 @@ export default function Lobby({
             <div className="flex items-center gap-3 px-4 pt-4 pb-3 sm:gap-4 sm:px-6 sm:pt-5 sm:pb-4">
               {/* Avatar */}
               <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/40 bg-gradient-to-br from-gold-faint/60 to-black/60 font-serif text-xl font-bold text-gold-light shadow-[0_0_16px_-8px_rgba(212,175,55,0.2)] sm:h-14 sm:w-14 sm:text-2xl">
-                {(name.trim()[0] || "?").toUpperCase()}
+                {(profile.username[0] || "?").toUpperCase()}
               </div>
 
               <div className="min-w-0 flex-1">
                 <label className="mb-0.5 block text-[9px] font-semibold uppercase tracking-[0.2em] text-white/35 sm:mb-1 sm:text-[10px] sm:tracking-[0.25em]">
-                  Display Name
+                  Username
                 </label>
-                <input
-                  value={name}
-                  maxLength={20}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                  className="w-full border-b border-white/10 bg-transparent pb-1 text-sm font-semibold text-ivory-DEFAULT outline-none transition-colors placeholder:text-white/20 focus:border-gold-DEFAULT/60 sm:pb-1.5 sm:text-base"
-                />
+                <button
+                  onClick={handleOpenProfile}
+                  className="pb-1 text-left text-sm font-semibold text-ivory-DEFAULT transition-colors hover:text-gold-light sm:pb-1.5 sm:text-base"
+                >
+                  {profile.username}
+                </button>
               </div>
+
+              {/* Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-red-500/30 bg-red-950/20 text-red-400 transition-all hover:border-red-500/50 hover:bg-red-950/40 active:scale-95"
+                title="Logout"
+              >
+                <i className="fa-solid fa-right-from-bracket text-sm" />
+              </button>
             </div>
 
             {/* Stats */}
@@ -235,7 +252,7 @@ export default function Lobby({
                     friends.
                   </p>
                   <button
-                    disabled={!isSupabaseConfigured || !name.trim()}
+                    disabled={!isSupabaseConfigured}
                     onClick={handleCreate}
                     className="group relative w-full overflow-hidden rounded-2xl border border-gold/50 bg-gradient-to-b from-gold-faint/70 to-gold-faint/30 py-3 text-sm font-bold tracking-wide text-gold-light shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] transition-all hover:border-gold/80 hover:shadow-[0_8px_20px_-10px_rgba(212,175,55,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:py-4 sm:text-base"
                   >
@@ -261,11 +278,7 @@ export default function Lobby({
                     />
                   </div>
                   <button
-                    disabled={
-                      !isSupabaseConfigured ||
-                      !isValidPartyCode(code) ||
-                      !name.trim()
-                    }
+                    disabled={!isSupabaseConfigured || !isValidPartyCode(code)}
                     onClick={handleJoin}
                     className="w-full rounded-2xl border border-white/15 bg-gradient-to-b from-felt-light/60 to-felt-light/30 py-3 text-sm font-bold tracking-wide text-ivory-DEFAULT transition-all hover:border-gold-DEFAULT/40 hover:from-felt-light/80 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 sm:py-4 sm:text-base"
                   >
@@ -342,6 +355,11 @@ export default function Lobby({
         isOpen={showHowToPlay}
         onClose={() => setShowHowToPlay(false)}
       />
+
+      {/* User Profile Modal */}
+      {showProfile && (
+        <UserProfile profile={profile} onClose={() => setShowProfile(false)} />
+      )}
     </div>
   );
 }
