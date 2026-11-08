@@ -56,43 +56,66 @@ function writeLocal(p) {
 
 // ─── CLOUD MODE ─────────────────────────────────────────────────────────────
 async function loadCloud() {
-  const { data: auth } = await supabase.auth.getSession();
-  let session = auth.session;
-  if (!session) {
-    const { data, error } = await supabase.auth.signInAnonymously();
-    if (error) throw error;
-    session = data.session;
-  }
-  const uid = session.user.id;
-
-  const [{ data: prof, error: e1 }, { data: inv }, { data: st }] =
-    await Promise.all([
-      supabase.from("profiles").select("*").eq("id", uid).single(),
-      supabase.from("user_inventory").select("item_id").eq("user_id", uid),
-      supabase.from("player_stats").select("*").eq("user_id", uid).single(),
-    ]);
-  if (e1) throw e1;
-
-  return {
-    id: uid,
-    username: prof.username,
-    avatarUrl: prof.avatar_url,
-    chips: prof.chips,
-    level: prof.level ?? 1,
-    currentRank: prof.current_rank ?? "Rookie",
-    equippedSkinId: prof.equipped_skin_id,
-    owned: (inv ?? []).map((r) => r.item_id),
-    stats: st
-      ? {
-          totalMatches: st.total_matches,
-          totalWins: st.total_wins,
-          totalLosses: st.total_losses,
-          currentWinStreak: st.current_win_streak,
-          highestWinStreak: st.highest_win_streak,
-          favoriteTrumpCard: st.favorite_trump_card ?? "BET_UP",
+  try {
+    const { data: auth } = await supabase.auth.getSession();
+    let session = auth.session;
+    if (!session) {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        // Handle captcha error specifically
+        if (error.message?.includes("captcha")) {
+          console.debug(
+            "[Lucky9] Captcha protection enabled on Supabase, falling back to local mode",
+          );
         }
-      : emptyStats(),
-  };
+        throw error;
+      }
+      session = data.session;
+    }
+    const uid = session.user.id;
+
+    const [{ data: prof, error: e1 }, { data: inv }, { data: st }] =
+      await Promise.all([
+        supabase.from("profiles").select("*").eq("id", uid).single(),
+        supabase.from("user_inventory").select("item_id").eq("user_id", uid),
+        supabase.from("player_stats").select("*").eq("user_id", uid).single(),
+      ]);
+    if (e1) throw e1;
+
+    return {
+      id: uid,
+      username: prof.username,
+      avatarUrl: prof.avatar_url,
+      chips: prof.chips,
+      level: prof.level ?? 1,
+      currentRank: prof.current_rank ?? "Rookie",
+      equippedSkinId: prof.equipped_skin_id,
+      owned: (inv ?? []).map((r) => r.item_id),
+      stats: st
+        ? {
+            totalMatches: st.total_matches,
+            totalWins: st.total_wins,
+            totalLosses: st.total_losses,
+            currentWinStreak: st.current_win_streak,
+            highestWinStreak: st.highest_win_streak,
+            favoriteTrumpCard: st.favorite_trump_card ?? "BET_UP",
+          }
+        : emptyStats(),
+    };
+  } catch (error) {
+    // Log captcha errors as debug only
+    if (error.message?.includes("captcha")) {
+      console.debug(
+        "[Lucky9] Supabase captcha protection enabled, using local mode",
+      );
+    } else {
+      console.warn(
+        "[Lucky9] Supabase unavailable, using local mode:",
+        error.message ?? error,
+      );
+    }
+    throw error;
+  }
 }
 
 // ─── PUBLIC API ──────────────────────────────────────────────────────────────
@@ -105,10 +128,17 @@ export async function initProfile() {
       mode = "cloud";
       return { ...p, mode };
     } catch (err) {
-      console.warn(
-        "[Lucky9] Supabase unavailable, using local profile:",
-        err.message ?? err,
-      );
+      // Captcha errors are expected in production - don't spam console
+      if (err.message?.includes("captcha")) {
+        console.debug(
+          "[Lucky9] Using local profile (Supabase captcha protection enabled)",
+        );
+      } else {
+        console.warn(
+          "[Lucky9] Supabase unavailable, using local profile:",
+          err.message ?? err,
+        );
+      }
     }
   }
   mode = "local";

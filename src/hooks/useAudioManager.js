@@ -24,14 +24,61 @@ export function useAudioManager() {
       return audioCache.current.get(key);
     }
 
+    // Fallback mapping for missing audio files
+    const audioFallbacks = {
+      showdown_reveal: "nine_hit",
+      round_end: "round_start",
+      countdown_go: "countdown_tick",
+      trump_play: "card_draw",
+      trump_rare: "card_draw",
+      trump_legendary: "card_draw",
+      trump_mythic: "card_draw",
+      trump_blocked: "ui_click",
+      trump_discard: "card_draw",
+      angel_activate: "card_draw",
+      card_flip: "card_draw",
+      card_place: "card_draw",
+      trump_draw: "card_draw",
+      trump_place: "card_draw",
+      bet_change: "ui_click",
+      bet_up: "ui_click",
+      bet_down: "ui_click",
+      win_round: "victory",
+      lose_round: "defeat",
+      draw_round: "round_start",
+      player_join: "ui_click",
+      player_leave: "ui_click",
+      ready: "ui_click",
+      ui_hover: "ui_click",
+      ui_error: "ui_click",
+      timer_tick: "countdown_tick",
+      timer_expire: "countdown_tick",
+      rematch_vote: "ui_click",
+    };
+
     try {
+      // Use fallback if available
+      const audioKey = audioFallbacks[key] || key;
+
       // Look for audio files in /public/sfx/
-      const audio = new Audio(`/sfx/${key}.mp3`);
+      const audio = new Audio(`/sfx/${audioKey}.mp3`);
       audio.preload = "auto";
+
+      // Handle load errors gracefully
+      audio.addEventListener(
+        "error",
+        () => {
+          console.debug(
+            `[Audio] File not found: ${audioKey}.mp3 (original: ${key})`,
+          );
+        },
+        { once: true },
+      );
+
       audioCache.current.set(key, audio);
       return audio;
     } catch (error) {
-      console.warn(`[Audio] Failed to load sound: ${key}`, error);
+      console.debug(`[Audio] Failed to load sound: ${key}`, error.message);
       return null;
     }
   }, []);
