@@ -24,6 +24,9 @@ export default function OvalTable({
   secondsLeft,
   displayedTrumps = [],
   aimCfg = null,
+  zoom = 1,
+  panX = 0,
+  panY = 0,
 }) {
   const [areaRef, { width, height }] = useElementSize();
   const { scale, cy, seats } = computeSeatLayout(
@@ -49,98 +52,119 @@ export default function OvalTable({
           aspectRatio: "1.7 / 1", // widest the oval is allowed to get
         }}
       >
-        {/* Oval felt surface */}
+        {/* Zoom wrapper - everything inside scales together */}
         <div
-          className="absolute pointer-events-none"
-          style={{ left: 12, right: 12, top: 12, bottom: 12 }}
+          className="absolute inset-0 transition-transform duration-300 ease-out"
+          style={{
+            transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
+            transformOrigin: "center center",
+          }}
         >
+          {/* Oval felt surface - semi-transparent to blend with background */}
           <div
-            className="felt-surface table-border w-full h-full"
-            style={{ borderRadius: "50%" }}
-          />
-        </div>
-        {/* Turn timer (my turn only) */}
-
-        {/* Centre info cluster */}
-        <div
-          className="absolute left-1/2 z-10 flex flex-col items-center gap-1 pointer-events-none"
-          style={{ top: cy - 2, transform: "translate(-50%, 0)" }}
-        >
-          <div className=" z-20 pointer-events-none ">
-            {view.phase === PHASES.PLAYING && isMyTurn && (
-              <TimerRing
-                s={secondsLeft}
-                max={GAME_CONFIG.TURN_TIMER}
-                warn={GAME_CONFIG.TIMER_WARNING}
-                paused={view.waitingForCounterResponse}
-              />
-            )}
-          </div>
-          <div className="flex items-center gap-1 bg-black/30 rounded-full px-3 py-1">
-            <i className="fa-solid fa-heart text-red-500/60 text-[10px]" />
-            <span className="text-xs font-semibold text-white/60 tabular-nums">
-              {bet}
-            </span>
-          </div>
-          <span className="text-[10px] sm:text-[11px] text-white/25 font-mono">
-            <i className="fa-solid fa-layer-group mr-1" />
-            {view.deckCount} · Round {view.round}
-          </span>
-
-          {view.phase === PHASES.PLAYING && (
-            <div className="text-[10px] text-white/30 text-center leading-tight">
-              {isMyTurn ? (
-                <span className="text-gold font-semibold">Your turn</span>
-              ) : (
-                <span>{turnPlayer?.name}</span>
-              )}
-              {active.length > 0 && (
-                <div className="text-white/20 mt-1">
-                  {stood}/{active.length} stood
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Active trump effects */}
-          <ActiveEffects effects={view.activeTrumpEffects} />
-        </div>
-
-        {/* Opponent seats (pixel-positioned, scaled to fit) */}
-        {opponents.map((opp, idx) => {
-          const pos = seats[idx];
-          if (!pos) return null;
-          return (
+            className="absolute pointer-events-none"
+            style={{
+              left: 12,
+              right: 12,
+              top: 12,
+              bottom: 12,
+            }}
+          >
             <div
-              key={opp.id}
-              className="absolute z-10"
+              className={`felt-surface felt-${GAME_CONFIG.TABLE_BACKGROUND} table-border w-full h-full`}
               style={{
-                left: pos.x,
-                top: pos.y,
-                minHeight: SEAT_H,
-                transform: `translate(-50%,-50%) scale(${scale})`,
-                transformOrigin: "center center",
+                borderRadius: "50%",
+                // Semi-transparent green felt
+                backdropFilter: "blur(4px)",
+                // Inner shadow for depth
               }}
-            >
-              <Seat
-                player={opp}
-                isTurn={turnPlayer?.id === opp.id}
-                revealed={revealed}
-                targetable={
-                  targeting &&
-                  !opp.isEliminated &&
-                  !opp.isSpectator &&
-                  // BUGFIX: Can't target players with full hands for cards that add cards
-                  !(
-                    aimCfg?.id === "TARGET" && // FORCE_DRAW
-                    opp.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND
-                  )
-                }
-                onTarget={onTarget}
-              />
+            />
+          </div>
+
+          {/* Centre info cluster */}
+          <div
+            className="absolute left-1/2 z-10 flex flex-col items-center gap-1 pointer-events-none"
+            style={{
+              top: cy - 2,
+              transform: "translate(-50%, 0)",
+            }}
+          >
+            <div className=" z-20 pointer-events-none ">
+              {view.phase === PHASES.PLAYING && isMyTurn && (
+                <TimerRing
+                  s={secondsLeft}
+                  max={GAME_CONFIG.TURN_TIMER}
+                  warn={GAME_CONFIG.TIMER_WARNING}
+                  paused={view.waitingForCounterResponse}
+                />
+              )}
             </div>
-          );
-        })}
+            <div className="flex items-center gap-1 bg-black/30 rounded-full px-3 py-1">
+              <i className="fa-solid fa-heart text-red-500/60 text-[10px]" />
+              <span className="text-xs font-semibold text-white/60 tabular-nums">
+                {bet}
+              </span>
+            </div>
+            <span className="text-[10px] sm:text-[11px] text-white/25 font-mono">
+              <i className="fa-solid fa-layer-group mr-1" />
+              {view.deckCount} · Round {view.round}
+            </span>
+
+            {view.phase === PHASES.PLAYING && (
+              <div className="text-[10px] text-white/30 text-center leading-tight">
+                {isMyTurn ? (
+                  <span className="text-gold font-semibold">Your turn</span>
+                ) : (
+                  <span>{turnPlayer?.name}</span>
+                )}
+                {active.length > 0 && (
+                  <div className="text-white/20 mt-1">
+                    {stood}/{active.length} stood
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Active trump effects */}
+            <ActiveEffects effects={view.activeTrumpEffects} />
+          </div>
+
+          {/* Opponent seats (pixel-positioned, now scale with zoom) */}
+          {opponents.map((opp, idx) => {
+            const pos = seats[idx];
+            if (!pos) return null;
+            return (
+              <div
+                key={opp.id}
+                className="absolute z-10"
+                style={{
+                  left: pos.x,
+                  top: pos.y,
+                  minHeight: SEAT_H,
+                  transform: `translate(-50%,-50%) scale(${scale})`,
+                  transformOrigin: "center center",
+                }}
+              >
+                <Seat
+                  player={opp}
+                  isTurn={turnPlayer?.id === opp.id}
+                  revealed={revealed}
+                  targetable={
+                    targeting &&
+                    !opp.isEliminated &&
+                    !opp.isSpectator &&
+                    // BUGFIX: Can't target players with full hands for cards that add cards
+                    !(
+                      aimCfg?.id === "TARGET" && // FORCE_DRAW
+                      opp.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND
+                    )
+                  }
+                  onTarget={onTarget}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

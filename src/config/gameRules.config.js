@@ -2,7 +2,7 @@ export const GAME_CONFIG = {
   // GENERAL GAME SETTINGS
   MAX_PLAYERS: 6,
   MIN_PLAYERS: 2,
-  GAME_MODE: "standard",
+  // GAME_MODE: "standard",
 
   // PLAYER SETTINGS
   STARTING_LIVES: 12,
@@ -52,7 +52,7 @@ export const GAME_CONFIG = {
 
   // TRUMP CARD SETTINGS
   // No inventory cap — trump cards are unlimited per SRD clarification.
-  STARTING_TRUMP_CARDS: 2, // trump cards granted at match start
+  STARTING_TRUMP_CARDS: 1, // trump cards granted at match start
   TRUMP_CARDS_PER_ROUND: 1, // trump card drawn after each round
   TRUMP_CARD_ON_TOTAL_NINE: true, // bonus trump card when hand first hits 9
   ALLOW_MULTIPLE_TRUMP_CARDS_PER_TURN: true,
@@ -70,14 +70,10 @@ export const GAME_CONFIG = {
   // BET SETTINGS
   MIN_BET: 0,
   MAX_BET: 999,
-  BET_UP_VALUE: 1,
-  BET_DOWN_VALUE: 1,
-  DOUBLE_BET_VALUE: 2,
 
   // CHIP ECONOMY
   WIN_REWARD_MIN: 100,
   WIN_REWARD_MAX: 120,
-  STARTING_CHIPS: 0,
   ENABLE_CHIP_REWARDS: true,
 
   // SPECTATOR SETTINGS
@@ -90,13 +86,13 @@ export const GAME_CONFIG = {
   // SPECTATOR_CAN_INTERACT: false,
 
   // GAME TABLE SETTINGS
-  TABLE_LAYOUT: "circular",
-  TABLE_BACKGROUNDS: ["green", "purple", "yellow", "blue", "gray"],
-  DEFAULT_TABLE_BACKGROUND: "green",
-  PLAYER_SKIN_VISIBLE_TO_ALL: true,
+  // TABLE_LAYOUT: "circular",
+  TABLE_BACKGROUND: "purple", // "green" | "purple" | "blue" | "red" | "black"
+  // DEFAULT_TABLE_BACKGROUND: "green",
+  // PLAYER_SKIN_VISIBLE_TO_ALL: true,
 
   // ANIMATION & AUDIO SETTINGS
-  ENABLE_ANIMATIONS: true,
+  // ENABLE_ANIMATIONS: true,
   ENABLE_SOUND: true,
   ENABLE_HEARTBEAT_SOUND: true,
   HEARTBEAT_WARNING_TIME: 10,
