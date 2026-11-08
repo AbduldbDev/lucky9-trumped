@@ -11,11 +11,18 @@ export default function WaitingRoom({
   selfId,
   onStart,
   onLeave,
+  onReady,
+  onUnready,
 }) {
   const audio = useAudio();
   const [copied, setCopied] = useState(false);
   const players = view?.players ?? [];
-  const canStart = isHost && players.length >= GAME_CONFIG.MIN_PLAYERS;
+  const me = players.find((p) => p.id === selfId);
+  const isReady = me?.isReady ?? false;
+  const allReady =
+    players.length >= GAME_CONFIG.MIN_PLAYERS &&
+    players.every((p) => p.isReady);
+  const canStart = isHost && allReady;
 
   const copy = async () => {
     try {
@@ -35,6 +42,23 @@ export default function WaitingRoom({
     audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
     onLeave();
   };
+
+  const handleReady = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    onReady();
+  };
+
+  const handleUnready = () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    onUnready();
+  };
+
+  const primaryBtn =
+    "group relative flex-1 overflow-hidden rounded-2xl border border-gold/50 bg-gradient-to-b from-gold-faint/70 to-gold-faint/30 py-3 text-sm font-bold tracking-wide text-gold-light shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] transition-all hover:border-gold/80 hover:shadow-[0_8px_20px_-10px_rgba(212,175,55,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:py-4 sm:text-base";
+
+  const shine = (
+    <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+  );
 
   return (
     <div className="relative min-h-[100dvh] w-full overflow-x-hidden overflow-y-auto">
@@ -157,6 +181,16 @@ export default function WaitingRoom({
                         <i className="fa-solid fa-crown" />
                       </span>
                     )}
+                    {p.isReady ? (
+                      <span className="rounded-full border border-gold/40 bg-gold-faint/30 px-2 py-0.5 text-[9px] uppercase tracking-wider text-gold-light sm:text-[10px]">
+                        <i className="fa-solid fa-check mr-1" />
+                        Ready
+                      </span>
+                    ) : (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] uppercase tracking-wider text-white/30 sm:text-[10px]">
+                        Not Ready
+                      </span>
+                    )}
                     {p.id === selfId && (
                       <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] uppercase tracking-wider text-white/40 sm:text-[10px]">
                         you
@@ -196,23 +230,34 @@ export default function WaitingRoom({
             </button>
 
             {isHost ? (
+              /* Host: gold primary, disabled until everyone is ready */
               <button
                 disabled={!canStart}
                 onClick={handleStart}
-                className="group relative flex-1 overflow-hidden rounded-2xl border border-gold/50 bg-gradient-to-b from-gold-faint/70 to-gold-faint/30 py-3 text-sm font-bold tracking-wide text-gold-light shadow-[0_6px_16px_-10px_rgba(212,175,55,0.2)] transition-all hover:border-gold/80 hover:shadow-[0_8px_20px_-10px_rgba(212,175,55,0.3)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none sm:py-4 sm:text-base"
+                className={primaryBtn}
               >
-                <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                {shine}
                 <i className="fa-solid fa-play mr-2 text-xs sm:mr-2.5" />
-                Start Game
+                {allReady ? "Start Game" : "Waiting for players..."}
+              </button>
+            ) : isReady ? (
+              /* Ready: subdued gold outline so the primary action reads as "done" */
+              <button
+                onClick={handleUnready}
+                className="group relative flex-1 overflow-hidden rounded-2xl border border-gold/30 bg-gold-faint/10 py-3 text-sm font-semibold tracking-wide text-gold-light/80 transition-all hover:border-gold/50 hover:bg-gold-faint/20 hover:text-gold-light active:scale-[0.98] sm:py-4 sm:text-base"
+              >
+                {shine}
+                <i className="fa-solid fa-check mr-2 text-xs sm:mr-2.5" />
+                Ready · Waiting for host
+                <i className="fa-solid fa-xmark ml-2 text-xs opacity-60" />
               </button>
             ) : (
-              <div className="flex-1 rounded-2xl border border-white/10 bg-black/30 py-3 text-center text-xs text-white/35 sm:py-4 sm:text-sm">
-                <i
-                  className="fa-solid fa-hourglass-half mr-1.5 animate-spin sm:mr-2"
-                  style={{ animationDuration: "3s" }}
-                />
-                Waiting for host
-              </div>
+              /* Not ready: gold primary call to action */
+              <button onClick={handleReady} className={primaryBtn}>
+                {shine}
+                <i className="fa-solid fa-circle-check mr-2 text-xs sm:mr-2.5" />
+                Ready Up
+              </button>
             )}
           </div>
         </main>

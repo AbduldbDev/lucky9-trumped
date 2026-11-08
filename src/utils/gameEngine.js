@@ -41,6 +41,7 @@ export function createPlayer({ id, name, skinId = "classic_red" }) {
     isEliminated: false,
     isSpectator: false,
     timeoutEliminated: false, // eliminated by timeout (temporary, only current round)
+    isReady: false, // ready status in waiting room
     hand: [], // hand[0] = hole card
     trumps: [], // trump card IDs in inventory
     stood: false,
@@ -59,6 +60,9 @@ export function createPlayer({ id, name, skinId = "classic_red" }) {
 // Initial state factory
 // ---------------------------------------------------------------------------
 export function createInitialState({ partyCode, hostPlayer }) {
+  // Ensure host is ready when room is created
+  hostPlayer.isReady = true;
+
   return {
     partyCode,
     hostId: hostPlayer.id,
@@ -67,6 +71,7 @@ export function createInitialState({ partyCode, hostPlayer }) {
     deck: [],
     players: [hostPlayer],
     turnIndex: -1,
+    turnStartTime: null, // timestamp when current turn started (for timer abuse prevention)
     betModifiers: 0,
     trumpLog: [], // for SHATTER tracking
     trumpPlays: [], // recent trump card plays for display (id, trumpId, playerName, timestamp)
@@ -78,6 +83,7 @@ export function createInitialState({ partyCode, hostPlayer }) {
     counterResponses: {}, // collected counter responses (requestId -> { playerId, accepted })
     rematchVotes: {}, // playerId → boolean (REMATCH_VOTE)
     rematchTimerEnd: null, // epoch ms when rematch vote expires
+    intentionalLeavers: [], // track players who intentionally left (so they rejoin as spectators)
     lastResult: null,
     winnerId: null,
     showdownAt: null, // epoch ms when countdown ends → showdown
@@ -173,6 +179,8 @@ function startRound(d, firstPlayerOverride = null) {
   }
 
   d.turnIndex = startIdx;
+  d.turnStartTime = Date.now(); // Set initial turn start time
+
   // If the designated starter has already stood (shouldn't happen normally), advance
   if (d.players[d.turnIndex]?.stood) advanceTurn(d);
 
@@ -186,6 +194,7 @@ function advanceTurn(d) {
     const p = d.players[idx];
     if (!p.isEliminated && !p.stood && !p.isSpectator) {
       d.turnIndex = idx;
+      d.turnStartTime = Date.now(); // Set turn start time for timer
       return;
     }
   }
@@ -521,19 +530,83 @@ function executeCounteredTrump(d, request) {
 // ---------------------------------------------------------------------------
 const HANDLERS = {
   JOIN(d, { player }) {
-    if (d.players.some((p) => p.id === player.id)) return false; // reconnect
-    if (d.phase !== PHASES.LOBBY) throw new Error("Game already started.");
+    const existingIdx = d.players.findIndex((p) => p.id === player.id);
+
+    // Player already exists - this is a reconnect/refresh
+    if (existingIdx !== -1) {
+      const existing = d.players[existingIdx];
+
+      // Check if they intentionally left before (tracked in intentionalLeavers)
+      if (d.intentionalLeavers?.includes(player.id)) {
+        // They left intentionally, now rejoining as spectator
+        if (!existing.isSpectator) {
+          existing.isSpectator = true;
+          existing.isEliminated = true;
+          existing.lives = 0;
+          existing.stood = true;
+          pushLog(d, `${player.name} rejoined as spectator.`);
+        }
+        return false; // reconnect, state unchanged except for spectator flag
+      }
+
+      // Regular reconnect (browser refresh) - welcome them back
+      // Ensure host is always ready
+      if (player.id === d.hostId && d.phase === PHASES.LOBBY) {
+        existing.isReady = true;
+      }
+      return false; // reconnect, no state change needed
+    }
+
+    // New player joining
+    if (d.phase !== PHASES.LOBBY) {
+      // Game already started - join as spectator
+      const spectator = createPlayer(player);
+      spectator.isSpectator = true;
+      spectator.isEliminated = true;
+      spectator.lives = 0;
+      d.players.push(spectator);
+      pushLog(d, `${player.name} joined as spectator.`);
+      return;
+    }
+
+    // New player joining in lobby
     if (d.players.length >= GAME_CONFIG.MAX_PLAYERS)
       throw new Error("Room is full.");
-    d.players.push(createPlayer(player));
+    const newPlayer = createPlayer(player);
+    // Host is automatically ready
+    if (player.id === d.hostId) {
+      newPlayer.isReady = true;
+    }
+    d.players.push(newPlayer);
     pushLog(d, `${player.name} joined.`);
   },
 
-  LEAVE(d, { id }) {
+  READY(d, { by }) {
+    if (d.phase !== PHASES.LOBBY) throw new Error("Not in lobby.");
+    const p = d.players.find((player) => player.id === by);
+    if (!p) throw new Error("Player not found.");
+    if (p.isReady) return false; // Already ready
+    p.isReady = true;
+    pushLog(d, `${p.name} is ready.`);
+  },
+
+  UNREADY(d, { by }) {
+    if (d.phase !== PHASES.LOBBY) throw new Error("Not in lobby.");
+    if (by === d.hostId) throw new Error("Host cannot unready.");
+    const p = d.players.find((player) => player.id === by);
+    if (!p) throw new Error("Player not found.");
+    if (!p.isReady) return false; // Already not ready
+    p.isReady = false;
+    pushLog(d, `${p.name} is not ready.`);
+  },
+
+  LEAVE(d, { id, intentional }) {
     const idx = d.players.findIndex((p) => p.id === id);
     if (idx === -1) return false;
     const p = d.players[idx];
+
     if (d.phase === PHASES.LOBBY) {
+      // In lobby, always remove the player completely
       d.players.splice(idx, 1);
       // Transfer host if the host left
       if (id === d.hostId && d.players.length > 0) {
@@ -541,15 +614,28 @@ const HANDLERS = {
         pushLog(d, `${d.players[0].name} is now the host.`);
       }
     } else {
-      p.isEliminated = true;
-      p.isSpectator = true;
-      p.lives = 0;
-      p.stood = true;
-      pushLog(d, `${p.name} left the game.`);
-      if (d.phase === PHASES.PLAYING) {
-        if (d.players[d.turnIndex]?.id === id) advanceTurn(d);
-        else checkSingleActiveRemaining(d);
+      // During game
+      if (intentional) {
+        // Track intentional leavers so they rejoin as spectators
+        if (!d.intentionalLeavers) d.intentionalLeavers = [];
+        if (!d.intentionalLeavers.includes(id)) {
+          d.intentionalLeavers.push(id);
+        }
+
+        // Mark as spectator/eliminated
+        p.isEliminated = true;
+        p.isSpectator = true;
+        p.lives = 0;
+        p.stood = true;
+        pushLog(d, `${p.name} left the game.`);
+
+        // Advance turn if it was their turn
+        if (d.phase === PHASES.PLAYING) {
+          if (d.players[d.turnIndex]?.id === id) advanceTurn(d);
+          else checkSingleActiveRemaining(d);
+        }
       }
+      // If not intentional (shouldn't happen anymore), do nothing - allow reconnect
     }
   },
 
@@ -558,6 +644,14 @@ const HANDLERS = {
     if (d.phase !== PHASES.LOBBY) throw new Error("Already started.");
     if (d.players.length < GAME_CONFIG.MIN_PLAYERS)
       throw new Error("Need more players.");
+
+    // Check if all players are ready
+    const notReady = d.players.filter((p) => !p.isReady && !p.isSpectator);
+    if (notReady.length > 0) {
+      throw new Error(
+        `Waiting for players: ${notReady.map((p) => p.name).join(", ")}`,
+      );
+    }
 
     // SRD §3.2: grant STARTING_TRUMP_CARDS at match start
     for (const p of d.players) {
@@ -618,6 +712,7 @@ const HANDLERS = {
         round: 0,
         deck: [],
         turnIndex: -1,
+        turnStartTime: null,
         betModifiers: 0,
         trumpLog: [],
         trumpPlays: [],
@@ -631,6 +726,7 @@ const HANDLERS = {
         lastResult: null,
         winnerId: null,
         log: [],
+        intentionalLeavers: [], // Clear intentional leavers on rematch
       });
       pushLog(d, "Rematch accepted! Room reset — waiting for host to start.");
     } else {
@@ -680,6 +776,7 @@ const HANDLERS = {
       round: 0,
       deck: [],
       turnIndex: -1,
+      turnStartTime: null,
       betModifiers: 0,
       trumpLog: [],
       trumpPlays: [],
@@ -690,6 +787,7 @@ const HANDLERS = {
       rematchVotes: {},
       rematchTimerEnd: null,
       rematchFailed: false,
+      intentionalLeavers: [], // Clear intentional leavers on reset
       lastResult: null,
       winnerId: null,
       log: [],

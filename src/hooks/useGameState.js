@@ -279,13 +279,11 @@ export function useGameState({ partyCode, isHost, profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHost, rt.status, view?.players?.length]);
 
-  // ── Guest: tell the host we're leaving if the tab closes ──────────────────
-  useEffect(() => {
-    if (isHost) return undefined;
-    const bye = () => rtRef.current?.sendAction({ type: "LEAVE", id: selfId });
-    window.addEventListener("beforeunload", bye);
-    return () => window.removeEventListener("beforeunload", bye);
-  }, [isHost, selfId]);
+  // ── Browser refresh/close handling ─────────────────────────────────────────
+  // We DO NOT send LEAVE on beforeunload/unload because we want players to be
+  // able to refresh without being kicked. The game will treat a disconnect as
+  // temporary, and players can rejoin by refreshing or navigating back.
+  // Only the explicit leave() action marks a player as having left intentionally.
 
   const dispatch = useCallback(
     (action) => {
@@ -316,7 +314,9 @@ export function useGameState({ partyCode, isHost, profile }) {
     rematchVote: (accept) => dispatch({ type: "REMATCH_VOTE", accept }),
     checkRematchTimer: () => dispatch({ type: "CHECK_REMATCH_TIMER" }),
     reset: () => dispatch({ type: "RESET" }),
-    leave: () => dispatch({ type: "LEAVE", id: selfId }),
+    leave: () => dispatch({ type: "LEAVE", id: selfId, intentional: true }),
+    ready: () => dispatch({ type: "READY" }),
+    unready: () => dispatch({ type: "UNREADY" }),
   };
 
   const current = view?.players?.[view.turnIndex];

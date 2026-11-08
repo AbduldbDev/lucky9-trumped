@@ -49,6 +49,7 @@ export default function Table({ game, onLeave }) {
     active: isMyTurn,
     phase: view?.phase,
     turnKey,
+    turnStartTime: view?.turnStartTime,
     paused: view?.waitingForCounterResponse ?? false,
     onTimeout: actions.timeout,
   });

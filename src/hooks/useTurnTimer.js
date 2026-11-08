@@ -10,6 +10,7 @@ import { AUDIO_CONFIG } from "../config/audio.config.js";
  * @param {string}  params.phase      - current game phase
  * @param {string}  params.turnKey    - a key that changes every time the turn changes
  *                                      (e.g. `${round}-${turnIndex}`)
+ * @param {number}  params.turnStartTime - server timestamp (ms) when turn started
  * @param {boolean} params.paused     - true to pause the timer (e.g., waiting for counter response)
  * @param {function} params.onTimeout - called with no args when the timer hits 0
  */
@@ -17,6 +18,7 @@ export function useTurnTimer({
   active,
   phase,
   turnKey,
+  turnStartTime,
   paused = false,
   onTimeout,
 }) {
@@ -33,13 +35,20 @@ export function useTurnTimer({
   const isPlaying = phase === PHASES.PLAYING;
 
   useEffect(() => {
-    // Reset every time the active turn changes
-    setSecondsLeft(duration);
+    // Calculate elapsed time from server timestamp
+    if (turnStartTime) {
+      const elapsed = Math.floor((Date.now() - turnStartTime) / 1000);
+      const remaining = Math.max(0, duration - elapsed);
+      setSecondsLeft(remaining);
+    } else {
+      setSecondsLeft(duration);
+    }
+
     if (heartbeatActiveRef.current) {
       audio.stopHeartbeat();
       heartbeatActiveRef.current = false;
     }
-  }, [turnKey, duration, audio]);
+  }, [turnKey, duration, turnStartTime, audio]);
 
   useEffect(() => {
     if (!active || !isPlaying || paused) {
@@ -51,8 +60,21 @@ export function useTurnTimer({
       return;
     }
 
+    // Calculate initial seconds left based on server timestamp
+    let initialSeconds = duration;
+    if (turnStartTime) {
+      const elapsed = Math.floor((Date.now() - turnStartTime) / 1000);
+      initialSeconds = Math.max(0, duration - elapsed);
+    }
+    setSecondsLeft(initialSeconds);
+
+    // If already expired, trigger timeout immediately
+    if (initialSeconds <= 0) {
+      onTimeoutRef.current?.();
+      return;
+    }
+
     // Start countdown
-    setSecondsLeft(duration);
     intervalRef.current = setInterval(() => {
       setSecondsLeft((s) => {
         // Start heartbeat when time is low
@@ -91,7 +113,7 @@ export function useTurnTimer({
         heartbeatActiveRef.current = false;
       }
     };
-  }, [active, isPlaying, paused, turnKey, audio]);
+  }, [active, isPlaying, paused, turnKey, turnStartTime, duration, audio]);
 
   const isWarning =
     active && isPlaying && secondsLeft <= warning && secondsLeft > 0;

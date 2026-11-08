@@ -120,6 +120,8 @@ function Room({ room, profile, onProfile, onExit }) {
         selfId={game.selfId}
         onStart={actions.start}
         onLeave={leave}
+        onReady={actions.ready}
+        onUnready={actions.unready}
       />
     );
   }
