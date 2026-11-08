@@ -365,12 +365,6 @@ body {
   outline-offset: 2px;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   Controls: container-query layout.
-   Reacts to the width of the column the controls sit in (not the
-   viewport), so it stays tidy in a narrow side column, a bottom bar
-   or a full-width panel. Narrow-first; widens at 300px / 480px.
-   ═══════════════════════════════════════════════════════════ */
 .controls {
   container-type: inline-size;
   container-name: controls;

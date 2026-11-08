@@ -1,20 +1,8 @@
 import { TRUMP_CARDS_CATALOG } from "../../../config/trumpCards.config.js";
-
-const TRUMP_ICONS = {
-  BET_UP: "fa-arrow-trend-up",
-  BET_DOWN: "fa-arrow-trend-down",
-  DOUBLE_BET_UP: "fa-angles-up",
-  DOUBLE_BET_DOWN: "fa-angles-down",
-  ANGEL_CARD: "fa-shield-halved",
-};
-
-const RARITY_COLOR = {
-  COMMON: "#8d99a8",
-  UNCOMMON: "#5fbf86",
-  RARE: "#6a9fd8",
-  LEGENDARY: "#b89b5e",
-  MYTHIC: "#a98bd6",
-};
+import {
+  RARITY_COLOR,
+  TRUMP_ICONS,
+} from "../../../config/trumpCards.config.js";
 
 /**
  * Displays active persistent trump effects (bet modifiers, angel cards)

@@ -1,6 +1,6 @@
 import Seat from "./Seat.jsx";
 import TimerRing from "./Timerring.jsx";
-import ActiveEffects from "./ActiveEffects.jsx";
+import ActiveEffects from "../effects/ActiveEffects.jsx";
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 import { PHASES } from "../../../utils/gameEngine.js";
 import { useElementSize } from "../../../hooks/useElementSize.js";

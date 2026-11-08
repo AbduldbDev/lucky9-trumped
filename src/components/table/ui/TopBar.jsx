@@ -1,5 +1,5 @@
 import { useState } from "react";
-import TrumpGuideModal from "./TrumpGuideModal.jsx";
+import TrumpGuideModal from "../modals/TrumpGuideModal.jsx";
 import AudioSettings from "./AudioSettings.jsx";
 
 export default function TopBar({ view, bet, onLeave }) {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 
-const COUNTER_PROMPT_TIME_MS = 5000; // 5 seconds to respond
+const COUNTER_PROMPT_TIME_MS = GAME_CONFIG.COUNTER_PROMPT_TIME_MS; // 5 seconds to respond
 
 /**
  * Mobile-first sizing: the base classes are the compact phone layout,
