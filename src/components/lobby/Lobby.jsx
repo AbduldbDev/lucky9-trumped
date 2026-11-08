@@ -9,7 +9,13 @@ import { useAuth } from "../../contexts/AuthContext.jsx";
 import HowToPlayModal from "./HowToPlayModal.jsx";
 import UserProfile from "../profile/UserProfile.jsx";
 
-export default function Lobby({ profile, onCreate, onJoin, onOpenShop }) {
+export default function Lobby({
+  profile,
+  onCreate,
+  onJoin,
+  onOpenShop,
+  onEquipSkin,
+}) {
   const audio = useAudio();
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -358,7 +364,11 @@ export default function Lobby({ profile, onCreate, onJoin, onOpenShop }) {
 
       {/* User Profile Modal */}
       {showProfile && (
-        <UserProfile profile={profile} onClose={() => setShowProfile(false)} />
+        <UserProfile
+          profile={profile}
+          onClose={() => setShowProfile(false)}
+          onEquipSkin={onEquipSkin}
+        />
       )}
     </div>
   );

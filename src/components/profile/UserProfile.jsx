@@ -6,10 +6,11 @@ import { CARD_SKINS_SHOP } from "../../config/cardSkins.config";
  * Mobile-first sizing: base classes are compact, `sm:` restores roomier sizes.
  * Data loading and tab logic are unchanged; only the presentation is restyled.
  */
-export default function UserProfile({ profile, onClose }) {
+export default function UserProfile({ profile, onClose, onEquipSkin }) {
   const [matchHistory, setMatchHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("stats"); // 'stats' | 'history' | 'inventory'
+  const [equipping, setEquipping] = useState(null);
 
   useEffect(() => {
     loadMatchHistory();
@@ -28,6 +29,18 @@ export default function UserProfile({ profile, onClose }) {
       console.warn("[Lucky9] Could not load match history:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEquipSkin = async (skinId) => {
+    if (!onEquipSkin) return;
+    setEquipping(skinId);
+    try {
+      await onEquipSkin(skinId);
+    } catch (err) {
+      console.warn("[Lucky9] Could not equip skin:", err);
+    } finally {
+      setEquipping(null);
     }
   };
 
@@ -270,6 +283,7 @@ export default function UserProfile({ profile, onClose }) {
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
                 {ownedSkins.map((skin) => {
                   const equipped = profile.equippedSkinId === skin.id;
+                  const isEquipping = equipping === skin.id;
                   return (
                     <div
                       key={skin.id}
@@ -293,7 +307,7 @@ export default function UserProfile({ profile, onClose }) {
                         />
                       )}
                       <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="truncate text-[12px] font-medium tracking-wide text-ivory sm:text-[13px]">
                             {skin.name}
                           </p>
@@ -301,13 +315,28 @@ export default function UserProfile({ profile, onClose }) {
                             {skin.rarity}
                           </p>
                         </div>
-                        {equipped && (
+                        {equipped ? (
                           <span
                             className="flex-none rounded-full border border-gold/40 bg-gold/[0.08] px-2 py-0.5
                               text-[8px] font-semibold uppercase tracking-[0.2em] text-gold-light sm:text-[9px]"
                           >
                             Equipped
                           </span>
+                        ) : (
+                          <button
+                            onClick={() => handleEquipSkin(skin.id)}
+                            disabled={isEquipping}
+                            className="flex-none rounded-md border border-gold/30 bg-gold/[0.08] px-2.5 py-1
+                              text-[9px] font-semibold uppercase tracking-[0.15em] text-gold-light
+                              transition-all hover:bg-gold/[0.15] hover:border-gold/50
+                              disabled:cursor-not-allowed disabled:opacity-50 sm:text-[10px] sm:px-3 sm:py-1.5"
+                          >
+                            {isEquipping ? (
+                              <i className="fa-solid fa-spinner fa-spin" />
+                            ) : (
+                              "Equip"
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
