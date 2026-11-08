@@ -131,19 +131,32 @@ export default function Table({ game, onLeave }) {
       return;
     }
 
-    // Get the most recent trump play
-    const latestPlay = view.trumpPlays[view.trumpPlays.length - 1];
+    // Find all new trump plays that haven't been shown yet
+    const newPlays = view.trumpPlays.filter(
+      (play) => !shownNotificationIds.has(play.id),
+    );
 
-    // Show notification only if we haven't shown this specific play before
-    if (!shownNotificationIds.has(latestPlay.id)) {
-      setNotification(latestPlay);
-      setShownNotificationIds((prev) => new Set([...prev, latestPlay.id]));
+    const timeouts = [];
 
-      // Play trump card sound based on rarity
-      const trumpCard = TRUMP_CARDS_CATALOG[latestPlay.trumpId];
-      if (trumpCard) {
-        audio.playTrumpSfx(trumpCard.rarity);
-      }
+    if (newPlays.length > 0) {
+      // Sort by timestamp to show in correct order
+      newPlays.sort((a, b) => a.timestamp - b.timestamp);
+
+      // Show notifications sequentially with delays
+      newPlays.forEach((play, index) => {
+        const timeoutId = setTimeout(() => {
+          setNotification(play);
+          setShownNotificationIds((prev) => new Set([...prev, play.id]));
+
+          // Play trump card sound based on rarity
+          const trumpCard = TRUMP_CARDS_CATALOG[play.trumpId];
+          if (trumpCard) {
+            audio.playTrumpSfx(trumpCard.rarity);
+          }
+        }, index * 4200); // Show each notification 4.2s apart (4s display + 0.2s gap)
+
+        timeouts.push(timeoutId);
+      });
     }
 
     // Update displayed trumps on table (filter out old ones)
@@ -152,6 +165,11 @@ export default function Table({ game, onLeave }) {
       (tp) => now - tp.timestamp < 6000,
     );
     setDisplayedTrumps(recentTrumps);
+
+    // Cleanup timeouts on unmount or dependency change
+    return () => {
+      timeouts.forEach((timeout) => clearTimeout(timeout));
+    };
   }, [view?.trumpPlays, shownNotificationIds, audio]);
 
   // Clear notification IDs and notification state when round changes

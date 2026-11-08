@@ -415,23 +415,41 @@ function executeCounteredTrump(d, request) {
   // Don't add the initial trump play notification here - it was already added
   // when the counter request was created. Only add counter notifications.
 
-  // If there were counters, add separate notification entries for each counter
+  // If there were counters, add a SINGLE combined notification for all counters
   if (countered && countered.length > 0) {
-    countered.forEach((counteredPlayerId) => {
-      const counterPlayer = d.players.find((p) => p.id === counteredPlayerId);
-      if (counterPlayer) {
-        d.trumpPlays.push({
-          id: `${counteredPlayerId}-SHATTER-${Date.now()}-${Math.random()}`,
-          trumpId: "SHATTER",
-          playerId: counteredPlayerId,
-          playerName: counterPlayer.name,
-          targetId: request.attackerId, // Counter targets the original attacker
-          targetName: request.attackerName,
-          timestamp: Date.now() + 100, // Slightly later to show after original
-          countered: true, // This is a counter notification
-        });
+    const counterPlayerNames = countered
+      .map((counteredPlayerId) => {
+        const counterPlayer = d.players.find((p) => p.id === counteredPlayerId);
+        return counterPlayer?.name;
+      })
+      .filter(Boolean); // Remove any undefined names
+
+    if (counterPlayerNames.length > 0) {
+      // Create natural language list: "Player1", "Player1 and Player2", or "Player1, Player2 and Player3"
+      let playerListText;
+      if (counterPlayerNames.length === 1) {
+        playerListText = counterPlayerNames[0];
+      } else if (counterPlayerNames.length === 2) {
+        playerListText = counterPlayerNames.join(" and ");
+      } else {
+        // 3 or more: "Player1, Player2 and Player3"
+        const lastPlayer = counterPlayerNames[counterPlayerNames.length - 1];
+        const otherPlayers = counterPlayerNames.slice(0, -1);
+        playerListText = `${otherPlayers.join(", ")} and ${lastPlayer}`;
       }
-    });
+
+      d.trumpPlays.push({
+        id: `COUNTER-${Date.now()}-${Math.random()}`,
+        trumpId: "SHATTER",
+        playerId: countered[0], // Use first counter's ID for consistency
+        playerName: playerListText, // "Player 2 and Player 3"
+        targetId: request.attackerId,
+        targetName: request.attackerName,
+        timestamp: Date.now() + 100, // Slightly later to show after original
+        countered: true, // This is a counter notification
+        multipleCounters: countered.length > 1, // Flag for multiple counters
+      });
+    }
   }
 
   // Keep only recent plays
