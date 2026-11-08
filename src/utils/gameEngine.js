@@ -686,7 +686,9 @@ const HANDLERS = {
     }
 
     // SRD §3.2: grant STARTING_TRUMP_CARDS at match start
+    // Clear existing trump cards first (in case of rematch)
     for (const p of d.players) {
+      p.trumps = []; // Clear existing trump cards
       for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(p);
     }
     startRound(d);
