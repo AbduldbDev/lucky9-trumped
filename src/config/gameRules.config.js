@@ -113,5 +113,5 @@ export const GAME_CONFIG = {
   // MAX CARDS IN HAND (derived, used throughout engine)
   MAX_CARDS_IN_HAND: 5,
 
-  COUNTER_PROMPT_TIME_MS: 5000,
+  COUNTER_PROMPT_TIME_MS: 5001,
 };
