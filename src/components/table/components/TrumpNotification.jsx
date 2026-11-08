@@ -93,7 +93,18 @@ export default function TrumpNotification({ notification, onDismiss }) {
             <span className="text-white/75 font-medium">
               {notification.playerName}
             </span>{" "}
-            played
+            {notification.countered ? (
+              <span className="text-red-400">countered with</span>
+            ) : notification.targetName ? (
+              <>
+                used on{" "}
+                <span className="text-white/75 font-medium">
+                  {notification.targetName}
+                </span>
+              </>
+            ) : (
+              "played"
+            )}
           </span>
           <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
             <span

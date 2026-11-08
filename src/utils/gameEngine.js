@@ -411,14 +411,28 @@ function executeCounteredTrump(d, request) {
 
   // Record this trump play for display on table
   if (!d.trumpPlays) d.trumpPlays = [];
-  d.trumpPlays.push({
-    id: `${request.attackerId}-${request.trumpId}-${Date.now()}`,
-    trumpId: request.trumpId,
-    playerId: request.attackerId,
-    playerName: request.attackerName,
-    timestamp: Date.now(),
-    countered, // Include counter info
-  });
+
+  // Don't add the initial trump play notification here - it was already added
+  // when the counter request was created. Only add counter notifications.
+
+  // If there were counters, add separate notification entries for each counter
+  if (countered && countered.length > 0) {
+    countered.forEach((counteredPlayerId) => {
+      const counterPlayer = d.players.find((p) => p.id === counteredPlayerId);
+      if (counterPlayer) {
+        d.trumpPlays.push({
+          id: `${counteredPlayerId}-SHATTER-${Date.now()}-${Math.random()}`,
+          trumpId: "SHATTER",
+          playerId: counteredPlayerId,
+          playerName: counterPlayer.name,
+          targetId: request.attackerId, // Counter targets the original attacker
+          targetName: request.attackerName,
+          timestamp: Date.now() + 100, // Slightly later to show after original
+          countered: true, // This is a counter notification
+        });
+      }
+    });
+  }
 
   // Keep only recent plays
   const now = Date.now();
@@ -703,6 +717,23 @@ const HANDLERS = {
           expiresAt: Date.now() + 10000, // 10 second timeout
         };
 
+        // Show notification immediately when trump is played (before counter responses)
+        if (!d.trumpPlays) d.trumpPlays = [];
+        const targetPlayer = targetId
+          ? d.players.find((pl) => pl.id === targetId)
+          : null;
+
+        d.trumpPlays.push({
+          id: `${by}-${trumpId}-${Date.now()}`,
+          trumpId,
+          playerId: by,
+          playerName: p.name,
+          targetId: targetId || null,
+          targetName: targetPlayer?.name || null,
+          timestamp: Date.now(),
+          countered: false,
+        });
+
         // Don't execute the trump yet - wait for responses
         pushLog(d, `${p.name} played ${card.name}. Waiting for counters...`);
         return;
@@ -717,11 +748,19 @@ const HANDLERS = {
 
     // Record this trump play for display on table
     if (!d.trumpPlays) d.trumpPlays = [];
+
+    // Get target player name if targetId exists
+    const targetPlayer = targetId
+      ? d.players.find((pl) => pl.id === targetId)
+      : null;
+
     d.trumpPlays.push({
       id: `${by}-${trumpId}-${Date.now()}`,
       trumpId,
       playerId: by,
       playerName: p.name,
+      targetId: targetId || null,
+      targetName: targetPlayer?.name || null,
       timestamp: Date.now(),
     });
 
