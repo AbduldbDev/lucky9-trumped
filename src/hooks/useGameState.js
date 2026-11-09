@@ -18,6 +18,7 @@ import {
   maskState,
   viewFor,
 } from "../utils/gameEngine.js";
+import { GAME_CONFIG } from "../config/gameRules.config.js";
 import { useSupabaseRealtime } from "./useSupabaseRealtime.js";
 import { supabase } from "../services/supabaseClient.js";
 
@@ -120,6 +121,80 @@ export function useGameState({ partyCode, isHost, profile }) {
     },
     [commit],
   );
+
+  // Auto-timeout mechanism: Host checks if current turn has exceeded time limit
+  // Auto-timeout mechanism: Host AND guests check if current turn has exceeded time limit
+  // This ensures even if host disconnects, guests can timeout stuck players
+  useEffect(() => {
+    const graceTime = isHost ? 2 : 5; // Host: 2s grace, Guests: 5s grace
+    const checkInterval = isHost ? 1000 : 2000; // Host checks every 1s, Guests every 2s
+
+    console.log(
+      `[Auto-timeout] Starting auto-timeout checker (${isHost ? "HOST" : "GUEST"}, grace: ${graceTime}s)`,
+    );
+
+    const intervalId = setInterval(() => {
+      const cur = isHost ? fullRef.current : publicRef.current;
+      if (!cur) return;
+
+      // Only check during PLAYING phase
+      if (cur.phase !== PHASES.PLAYING) return;
+
+      // Check if there's an active turn
+      if (cur.turnIndex < 0 || !cur.turnStartTime) return;
+
+      const currentPlayer = cur.players[cur.turnIndex];
+      if (!currentPlayer) return;
+
+      // Skip if player already handled
+      if (
+        currentPlayer.stood ||
+        currentPlayer.isEliminated ||
+        currentPlayer.isSpectator
+      )
+        return;
+
+      // Skip if timer is paused
+      if (cur.pausedForCounter) return;
+
+      // Calculate elapsed time accounting for pauses
+      const elapsed = Math.floor(
+        (Date.now() - cur.turnStartTime - (cur.totalPauseTime || 0)) / 1000,
+      );
+      const timeLimit = GAME_CONFIG.TURN_TIMER;
+
+      // Log progress (host: every 5s, guest: every 10s)
+      if ((isHost && elapsed % 5 === 0) || (!isHost && elapsed % 10 === 0)) {
+        console.log(
+          `[Auto-timeout] ${currentPlayer.name}: ${elapsed}s / ${timeLimit}s`,
+        );
+      }
+
+      // Trigger timeout if time limit exceeded
+      if (elapsed > timeLimit + graceTime) {
+        console.log(
+          `[Auto-timeout] !!! TIMEOUT TRIGGERED for ${currentPlayer.name} (${elapsed}s > ${timeLimit + graceTime}s) by ${isHost ? "HOST" : "GUEST"}`,
+        );
+
+        const timeoutAction = { type: "TIMEOUT", by: currentPlayer.id };
+
+        if (isHost) {
+          // Host applies directly
+          hostApply(timeoutAction);
+        } else {
+          // Guest sends via realtime
+          rtRef.current?.sendAction(timeoutAction);
+        }
+      }
+    }, checkInterval);
+
+    return () => {
+      console.log(
+        `[Auto-timeout] Stopping auto-timeout checker (${isHost ? "HOST" : "GUEST"})`,
+      );
+      clearInterval(intervalId);
+    };
+  }, [isHost, hostApply]);
 
   const rt = useSupabaseRealtime({
     partyCode,

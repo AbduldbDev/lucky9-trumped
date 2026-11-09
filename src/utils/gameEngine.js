@@ -47,6 +47,7 @@ export function createPlayer({ id, name, skinId = "classic_red" }) {
     stood: false,
     disabled: false, // DISABLE trump effect — skipped this round
     angelProtected: false, // ANGEL_CARD protection active
+    consecutiveTimeouts: 0, // Track consecutive timeout rounds
     lucky9Awarded: false, // flag: bonus trump card already given this round
     stats: {
       livesTaken: 0,
@@ -652,6 +653,41 @@ const HANDLERS = {
     pushLog(d, `${p.name} is not ready.`);
   },
 
+  KICK(d, { by, targetId }) {
+    // Only host can kick players
+    assertHost(d, by);
+
+    // Can only kick in lobby phase
+    if (d.phase !== PHASES.LOBBY) {
+      throw new Error("Can only kick players in the lobby.");
+    }
+
+    const targetIdx = d.players.findIndex((p) => p.id === targetId);
+    if (targetIdx === -1) {
+      throw new Error("Player not found.");
+    }
+
+    // Cannot kick yourself
+    if (targetId === by) {
+      throw new Error("Cannot kick yourself.");
+    }
+
+    // Cannot kick the host
+    if (targetId === d.hostId) {
+      throw new Error("Cannot kick the host.");
+    }
+
+    const kickedPlayer = d.players[targetIdx];
+    pushLog(d, `${kickedPlayer.name} was kicked from the lobby.`);
+
+    // Mark as kicked (so they know they were kicked, not just disconnected)
+    if (!d.kickedPlayers) d.kickedPlayers = [];
+    d.kickedPlayers.push(targetId);
+
+    // Remove player from the game
+    d.players.splice(targetIdx, 1);
+  },
+
   LEAVE(d, { id, intentional }) {
     const idx = d.players.findIndex((p) => p.id === id);
     if (idx === -1) return false;
@@ -861,6 +897,10 @@ const HANDLERS = {
     p.hand.push(d.deck.pop());
     pushLog(d, `${p.name} drew a card.`);
     checkLucky9(d, p);
+
+    // Reset consecutive timeout counter on successful action
+    p.consecutiveTimeouts = 0;
+
     // A Hit means someone is still playing — reset all stood flags so
     // stood players get another turn when the cycle comes back.
     // The round only ends when ALL players stand in a single cycle.
@@ -876,24 +916,47 @@ const HANDLERS = {
   STAND(d, { by }) {
     const p = assertTurn(d, by);
     p.stood = true;
+
+    // Reset consecutive timeout counter on successful action
+    p.consecutiveTimeouts = 0;
+
     pushLog(d, `${p.name} stands.`);
     advanceTurn(d);
   },
 
   // SRD §3.2: timeout → eliminate for current round only (temporary elimination)
   // Angel Card does NOT protect against timeout
+  // 2 consecutive timeouts → permanent elimination
   TIMEOUT(d, { by }) {
     const p = d.players.find((x) => x.id === by);
     if (!p || p.isEliminated || p.isSpectator || p.stood) return false;
     if (d.phase !== PHASES.PLAYING) return false;
     if (d.players[d.turnIndex]?.id !== by) return false;
 
-    // Mark as timeout-eliminated (temporary, only for this round)
-    p.stood = true;
-    p.timeoutEliminated = true;
-    p.isSpectator = true; // Temporarily a spectator for this round
+    // Increment consecutive timeout counter
+    p.consecutiveTimeouts = (p.consecutiveTimeouts || 0) + 1;
 
-    pushLog(d, `${p.name} timed out and was eliminated from this round!`);
+    // Check if this is the 2nd consecutive timeout
+    if (p.consecutiveTimeouts >= 2) {
+      // Permanent elimination
+      p.isEliminated = true;
+      p.stood = true;
+      p.isSpectator = true;
+      pushLog(
+        d,
+        `${p.name} timed out for the 2nd consecutive round and was permanently eliminated!`,
+      );
+    } else {
+      // Temporary elimination (first timeout)
+      p.stood = true;
+      p.timeoutEliminated = true;
+      p.isSpectator = true; // Temporarily a spectator for this round
+      pushLog(
+        d,
+        `${p.name} timed out and was eliminated from this round! (Warning: 1/2)`,
+      );
+    }
+
     // SRD §8.8: track timeout eliminations this round for potential draw
     if (!d.timeoutEliminatedIds) d.timeoutEliminatedIds = [];
     d.timeoutEliminatedIds.push(p.id);
