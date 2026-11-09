@@ -186,7 +186,7 @@ export const TRUMP_CARDS_CATALOG = {
   CHECKER: {
     id: "CHECKER",
     name: "Checker",
-    rarity: "LEGENDARY",
+    rarity: "RARE",
     description:
       "Inspect remaining copies of a selected card rank in the deck (visible only to you).",
     targetType: "RANK_CHOICE",

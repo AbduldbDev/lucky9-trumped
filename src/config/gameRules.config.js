@@ -60,14 +60,31 @@ export const GAME_CONFIG = {
   // ALLOW_MULTIPLE_TRUMP_CARDS_PER_TURN: true,
   // TRUMP_CARD_DRAW_PRIVATE: true,
 
-  // TRUMP CARD RARITY DROP PROBABILITIES (total = 100 %)
+  // ORIGINAL TRUMP CARD RARITY SETTINGS
+  // TRUMP_RARITY: {
+  //   COMMON: 45,
+  //   UNCOMMON: 27,
+  //   RARE: 17,
+  //   LEGENDARY: 8,
+  //   MYTHIC: 3,
+  // },
+
+  // BETA TRUMP CARD RARITY SETTINGS
   TRUMP_RARITY: {
-    COMMON: 45,
-    UNCOMMON: 27,
-    RARE: 17,
-    LEGENDARY: 8,
-    MYTHIC: 3,
+    COMMON: 35,
+    UNCOMMON: 25,
+    RARE: 18,
+    LEGENDARY: 12,
+    MYTHIC: 10,
   },
+
+  // TRUMP_RARITY: {
+  //   COMMON: 0,
+  //   UNCOMMON: 0,
+  //   RARE: 0,
+  //   LEGENDARY: 100,
+  //   MYTHIC: 0,
+  // },
 
   // BET SETTINGS
   MIN_BET: 0,
