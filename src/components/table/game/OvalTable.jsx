@@ -96,7 +96,7 @@ export default function OvalTable({
                   s={secondsLeft}
                   max={GAME_CONFIG.TURN_TIMER}
                   warn={GAME_CONFIG.TIMER_WARNING}
-                  paused={view.waitingForCounterResponse}
+                  paused={view.pausedForCounter}
                 />
               )}
             </div>
@@ -134,6 +134,10 @@ export default function OvalTable({
           {opponents.map((opp, idx) => {
             const pos = seats[idx];
             if (!pos) return null;
+            // Ring faces the table centre, away from the nearest edge
+            const ringSide = pos.x < width / 2 ? "right" : "left";
+
+            if (!pos) return null;
             return (
               <div
                 key={opp.id}
@@ -148,6 +152,7 @@ export default function OvalTable({
               >
                 <Seat
                   player={opp}
+                  ringSide={ringSide}
                   isTurn={turnPlayer?.id === opp.id}
                   revealed={revealed}
                   targetable={
@@ -161,6 +166,20 @@ export default function OvalTable({
                     )
                   }
                   onTarget={onTarget}
+                  turnStartTime={
+                    turnPlayer?.id === opp.id ? view.turnStartTime : null
+                  }
+                  totalPauseTime={
+                    turnPlayer?.id === opp.id ? view.totalPauseTime : 0
+                  }
+                  paused={
+                    turnPlayer?.id === opp.id ? view.pausedForCounter : false
+                  }
+                  turnKey={
+                    turnPlayer?.id === opp.id
+                      ? `${view.round}-${view.turnIndex}`
+                      : null
+                  }
                 />
               </div>
             );

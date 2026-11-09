@@ -23,6 +23,7 @@
   --c-rare: #6a9fd8;
   --c-legendary: #b89b5e;
   --c-mythic: #a98bd6;
+  color-scheme: dark;
 }
 
 /* ── Reset ── */
@@ -54,25 +55,31 @@ body {
       #030a07 100%
     )
     fixed;
-  overflow: hidden; /* full-screen, no scroll on table */
+  /* full-screen, no scroll on table */
 }
-
-::selection {
-  background: rgba(184, 155, 94, 0.3);
-  color: #fff;
-}
-
-/* ── Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
+  width: 5px;
+  height: 5px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(12, 61, 34, 0.08);
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(184, 155, 94, 0.22);
-  border-radius: 0;
+  background: #012210;
+  border: 1px solid rgba(12, 61, 34, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #012210;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #012210 rgba(12, 61, 34, 0.08);
 }
 
 /* ── Keyframes (defined here so custom classes below never depend on Tailwind purging) ── */
@@ -331,9 +338,9 @@ body {
 
 /* ── Player seat ── */
 .player-seat {
-  border-radius: var(--radius-lg);
+  /* border-radius: var(--radius-lg);
   background: var(--surface);
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--hairline); */
   transition:
     box-shadow 0.25s ease,
     border-color 0.25s ease,
@@ -502,13 +509,13 @@ body {
 }
 
 /* ── Utility ── */
-.no-scrollbar::-webkit-scrollbar {
+/* .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-}
+} */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -517,5 +524,34 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.targetable-glow {
+  padding: 1.5px; /* border thickness */
+  background: conic-gradient(
+    from var(--glow-angle),
+    transparent 0deg,
+    rgba(239, 68, 68, 0.95) 70deg,
+    transparent 140deg,
+    transparent 360deg
+  );
+  /* keep only the padding ring, cut out the center */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: targetable-glow-spin 2s linear infinite;
+}
+
+@keyframes targetable-glow-spin {
+  to {
+    --glow-angle: 360deg;
   }
 }

@@ -55,7 +55,7 @@ async function loadCloud() {
         id: uid,
         username,
         chips: 1000,
-        table_color: "blue", // Set default table color
+        table_color: "green", // Set default table color
       });
 
       if (profError && profError.code !== "23505") {

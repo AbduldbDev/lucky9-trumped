@@ -11,7 +11,7 @@
 export const SEAT_W = 100;
 export const SEAT_H = 98;
 const MIN_SCALE = 0.5;
-const EDGE_PAD = 20;
+const EDGE_PAD = 7;
 
 export function computeSeatLayout(count, width, height) {
   if (!width || !height || count <= 0) {
@@ -37,7 +37,11 @@ export function computeSeatLayout(count, width, height) {
   const seats = Array.from({ length: count }, (_, i) => {
     const deg = 270 + step * (i - (count - 1) / 2);
     const rad = (deg * Math.PI) / 180;
-    return { x: cx + rx * Math.cos(rad), y: cy + ry * Math.sin(rad) };
+    const x = cx + rx * Math.cos(rad);
+    const y = cy + ry * Math.sin(rad);
+    // Hang the timer ring toward the table center so it never crops at the edges
+    const ringSide = x < cx - 1 ? "right" : "left";
+    return { x, y, ringSide };
   });
 
   return { scale, cy, seats };

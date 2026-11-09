@@ -68,7 +68,7 @@ export default function Lobby({
     : 0;
 
   return (
-    <div className="relative min-h-[100dvh] w-full overflow-x-hidden overflow-y-auto">
+    <div className="relative min-h-[100dvh] w-full overflow-x-hidden ">
       {/* ── Ambient background ───────────────────────────── */}
       <div className="pointer-events-none fixed inset-0 -z-0">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(212,175,55,0.04),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(0,0,0,0.6),transparent_60%)]" />

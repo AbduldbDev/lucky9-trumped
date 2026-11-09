@@ -72,6 +72,9 @@ export function createInitialState({ partyCode, hostPlayer }) {
     players: [hostPlayer],
     turnIndex: -1,
     turnStartTime: null, // timestamp when current turn started (for timer abuse prevention)
+    pausedForCounter: false, // true when waiting for counter responses
+    pauseStartTime: null, // timestamp when pause started (to calculate pause duration)
+    totalPauseTime: 0, // accumulated pause time in milliseconds for current turn
     betModifiers: 0,
     trumpLog: [], // for SHATTER tracking
     trumpPlays: [], // recent trump card plays for display (id, trumpId, playerName, timestamp)
@@ -131,6 +134,10 @@ function startRound(d, firstPlayerOverride = null) {
   d.personalNotifications = {}; // Clear personal notifications for new round
   d.rematchVotes = {};
   d.rematchTimerEnd = null;
+  d.pausedForCounter = false; // Clear counter pause for new round
+  d.counterRequests = {}; // Clear any pending counter requests
+  d.totalPauseTime = 0; // Reset pause time
+  d.pauseStartTime = null;
   d.deck = shuffle(createDeck());
   d.phase = PHASES.PLAYING;
 
@@ -188,6 +195,12 @@ function startRound(d, firstPlayerOverride = null) {
 }
 
 function advanceTurn(d) {
+  // Clear counter pause when turn advances
+  d.pausedForCounter = false;
+  d.counterRequests = {}; // Clear any pending counter requests
+  d.totalPauseTime = 0; // Reset pause time for new turn
+  d.pauseStartTime = null;
+
   const n = d.players.length;
   for (let k = 1; k <= n; k++) {
     const idx = (d.turnIndex + k) % n;
@@ -364,6 +377,8 @@ function resolveShowdown(d) {
   }
 
   d.turnIndex = -1;
+  d.pausedForCounter = false; // Clear counter pause when showdown starts
+  d.counterRequests = {}; // Clear any pending counter requests
   d.betModifiers = 0;
   d.phase = PHASES.SHOWDOWN;
 
@@ -882,7 +897,12 @@ const HANDLERS = {
     // SRD §8.8: track timeout eliminations this round for potential draw
     if (!d.timeoutEliminatedIds) d.timeoutEliminatedIds = [];
     d.timeoutEliminatedIds.push(p.id);
+
+    // Advance to next player's turn
     advanceTurn(d);
+
+    // Explicitly return to commit state changes
+    return;
   },
 
   TRUMP(d, { by, trumpId, targetId, rank }) {
@@ -931,6 +951,10 @@ const HANDLERS = {
           createdAt: Date.now(),
           expiresAt: Date.now() + 10000, // 10 second timeout
         };
+
+        // Pause timer while waiting for counter responses
+        d.pausedForCounter = true;
+        d.pauseStartTime = Date.now(); // Record when pause started
 
         // Show notification immediately when trump is played (before counter responses)
         if (!d.trumpPlays) d.trumpPlays = [];
@@ -1068,6 +1092,21 @@ const HANDLERS = {
       executeCounteredTrump(d, request);
       // Clean up
       delete d.counterRequests[requestId];
+
+      // Calculate and accumulate pause duration
+      if (d.pauseStartTime) {
+        const pauseDuration = Date.now() - d.pauseStartTime;
+        d.totalPauseTime += pauseDuration;
+        d.pauseStartTime = null;
+      }
+
+      // Resume timer if no more counter requests pending
+      if (Object.keys(d.counterRequests).length === 0) {
+        d.pausedForCounter = false;
+      } else {
+        // If there are more counter requests, update pause start time for the next one
+        d.pauseStartTime = Date.now();
+      }
     }
   },
 };

@@ -161,7 +161,7 @@ function Room({ room, profile, onProfile, onExit }) {
     <Table
       game={game}
       onLeave={leave}
-      tableColor={profile.tableColor || "blue"}
+      tableColor={profile.tableColor || "green"}
     />
   );
 }

@@ -61,7 +61,8 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
     phase: view?.phase,
     turnKey,
     turnStartTime: view?.turnStartTime,
-    paused: view?.waitingForCounterResponse ?? false,
+    totalPauseTime: view?.totalPauseTime ?? 0,
+    paused: view?.pausedForCounter ?? false,
     onTimeout: actions.timeout,
   });
   const rematchLeft = useRematchTimer(

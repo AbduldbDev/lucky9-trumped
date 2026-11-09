@@ -44,11 +44,15 @@ export default function FogBadge({ hand, revealed = false, isSelf = false }) {
 
   return (
     <div
-      className={`${baseClass} font-normal bg-black/40 text-white/80 border border-white/8`}
-      aria-label={`Exposed: ${displayExp}`}
+      className={`${baseClass}
+          ${
+            isNine
+              ? "bg-gold-/20 text-gold-light border border-gold/50"
+              : "bg-black/30 text-ivory-dim border border-white/10"
+          }`}
+      aria-label={`Score: ${displayExp}`}
     >
-      <i className="fa-solid fa-eye-slash text-[8px] sm:text-[7px]" />
-      <span className="text-[10px] sm:text-[10px]">{displayExp}</span>
+      {displayExp}
     </div>
   );
 }

@@ -13,8 +13,10 @@ export function useTrumpTargeting({ isMyTurn, actions }) {
 
   // Clear aiming when turn ends
   useEffect(() => {
-    if (!isMyTurn) setAiming(null);
-  }, [isMyTurn]);
+    if (!isMyTurn && aiming) {
+      setAiming(null);
+    }
+  }, [isMyTurn, aiming]);
 
   const aimCfg = aiming ? TRUMP_CARDS_CATALOG[aiming] : null;
   const targeting = aimCfg?.targetType === "SINGLE_PLAYER";
@@ -35,14 +37,27 @@ export function useTrumpTargeting({ isMyTurn, actions }) {
 
     actions.playTrump(aiming, { targetId: p.id });
     setAiming(null);
+    // Trump card play will automatically clear targeting on server
+  };
+
+  const startAiming = (trumpId) => {
+    setAiming(trumpId);
+    // Don't notify server - we don't pause during targeting selection
+  };
+
+  const cancelAim = () => {
+    if (aiming) {
+      // Don't notify server - we don't pause during targeting selection
+      setAiming(null);
+    }
   };
 
   return {
     aiming,
     aimCfg,
     targeting,
-    setAiming,
+    setAiming: startAiming,
     onTarget,
-    cancelAim: () => setAiming(null),
+    cancelAim,
   };
 }

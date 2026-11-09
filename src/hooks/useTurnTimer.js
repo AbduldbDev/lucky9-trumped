@@ -11,6 +11,7 @@ import { AUDIO_CONFIG } from "../config/audio.config.js";
  * @param {string}  params.turnKey    - a key that changes every time the turn changes
  *                                      (e.g. `${round}-${turnIndex}`)
  * @param {number}  params.turnStartTime - server timestamp (ms) when turn started
+ * @param {number}  params.totalPauseTime - accumulated pause time (ms) for current turn
  * @param {boolean} params.paused     - true to pause the timer (e.g., waiting for counter response)
  * @param {function} params.onTimeout - called with no args when the timer hits 0
  */
@@ -19,6 +20,7 @@ export function useTurnTimer({
   phase,
   turnKey,
   turnStartTime,
+  totalPauseTime = 0,
   paused = false,
   onTimeout,
 }) {
@@ -37,7 +39,9 @@ export function useTurnTimer({
   useEffect(() => {
     // Calculate elapsed time from server timestamp
     if (turnStartTime) {
-      const elapsed = Math.floor((Date.now() - turnStartTime) / 1000);
+      const elapsed = Math.floor(
+        (Date.now() - turnStartTime - totalPauseTime) / 1000,
+      );
       const remaining = Math.max(0, duration - elapsed);
       setSecondsLeft(remaining);
     } else {
@@ -48,7 +52,7 @@ export function useTurnTimer({
       audio.stopHeartbeat();
       heartbeatActiveRef.current = false;
     }
-  }, [turnKey, duration, turnStartTime, audio]);
+  }, [turnKey, duration, turnStartTime, totalPauseTime, audio]);
 
   useEffect(() => {
     if (!active || !isPlaying || paused) {
@@ -63,7 +67,9 @@ export function useTurnTimer({
     // Calculate initial seconds left based on server timestamp
     let initialSeconds = duration;
     if (turnStartTime) {
-      const elapsed = Math.floor((Date.now() - turnStartTime) / 1000);
+      const elapsed = Math.floor(
+        (Date.now() - turnStartTime - totalPauseTime) / 1000,
+      );
       initialSeconds = Math.max(0, duration - elapsed);
     }
     setSecondsLeft(initialSeconds);
@@ -113,7 +119,16 @@ export function useTurnTimer({
         heartbeatActiveRef.current = false;
       }
     };
-  }, [active, isPlaying, paused, turnKey, turnStartTime, duration, audio]);
+  }, [
+    active,
+    isPlaying,
+    paused,
+    turnKey,
+    turnStartTime,
+    totalPauseTime,
+    duration,
+    audio,
+  ]);
 
   const isWarning =
     active && isPlaying && secondsLeft <= warning && secondsLeft > 0;
