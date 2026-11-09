@@ -33,6 +33,14 @@ export const UPDATES = [
         type: "new",
         text: "Added a kick feature that allows lobby hosts to remove players from the lobby.",
       },
+      {
+        type: "new",
+        text: "Added a Flip Cards feature that allows players to flip all their cards simultaneously to reveal their card backs. This visual effect is only visible to the player who activates it and does not affect other players' views or gameplay.",
+      },
+      {
+        type: "new",
+        text: "Added glowing effects to Card Skins, giving each skin a unique glow that matches its artwork and color theme. These visual effects enhance card appearances with ambient lighting and highlights, making equipped skins more visually distinctive on the game table.",
+      },
 
       // IMPROVED
       {

@@ -129,9 +129,9 @@ export function useGameState({ partyCode, isHost, profile }) {
     const graceTime = isHost ? 2 : 5; // Host: 2s grace, Guests: 5s grace
     const checkInterval = isHost ? 1000 : 2000; // Host checks every 1s, Guests every 2s
 
-    console.log(
-      `[Auto-timeout] Starting auto-timeout checker (${isHost ? "HOST" : "GUEST"}, grace: ${graceTime}s)`,
-    );
+    // console.log(
+    //   `[Auto-timeout] Starting auto-timeout checker (${isHost ? "HOST" : "GUEST"}, grace: ${graceTime}s)`,
+    // );
 
     const intervalId = setInterval(() => {
       const cur = isHost ? fullRef.current : publicRef.current;
@@ -164,17 +164,17 @@ export function useGameState({ partyCode, isHost, profile }) {
       const timeLimit = GAME_CONFIG.TURN_TIMER;
 
       // Log progress (host: every 5s, guest: every 10s)
-      if ((isHost && elapsed % 5 === 0) || (!isHost && elapsed % 10 === 0)) {
-        console.log(
-          `[Auto-timeout] ${currentPlayer.name}: ${elapsed}s / ${timeLimit}s`,
-        );
-      }
+      // if ((isHost && elapsed % 5 === 0) || (!isHost && elapsed % 10 === 0)) {
+      //   console.log(
+      //     `[Auto-timeout] ${currentPlayer.name}: ${elapsed}s / ${timeLimit}s`,
+      //   );
+      // }
 
       // Trigger timeout if time limit exceeded
       if (elapsed > timeLimit + graceTime) {
-        console.log(
-          `[Auto-timeout] !!! TIMEOUT TRIGGERED for ${currentPlayer.name} (${elapsed}s > ${timeLimit + graceTime}s) by ${isHost ? "HOST" : "GUEST"}`,
-        );
+        // console.log(
+        //   `[Auto-timeout] !!! TIMEOUT TRIGGERED for ${currentPlayer.name} (${elapsed}s > ${timeLimit + graceTime}s) by ${isHost ? "HOST" : "GUEST"}`,
+        // );
 
         const timeoutAction = { type: "TIMEOUT", by: currentPlayer.id };
 
@@ -189,9 +189,9 @@ export function useGameState({ partyCode, isHost, profile }) {
     }, checkInterval);
 
     return () => {
-      console.log(
-        `[Auto-timeout] Stopping auto-timeout checker (${isHost ? "HOST" : "GUEST"})`,
-      );
+      // console.log(
+      //   `[Auto-timeout] Stopping auto-timeout checker (${isHost ? "HOST" : "GUEST"})`,
+      // );
       clearInterval(intervalId);
     };
   }, [isHost, hostApply]);

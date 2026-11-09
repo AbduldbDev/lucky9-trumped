@@ -2,8 +2,7 @@ import FogBadge from "../../cards/FogBadge.jsx";
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 import { PHASES } from "../../../utils/gameEngine.js";
 
-/** Name, lives bar, score and card count. Slim strip on mobile, column on sm+. */
-export default function PlayerInfo({ me, phase, amSpectator }) {
+export default function PlayerInfo({ me, phase, amSpectator, cardsFlipped }) {
   return (
     <div
       className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 pt-2 pb-1
@@ -52,7 +51,12 @@ export default function PlayerInfo({ me, phase, amSpectator }) {
         {me.hand.length > 0 && (
           <span className="flex items-center gap-1.5">
             <i className="fa-solid fa-hashtag" />
-            <FogBadge hand={me.hand} isSelf revealed />
+            <FogBadge
+              hand={me.hand}
+              isSelf
+              revealed
+              forceValue={cardsFlipped ? 0 : null}
+            />
           </span>
         )}
         <span className="text-white/30">

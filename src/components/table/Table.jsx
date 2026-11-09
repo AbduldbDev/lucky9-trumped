@@ -32,6 +32,7 @@ import { useTableDerived } from "../../hooks/useTableDerived.js";
 export default function Table({ game, onLeave, tableColor = "blue" }) {
   const { view, me, isMyTurn, isHost, turnKey, actions } = game;
   const [panelCollapsed, setPanelCollapsed] = useState(false);
+  const [cardsFlipped, setCardsFlipped] = useState(false);
 
   // Custom hooks for separated concerns
   const viewControls = useViewControls();
@@ -289,8 +290,18 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
         )}
 
         <div className="flex flex-col sm:flex-row sm:items-stretch">
-          <PlayerInfo me={me} phase={view.phase} amSpectator={amSpectator} />
-          <PlayerHand me={me} amSpectator={amSpectator} />
+          <PlayerInfo
+            me={me}
+            phase={view.phase}
+            amSpectator={amSpectator}
+            cardsFlipped={cardsFlipped}
+          />
+          <PlayerHand
+            me={me}
+            amSpectator={amSpectator}
+            flipped={cardsFlipped}
+            onToggleFlip={() => setCardsFlipped((prev) => !prev)}
+          />
         </div>
 
         {showControls ? (

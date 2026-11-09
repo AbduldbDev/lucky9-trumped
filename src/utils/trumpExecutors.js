@@ -391,8 +391,7 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
 // ---------------------------------------------------------------------------
 
 /**
- * Roll a random trump card ID based on SRD rarity probabilities.
- * Total weights: COMMON 45, UNCOMMON 27, RARE 17, LEGENDARY 8, MYTHIC 3 = 100
+ * Roll a random trump card ID based rarity probabilities.
  */
 export function rollTrumpCard(rng = Math.random) {
   const cards = Object.values(TRUMP_CARDS_CATALOG);
