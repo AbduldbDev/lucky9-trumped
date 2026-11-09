@@ -42,7 +42,7 @@ export default function Leaderboard() {
   };
 
   return (
-    <AuthLayout showTagline={false} showRules={false}>
+    <AuthLayout showTagline={true} showRules={true}>
       <div className="w-full overflow-hidden rounded-2xl border border-gold/30 bg-gradient-to-b from-white/[0.05] to-black/50 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md sm:rounded-3xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/5 px-3.5 py-3 sm:px-5 sm:py-4">
@@ -67,7 +67,7 @@ export default function Leaderboard() {
         </div>
 
         {/* Content (scrolls inside the panel) */}
-        <div className="max-h-[62dvh] overflow-y-auto overscroll-contain p-2.5 [scrollbar-color:rgba(212,175,55,0.35)_transparent] [scrollbar-width:thin] sm:max-h-[520px] sm:p-4">
+        <div className="max-h-[50vh] overflow-y-auto overscroll-contain p-2.5 [scrollbar-color:rgba(212,175,55,0.35)_transparent] [scrollbar-width:thin] sm:max-h-[45vh] sm:p-4">
           {loading ? (
             <LoadingState />
           ) : error ? (

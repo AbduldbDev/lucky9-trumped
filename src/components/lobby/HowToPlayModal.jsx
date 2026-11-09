@@ -1,20 +1,21 @@
 import { useState } from "react";
+import { GAME_CONFIG } from "../../config/gameRules.config.js";
+import {
+  TRUMP_CARDS_CATALOG,
+  TRUMP_RARITIES,
+  TRUMP_ICONS,
+} from "../../config/trumpCards.config.js";
 
 /**
  * Mobile-first sizing: base classes are compact, `sm:` restores roomier sizes.
- * Content and tab logic are unchanged; only the presentation is restyled.
+ * Game numbers come from GAME_CONFIG; trump cards come from TRUMP_CARDS_CATALOG.
  */
 
-// Rarity colours match RARITY_COLOR in trumpCards.config.js
-const RARITY_HEX = {
-  COMMON: "#9ca3af",
-  UNCOMMON: "#22c55e",
-  RARE: "#3b82f6",
-  LEGENDARY: "#eab308",
-  MYTHIC: "#a855f7",
-};
-
 const BODY = "text-[11px] leading-relaxed text-ivory-dim/70 sm:text-[13px]";
+
+const RARITY_ORDER = ["COMMON", "UNCOMMON", "RARE", "LEGENDARY", "MYTHIC"];
+
+const counterSeconds = Math.round(GAME_CONFIG.COUNTER_PROMPT_TIME_MS / 1000);
 
 export default function HowToPlayModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState("basics");
@@ -195,15 +196,18 @@ function BasicsTab() {
 
       <Section icon="fa-heart" title="Lives System">
         <p className={BODY}>
-          Everyone starts with <B>12 lives</B> (♥). Lose a round? You lose lives
-          equal to the current bet. Run out of lives and you're eliminated!
+          Everyone starts with <B>{GAME_CONFIG.STARTING_LIVES} lives</B> (♥).
+          Lose a round? You lose lives equal to the current bet. Run out of
+          lives and you're eliminated!
         </p>
       </Section>
 
       <Section icon="fa-users" title="Players">
         <p className={BODY}>
-          <B>2-6 players</B> compete in private rooms. Last player standing wins
-          the match!
+          <B>
+            {GAME_CONFIG.MIN_PLAYERS}-{GAME_CONFIG.MAX_PLAYERS} players
+          </B>{" "}
+          compete in private rooms. Last player standing wins the match!
         </p>
       </Section>
     </div>
@@ -220,10 +224,12 @@ function GameplayTab() {
       On your turn, choose to <B>Hit</B> (draw) or <B>Stand</B> (lock hand)
     </>,
     <>
-      You can hold up to <B>5 cards</B> maximum in your hand
+      You can hold up to <B>{GAME_CONFIG.MAX_CARDS_IN_HAND} cards</B> maximum in
+      your hand
     </>,
     <>
-      Once all players stand, there's a <B>showdown</B> to reveal the winner
+      Once all players stand, there's a <B>showdown</B> (
+      {GAME_CONFIG.ROUND_RESULT_COUNTDOWN}-2-1 countdown) to reveal the winner
     </>,
   ];
 
@@ -243,6 +249,18 @@ function GameplayTab() {
             </li>
           ))}
         </ol>
+        <p className={`${BODY} mt-3`}>
+          {GAME_CONFIG.WINNER_FIRST_NEXT_ROUND && (
+            <>
+              The <B>round winner goes first</B> next round.{" "}
+            </>
+          )}
+          {GAME_CONFIG.RANDOM_FIRST_PLAYER_ON_DRAW && (
+            <>
+              After a draw, the first player is <B>picked at random</B>.
+            </>
+          )}
+        </p>
       </Section>
 
       <Section icon="fa-hand" title="Your Actions">
@@ -276,16 +294,25 @@ function GameplayTab() {
 
       <Section icon="fa-clock" title="Timer">
         <p className={BODY}>
-          You have <B>30 seconds</B> per turn. When time gets low, you'll hear a
-          heartbeat warning. Run out of time and you're eliminated for the
-          round!
+          You have <B>{GAME_CONFIG.TURN_TIMER} seconds</B> per turn.
+          {GAME_CONFIG.ENABLE_HEARTBEAT_SOUND && (
+            <>
+              {" "}
+              With <B>{GAME_CONFIG.TIMER_WARNING} seconds</B> left, the timer
+              turns red and you'll hear a heartbeat warning.
+            </>
+          )}
+          {GAME_CONFIG.AUTO_ELIMINATE_ON_TIMEOUT && (
+            <> Run out of time and you're eliminated for the round!</>
+          )}
         </p>
       </Section>
 
       <Section icon="fa-coins" title="Betting">
         <p className={BODY}>
-          The bet starts at <B>1 life</B> per round. Trump cards can increase or
-          decrease the bet, making rounds more intense!
+          The bet starts at <B>{GAME_CONFIG.STARTING_BET} life</B> per round and
+          can never drop below <B>{GAME_CONFIG.MIN_BET}</B>. Trump cards can
+          increase or decrease the bet, making rounds more intense!
         </p>
       </Section>
     </div>
@@ -293,68 +320,74 @@ function GameplayTab() {
 }
 
 function TrumpsTab() {
+  const grouped = RARITY_ORDER.map((id) => ({
+    rarity: TRUMP_RARITIES[id],
+    cards: Object.values(TRUMP_CARDS_CATALOG).filter((c) => c.rarity === id),
+  })).filter((g) => g.cards.length > 0);
+
   return (
     <div className="space-y-5 sm:space-y-6">
       <Section icon="fa-wand-magic-sparkles" title="Trump Cards">
         <p className={`${BODY} mb-3`}>
           Trump cards are <B>special powers</B> that can change the game! Each
-          player starts with <B>2 trump cards</B> and draws{" "}
-          <B>1 more after each round</B>.
+          player starts with{" "}
+          <B>{GAME_CONFIG.STARTING_TRUMP_CARDS} trump cards</B> and there's no
+          limit on how many you can hold. After each round, the winner draws{" "}
+          <B>{GAME_CONFIG.TRUMP_CARDS_FOR_WINNER}</B> and the loser draws{" "}
+          <B>{GAME_CONFIG.TRUMP_CARDS_FOR_LOSER}</B>.
         </p>
-        <Panel accent>
-          <p className="mb-1 text-[9px] font-medium uppercase tracking-[0.2em] text-gold sm:text-[10px]">
-            <i className="fa-solid fa-lightbulb mr-1.5" />
-            Bonus Trump Card
-          </p>
-          <p className={BODY}>
-            Hit exactly <B>9</B> during a round to earn a bonus trump card!
-          </p>
-        </Panel>
+        {GAME_CONFIG.TRUMP_CARD_ON_TOTAL_NINE && (
+          <Panel accent>
+            <p className="mb-1 text-[9px] font-medium uppercase tracking-[0.2em] text-gold sm:text-[10px]">
+              <i className="fa-solid fa-lightbulb mr-1.5" />
+              Bonus Trump Card
+            </p>
+            <p className={BODY}>
+              Hit exactly <B>9</B> during a round to earn a bonus trump card!
+            </p>
+          </Panel>
+        )}
       </Section>
 
       <Section icon="fa-gem" title="Rarity System">
         <div className="space-y-1.5">
-          <RarityBadge rarity="Common" id="COMMON" chance="45%" />
-          <RarityBadge rarity="Uncommon" id="UNCOMMON" chance="27%" />
-          <RarityBadge rarity="Rare" id="RARE" chance="17%" />
-          <RarityBadge rarity="Legendary" id="LEGENDARY" chance="8%" />
-          <RarityBadge rarity="Mythic" id="MYTHIC" chance="3%" />
+          {RARITY_ORDER.map((id) => (
+            <RarityBadge key={id} rarity={TRUMP_RARITIES[id]} />
+          ))}
         </div>
       </Section>
 
-      <Section icon="fa-list" title="Example Trump Cards">
-        <div className="space-y-2">
-          <TrumpExample
-            name="Double Down"
-            rarity="COMMON"
-            effect="Double the current bet"
-          />
-          <TrumpExample
-            name="Peek"
-            rarity="UNCOMMON"
-            effect="View the next 3 cards in the deck"
-          />
-          <TrumpExample
-            name="Hush"
-            rarity="RARE"
-            effect="Draw a card that opponents can't see"
-          />
-          <TrumpExample
-            name="Shatter"
-            rarity="LEGENDARY"
-            effect="Counter another player's trump card"
-          />
-          <TrumpExample
-            name="Angel Card"
-            rarity="MYTHIC"
-            effect="Protect yourself from elimination once"
-          />
+      <Section icon="fa-shield-halved" title="Countering">
+        <p className={BODY}>
+          Cards marked <B>Counterable</B> give the targeted player{" "}
+          <B>{counterSeconds} seconds</B> to respond with a{" "}
+          <B>{TRUMP_CARDS_CATALOG.SHATTER.name}</B> to cancel the effect.
+        </p>
+      </Section>
+
+      <Section icon="fa-list" title="All Trump Cards">
+        <div className="space-y-4">
+          {grouped.map(({ rarity, cards }) => (
+            <div key={rarity.id}>
+              <p
+                className="mb-1.5 text-[9px] font-medium uppercase tracking-[0.25em] sm:text-[10px]"
+                style={{ color: rarity.color }}
+              >
+                {rarity.name}
+              </p>
+              <div className="space-y-2">
+                {cards.map((card) => (
+                  <TrumpCardItem key={card.id} card={card} />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
         <Panel className="mt-3">
           <p className="text-[10px] text-ivory-dim/60 sm:text-xs">
             <i className="fa-solid fa-circle-info mr-1.5 text-gold/60" />
             Click the <i className="fa-solid fa-question mx-0.5 text-gold/70" />{" "}
-            icon in-game to view all trump cards and their effects!
+            icon in-game to view this list anytime!
           </p>
         </Panel>
       </Section>
@@ -377,7 +410,8 @@ function WinningTab() {
       <Tip>Count cards</Tip> if you can — knowing what's been played helps
     </>,
     <>
-      <Tip>Save powerful trumps</Tip> for critical moments
+      <Tip>Save {TRUMP_CARDS_CATALOG.SHATTER.name}</Tip> to counter dangerous
+      trumps aimed at you
     </>,
   ];
 
@@ -419,26 +453,36 @@ function WinningTab() {
         <p className={`${BODY} mb-3`}>
           The last player standing (with lives remaining) <B>wins the match</B>!
         </p>
-        <Panel accent>
-          <div className="mb-1.5 flex items-center gap-2">
-            <i className="fa-solid fa-coins text-xs text-gold-light sm:text-sm" />
-            <strong className="text-[10px] font-medium uppercase tracking-[0.2em] text-ivory sm:text-[11px]">
-              Rewards
-            </strong>
-          </div>
-          <p className={BODY}>
-            Winners earn <B>100-120 chips</B> that can be used in the shop to
-            unlock new card skins!
-          </p>
-        </Panel>
+        {GAME_CONFIG.ENABLE_CHIP_REWARDS && (
+          <Panel accent>
+            <div className="mb-1.5 flex items-center gap-2">
+              <i className="fa-solid fa-coins text-xs text-gold-light sm:text-sm" />
+              <strong className="text-[10px] font-medium uppercase tracking-[0.2em] text-ivory sm:text-[11px]">
+                Rewards
+              </strong>
+            </div>
+            <p className={BODY}>
+              Winners earn{" "}
+              <B>
+                {GAME_CONFIG.WIN_REWARD_MIN}-{GAME_CONFIG.WIN_REWARD_MAX} chips
+              </B>{" "}
+              that can be used in the shop to unlock new card skins!
+            </p>
+          </Panel>
+        )}
       </Section>
 
-      <Section icon="fa-repeat" title="Rematch">
-        <p className={BODY}>
-          After a match ends, all players can vote for a <B>rematch</B>. If
-          everyone agrees, you'll play again with the same group!
-        </p>
-      </Section>
+      {GAME_CONFIG.ENABLE_REMATCH && (
+        <Section icon="fa-repeat" title="Rematch">
+          <p className={BODY}>
+            After a match ends, all players can vote for a <B>rematch</B> within{" "}
+            <B>{GAME_CONFIG.REMATCH_VOTING_TIMER} seconds</B>.
+            {GAME_CONFIG.REQUIRE_UNANIMOUS_REMATCH
+              ? " If everyone agrees, you'll play again with the same group!"
+              : " If enough players agree, you'll play again with the same group!"}
+          </p>
+        </Section>
+      )}
 
       <Section icon="fa-graduation-cap" title="Pro Tips">
         <ul className="space-y-2">
@@ -498,8 +542,8 @@ function Section({ icon, title, children }) {
   );
 }
 
-function RarityBadge({ rarity, id, chance }) {
-  const color = RARITY_HEX[id];
+function RarityBadge({ rarity }) {
+  const { color, name, chance } = rarity;
   return (
     <div
       className="relative flex items-center justify-between overflow-hidden rounded-lg border px-3 py-2"
@@ -517,18 +561,20 @@ function RarityBadge({ rarity, id, chance }) {
           className="text-[10px] font-medium uppercase tracking-[0.2em] sm:text-[11px]"
           style={{ color }}
         >
-          {rarity}
+          {name}
         </span>
       </div>
       <span className="font-mono text-[10px] tabular-nums text-ivory-dim/50 sm:text-[11px]">
-        {chance}
+        {chance}%
       </span>
     </div>
   );
 }
 
-function TrumpExample({ name, rarity, effect }) {
-  const color = RARITY_HEX[rarity];
+function TrumpCardItem({ card }) {
+  const rarity = TRUMP_RARITIES[card.rarity];
+  const color = rarity.color;
+  const icon = TRUMP_ICONS[card.id];
 
   return (
     <div
@@ -546,25 +592,33 @@ function TrumpExample({ name, rarity, effect }) {
           background: `linear-gradient(90deg, transparent, ${color}99, transparent)`,
         }}
       />
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        {icon && (
+          <span
+            className="flex h-7 w-7 flex-none items-center justify-center rounded-full border sm:h-8 sm:w-8"
+            style={{ borderColor: `${color}40`, backgroundColor: `${color}12` }}
+          >
+            <i
+              className={`fa-solid ${icon} text-[10px] sm:text-xs`}
+              style={{ color }}
+            />
+          </span>
+        )}
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-medium tracking-wide text-ivory sm:text-[13px]">
-            {name}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-[11px] font-medium tracking-wide text-ivory sm:text-[13px]">
+              {card.name}
+            </span>
+            {card.counterable && (
+              <span className="rounded-full border border-white/10 px-1.5 py-px text-[8px] uppercase tracking-[0.15em] text-ivory-dim/50 sm:text-[9px]">
+                Counterable
+              </span>
+            )}
           </div>
           <div className="mt-0.5 text-[10px] leading-snug text-ivory-dim/60 sm:text-xs">
-            {effect}
+            {card.description}
           </div>
         </div>
-        <span
-          className="flex-none whitespace-nowrap rounded-full border px-2 py-0.5 text-[8px] font-medium uppercase tracking-[0.15em] sm:text-[9px]"
-          style={{
-            color: `${color}d9`,
-            borderColor: `${color}40`,
-            backgroundColor: `${color}12`,
-          }}
-        >
-          {rarity}
-        </span>
       </div>
     </div>
   );

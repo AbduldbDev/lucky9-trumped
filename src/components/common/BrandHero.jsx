@@ -1,11 +1,5 @@
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
 
-/**
- * Reusable Lucky 9 hero / logo block.
- * Props:
- *  - showTagline: show the "Take a seat..." paragraph on large screens (default true)
- *  - showRules:   show the players / lives / cards badges (default true)
- */
 export default function BrandHero({ showTagline = true, showRules = true }) {
   const rules = [
     [
@@ -29,40 +23,43 @@ export default function BrandHero({ showTagline = true, showRules = true }) {
         LUCKY 9
       </h1>
 
-      <div className="mt-4 flex w-full items-center gap-3 sm:mt-5 sm:gap-4 lg:max-w-sm">
-        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gold-DEFAULT/40 lg:from-gold-DEFAULT/40" />
-        <p className="text-[9px] sm:text-xs font-semibold uppercase tracking-[0.35em] sm:tracking-[0.5em] text-gold-light/70 whitespace-nowrap">
+      <div className="mt-3 flex w-full items-center gap-3 sm:mt-4 sm:gap-4">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/40" />
+        <p className="whitespace-nowrap text-[8px] font-semibold uppercase tracking-[0.35em] text-gold-light/70 sm:text-[10px] sm:tracking-[0.5em]">
           Trump Card Edition
         </p>
-        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gold-DEFAULT/40" />
+        <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/40" />
       </div>
 
-      <p className="mt-6 hidden max-w-sm text-sm leading-relaxed text-white/40 lg:block">
-        Take a seat at the private table. Bring your friends, play your cards
-        wisely, and outlast the house.
-      </p>
+      {showTagline && (
+        <p className="mt-6 hidden max-w-sm text-sm leading-relaxed text-white/40 lg:block">
+          Take a seat at the private table. Bring your friends, play your cards
+          wisely, and outlast the house.
+        </p>
+      )}
 
-      {/* Rules summary */}
-      <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:mt-6 sm:gap-2 lg:justify-start">
-        {[
-          [
-            "fa-users",
-            `${GAME_CONFIG.MIN_PLAYERS}–${GAME_CONFIG.MAX_PLAYERS} Players`,
-          ],
-          ["fa-heart", `${GAME_CONFIG.STARTING_LIVES} Lives`],
-          ["fa-clone", `Up to ${GAME_CONFIG.MAX_CARDS_IN_HAND} Cards`],
-        ].map(([ic, lb]) => (
-          <span
-            key={lb}
-            className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-black/30 px-2.5 py-1 text-[10px] text-white/60 backdrop-blur sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-xs"
-          >
-            <i
-              className={`fa-solid ${ic} text-[9px] text-gold/70 sm:text-[10px]`}
-            />
-            {lb}
-          </span>
-        ))}
-      </div>
+      {showRules && (
+        <div className="mt-4 flex flex-wrap justify-center gap-1.5 sm:mt-6 sm:gap-2 lg:justify-start">
+          {[
+            [
+              "fa-users",
+              `${GAME_CONFIG.MIN_PLAYERS}–${GAME_CONFIG.MAX_PLAYERS} Players`,
+            ],
+            ["fa-heart", `${GAME_CONFIG.STARTING_LIVES} Lives`],
+            ["fa-clone", `Up to ${GAME_CONFIG.MAX_CARDS_IN_HAND} Cards`],
+          ].map(([ic, lb]) => (
+            <span
+              key={lb}
+              className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-black/30 px-2.5 py-1 text-[10px] text-white/60 backdrop-blur sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-xs"
+            >
+              <i
+                className={`fa-solid ${ic} text-[9px] text-gold/70 sm:text-[10px]`}
+              />
+              {lb}
+            </span>
+          ))}
+        </div>
+      )}
     </header>
   );
 }

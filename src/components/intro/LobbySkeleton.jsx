@@ -67,6 +67,8 @@ export default function LobbySkeleton() {
               <Bar className="mx-auto h-3 w-3/4" />
               <Bar className="h-11 w-full rounded-2xl sm:h-14" />
               <Bar className="h-12 w-full rounded-2xl sm:h-[3.75rem]" />
+              <Bar className="h-12 w-full rounded-2xl sm:h-[3.75rem]" />
+              <Bar className="h-12 w-full rounded-2xl sm:h-[1.25rem]" />
             </div>
           </Card>
         </div>
