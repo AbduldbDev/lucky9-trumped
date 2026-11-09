@@ -54,8 +54,8 @@ async function loadCloud() {
       const { error: profError } = await supabase.from("profiles").insert({
         id: uid,
         username,
-        chips: 1000,
-        table_color: "green", // Set default table color
+        chips: 100,
+        table_color: "green",
       });
 
       if (profError && profError.code !== "23505") {

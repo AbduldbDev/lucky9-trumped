@@ -84,9 +84,9 @@ export default function OvalTable({
 
           {/* Centre info cluster */}
           <div
-            className="absolute left-1/2 z-10 flex flex-col items-center gap-1 pointer-events-none"
+            className="absolute  left-1/2 z-10 flex flex-col items-center gap-1 pointer-events-none"
             style={{
-              top: cy - 2,
+              top: cy - 1,
               transform: "translate(-50%, 0)",
             }}
           >
@@ -134,8 +134,15 @@ export default function OvalTable({
           {opponents.map((opp, idx) => {
             const pos = seats[idx];
             if (!pos) return null;
-            // Ring faces the table centre, away from the nearest edge
-            const ringSide = pos.x < width / 2 ? "right" : "left";
+            const isLeftHalf = pos.x < width / 2;
+            const isLower = pos.y > cy; // below the table's vertical centre
+            const ringSide = isLower
+              ? isLeftHalf
+                ? "left"
+                : "right"
+              : isLeftHalf
+                ? "right"
+                : "left";
 
             if (!pos) return null;
             return (

@@ -11,7 +11,7 @@ export default function RoundResult({
       <div className="px-3 py-2 bg-gold-faint/60 border-b border-white/5 flex items-center gap-2">
         <i className="fa-solid fa-trophy text-gold text-xs" />
         <span className="text-xs font-semibold text-gold">
-          Round {result.round} · {bet}♥ bet
+          Round {result.round} · {bet} ♥ bet
           {result.draw && <span className="text-white/40 ml-1">· Draw</span>}
         </span>
       </div>
