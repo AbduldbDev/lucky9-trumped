@@ -13,6 +13,7 @@ export default function WaitingRoom({
   onLeave,
   onReady,
   onUnready,
+  onKick,
 }) {
   const audio = useAudio();
   const [copied, setCopied] = useState(false);
@@ -51,6 +52,11 @@ export default function WaitingRoom({
   const handleUnready = () => {
     audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
     onUnready();
+  };
+
+  const handleKick = (playerId) => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    onKick(playerId);
   };
 
   const primaryBtn =
@@ -181,6 +187,11 @@ export default function WaitingRoom({
                         <i className="fa-solid fa-crown" />
                       </span>
                     )}
+                    {p.id === selfId && (
+                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] uppercase tracking-wider text-white/40 sm:text-[10px]">
+                        you
+                      </span>
+                    )}
                     {p.isReady ? (
                       <span className="rounded-full border border-gold/40 bg-gold-faint/30 px-2 py-0.5 text-[9px] uppercase tracking-wider text-gold-light sm:text-[10px]">
                         <i className="fa-solid fa-check mr-1" />
@@ -191,10 +202,16 @@ export default function WaitingRoom({
                         Not Ready
                       </span>
                     )}
-                    {p.id === selfId && (
-                      <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] uppercase tracking-wider text-white/40 sm:text-[10px]">
-                        you
-                      </span>
+
+                    {/* Host kick button */}
+                    {isHost && p.id !== selfId && (
+                      <button
+                        onClick={() => handleKick(p.id)}
+                        className="ml-1 flex h-6 w-6 items-center justify-center rounded-full border border-red-500/30 bg-red-500/10 text-[10px] text-red-400/70 transition-all hover:border-red-500/60 hover:bg-red-500/20 hover:text-red-400 active:scale-95 sm:h-7 sm:w-7 sm:text-xs"
+                        title="Kick player"
+                      >
+                        <i className="fa-solid fa-xmark" />
+                      </button>
                     )}
                   </div>
                 </li>

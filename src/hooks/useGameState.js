@@ -29,6 +29,7 @@ export function useGameState({ partyCode, isHost, profile }) {
   const privateRef = useRef(null); // guest only: my private packet
   const rtRef = useRef(null);
   const loadedRef = useRef(false); // guard: initial DB load done
+  const seatedRef = useRef(false); // guest only: true once the host has listed us in players
   const [view, setView] = useState(null);
 
   const me = {
@@ -122,7 +123,6 @@ export function useGameState({ partyCode, isHost, profile }) {
     [commit],
   );
 
-  // Auto-timeout mechanism: Host checks if current turn has exceeded time limit
   // Auto-timeout mechanism: Host AND guests check if current turn has exceeded time limit
   // This ensures even if host disconnects, guests can timeout stuck players
   useEffect(() => {
@@ -204,6 +204,11 @@ export function useGameState({ partyCode, isHost, profile }) {
       ? undefined
       : (pub) => {
           publicRef.current = pub;
+          // Remember that the host has seated us, so a later removal (kick)
+          // is never followed by an automatic rejoin.
+          if (pub?.players?.some((p) => p.id === selfId)) {
+            seatedRef.current = true;
+          }
           setView(applyPrivate(pub, privateRef.current, selfId));
         },
     onPrivate: isHost
@@ -332,27 +337,34 @@ export function useGameState({ partyCode, isHost, profile }) {
   // ── Guest: announce ourselves once the channel is live ────────────────────
   // JOIN is a no-op if we're already in the game (reconnect), but it triggers
   // the host to re-broadcast state + our private packet.
-  // We retry every 2 seconds until we receive state to handle race conditions.
+  // We retry every 2 seconds until the host has actually seated us.
+  // If we were seated and then removed (kicked), we never auto-rejoin; the
+  // player must go back through the lobby, which mounts a fresh Room.
   useEffect(() => {
     if (isHost || rt.status !== "SUBSCRIBED") return undefined;
 
-    // Send initial JOIN immediately
+    const amIn = (v) => v?.players?.some((p) => p.id === selfId);
+
+    // Seated before but no longer in players => removed (kicked). Never auto-rejoin.
+    const wasRemoved = () => seatedRef.current && !amIn(publicRef.current);
+
+    if (wasRemoved()) return undefined;
+
+    // Announce ourselves once on connect
     rt.sendAction({ type: "JOIN", player: me });
 
-    // Set up retry interval in case the host missed it or wasn't ready
+    // Retry until the host has actually seated us
     const retryInterval = setInterval(() => {
-      // Stop retrying once we have a valid view with players
-      if (view?.players?.length > 0) {
+      if (amIn(publicRef.current) || wasRemoved()) {
         clearInterval(retryInterval);
         return;
       }
-      // Re-send JOIN to ensure host knows about us
       rt.sendAction({ type: "JOIN", player: me });
     }, 2000);
 
     return () => clearInterval(retryInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHost, rt.status, view?.players?.length]);
+  }, [isHost, rt.status]);
 
   // ── Browser refresh/close handling ─────────────────────────────────────────
   // We DO NOT send LEAVE on beforeunload/unload because we want players to be
@@ -392,6 +404,7 @@ export function useGameState({ partyCode, isHost, profile }) {
     leave: () => dispatch({ type: "LEAVE", id: selfId, intentional: true }),
     ready: () => dispatch({ type: "READY" }),
     unready: () => dispatch({ type: "UNREADY" }),
+    kick: (playerId) => dispatch({ type: "KICK", targetId: playerId }),
   };
 
   const current = view?.players?.[view.turnIndex];

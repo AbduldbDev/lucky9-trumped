@@ -583,6 +583,11 @@ function executeCounteredTrump(d, request) {
 // ---------------------------------------------------------------------------
 const HANDLERS = {
   JOIN(d, { player }) {
+    // Check if player was kicked - prevent rejoin
+    // if (d.kickedPlayers?.includes(player.id)) {
+    //   throw new Error("You have been kicked from this room.");
+    // }
+
     const existingIdx = d.players.findIndex((p) => p.id === player.id);
 
     // Player already exists - this is a reconnect/refresh
