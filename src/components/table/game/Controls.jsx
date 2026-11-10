@@ -174,6 +174,12 @@ export function TrumpTray({
     const cfg = TRUMP_CARDS_CATALOG[id];
     if (!cfg) return;
 
+    // Validation: SACRIFICE requires more than 1 life
+    if (id === "SACRIFICE" && me.lives <= 1) {
+      audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+      return;
+    }
+
     audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
 
     if (cfg.targetType === "SINGLE_PLAYER" || cfg.targetType === "RANK_CHOICE")
@@ -294,16 +300,28 @@ export function TrumpTray({
               const isAiming = aiming === id;
               const rarity = cfg.rarity[0] + cfg.rarity.slice(1).toLowerCase();
 
+              // Check if SACRIFICE is disabled due to insufficient lives
+              const isSacrificeDisabled = id === "SACRIFICE" && me.lives <= 1;
+              const isDisabled = !isMyTurn || isSacrificeDisabled;
+
               return (
                 // Drop-in replacement for the <button> inside me.trumps.map(...).
                 // Everything above it (color, icon, isAiming, rarity) stays the same.
 
                 <button
                   key={`${id}-${i}`}
-                  disabled={!isMyTurn}
+                  disabled={isDisabled}
                   onClick={() => pick(id)}
-                  title={`${cfg.name} (${rarity}) — ${cfg.description ?? ""}`}
-                  aria-label={`${cfg.name}, ${rarity}. ${cfg.description ?? ""}`}
+                  title={
+                    isSacrificeDisabled
+                      ? `${cfg.name} (${rarity}) — Cannot use: Need more than 1 life`
+                      : `${cfg.name} (${rarity}) — ${cfg.description ?? ""}`
+                  }
+                  aria-label={
+                    isSacrificeDisabled
+                      ? `${cfg.name}, ${rarity}. Cannot use: Need more than 1 life`
+                      : `${cfg.name}, ${rarity}. ${cfg.description ?? ""}`
+                  }
                   aria-pressed={isAiming}
                   className={`ctl-trump trump-btn group relative touch-manipulation shrink-0 overflow-hidden
                     flex flex-col items-center justify-center text-center gap-1

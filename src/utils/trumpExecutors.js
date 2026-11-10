@@ -310,6 +310,23 @@ export const EFFECT_EXECUTORS = {
     return `${actor.name} drew a hidden card.`;
   },
 
+  // ── SACRIFICE ────────────────────────────────────────────────────────────
+  SACRIFICE_FOR_TRUMP({ draft, actor }) {
+    // Cannot sacrifice if you have 1 or fewer lives remaining
+    if (actor.lives <= 1) {
+      return `${actor.name} tried to sacrifice lives, but they don't have enough lives (need more than 1).`;
+    }
+
+    // Lose 2 lives
+    actor.lives -= 2;
+
+    // Gain 2 trump cards
+    actor.trumps.push(rollTrumpCard());
+    actor.trumps.push(rollTrumpCard());
+
+    return `${actor.name} sacrificed 2 lives and gained 2 trump cards!`;
+  },
+
   // ── FORTUNE TELLER ───────────────────────────────────────────────────────
   PEEK_DECK({ draft, actor }) {
     const peekCount = Math.min(3, draft.deck.length);

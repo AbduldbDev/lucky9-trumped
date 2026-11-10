@@ -26,6 +26,7 @@ export const TRUMP_ICONS = {
   ANGEL_CARD: "fa-shield-halved",
   FORTUNE_TELLER: "fa-magnifying-glass-chart",
   HUSH: "fa-eye-slash",
+  SACRIFICE: "fa-heart-crack",
 };
 
 export const TRUMP_RARITIES = {
@@ -87,6 +88,15 @@ export const TRUMP_CARDS_CATALOG = {
       "Destroy a Trump Card on the table or counter an opponent's Trump Card, canceling its effect.",
     targetType: "NONE",
     effect: { type: "CANCEL_LAST_TRUMP" },
+  },
+  SACRIFICE: {
+    id: "SACRIFICE",
+    name: "Sacrifice",
+    rarity: "COMMON",
+    description:
+      "Lose 2 lives to gain 2 trump cards. Cannot be used if you have 1 or fewer lives remaining.",
+    targetType: "SELF",
+    effect: { type: "SACRIFICE_FOR_TRUMP" },
   },
 
   // ── UNCOMMON ────────────────────────────────────────────────────────────

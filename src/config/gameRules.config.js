@@ -71,6 +71,7 @@ export const GAME_CONFIG = {
     // "BET_UP",
     // "BET_DOWN",
     // "SHATTER",
+    "SACRIFICE",
     // // ── UNCOMMON ──
     // "DOUBLE_BET_UP",
     // "DOUBLE_BET_DOWN",
