@@ -1211,7 +1211,9 @@ export function gameReducer(state, action) {
 // SRD §5.1: spectators see all hole cards and all trump inventories.
 // ---------------------------------------------------------------------------
 const isRevealPhase = (phase) =>
-  phase === PHASES.SHOWDOWN || phase === PHASES.GAMEOVER;
+  phase === PHASES.COUNTDOWN ||
+  phase === PHASES.SHOWDOWN ||
+  phase === PHASES.GAMEOVER;
 
 /**
  * Public state broadcast to all clients.
@@ -1233,10 +1235,13 @@ export function maskState(state) {
       hand: p.hand.map((c, i) => {
         // Hide hole card (index 0) unless in reveal phase
         if (i === 0 && !reveal) return { hidden: true };
-        // BUGFIX: HUSH cards (card.hidden) should be visible in spectator view
-        // but hidden from active players. We keep the card data and let the
-        // spectator view reveal it in getPrivate/applyPrivate.
-        // For now, keep card.hidden flag - spectator view will handle it.
+
+        // During reveal phase (showdown/gameover), remove hidden flag from HUSH cards
+        if (reveal && c.hidden) {
+          const { hidden, ...revealedCard } = c;
+          return revealedCard;
+        }
+
         return c;
       }),
     })),

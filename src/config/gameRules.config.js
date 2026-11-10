@@ -67,28 +67,28 @@ export const GAME_CONFIG = {
   // Leave empty array [] to enable all cards, or specify IDs to restrict.
   // Example: ["BET_UP", "BET_DOWN", "SHATTER"] - only these 3 cards can appear
   ENABLED_TRUMP_CARDS: [
-    // ── COMMON ──
-    "BET_UP",
-    "BET_DOWN",
-    "SHATTER",
-    // ── UNCOMMON ──
-    "DOUBLE_BET_UP",
-    "DOUBLE_BET_DOWN",
-    "RETURN",
-    "DISCARD",
+    // // ── COMMON ──
+    // "BET_UP",
+    // "BET_DOWN",
+    // "SHATTER",
+    // // ── UNCOMMON ──
+    // "DOUBLE_BET_UP",
+    // "DOUBLE_BET_DOWN",
+    // "RETURN",
+    // "DISCARD",
     "HUSH",
-    // ── RARE ──
-    "REFRESH",
-    "EXCHANGE",
-    "TARGET",
-    "CHECKER",
-    // ── LEGENDARY ──
-    "SELECT",
-    "DISABLE",
-    // ── MYTHIC ──
-    "FRIENDSHIP_CARD",
-    "ANGEL_CARD",
-    "FORTUNE_TELLER",
+    // // ── RARE ──
+    // "REFRESH",
+    // "EXCHANGE",
+    // "TARGET",
+    // "CHECKER",
+    // // ── LEGENDARY ──
+    // "SELECT",
+    // "DISABLE",
+    // // ── MYTHIC ──
+    // "FRIENDSHIP_CARD",
+    // "ANGEL_CARD",
+    // "FORTUNE_TELLER",
   ],
 
   // ORIGINAL TRUMP CARD RARITY SETTINGS
