@@ -150,6 +150,7 @@ function startRound(d, firstPlayerOverride = null) {
     p.hand = [];
     p.stood = p.isEliminated || p.isSpectator;
     p.disabled = false;
+    p.trumpsDisabled = false; // Clear trump lockdown at start of each round
     p.lucky9Awarded = false;
 
     // Clear Angel Card protection at the start of each round (only lasts 1 round)
@@ -977,6 +978,11 @@ const HANDLERS = {
     const p = assertTurn(d, by);
     const idx = p.trumps.indexOf(trumpId);
     if (idx === -1) throw new Error("You don't hold that Trump Card.");
+
+    // Check if player's trump cards are locked down
+    if (p.trumpsDisabled) {
+      throw new Error("Your trump cards are locked down for this round.");
+    }
 
     // Validate that this trump card is enabled in the game configuration
     const enabledIds = GAME_CONFIG.ENABLED_TRUMP_CARDS || [];

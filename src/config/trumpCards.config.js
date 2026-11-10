@@ -27,6 +27,7 @@ export const TRUMP_ICONS = {
   FORTUNE_TELLER: "fa-magnifying-glass-chart",
   HUSH: "fa-eye-slash",
   SACRIFICE: "fa-heart-crack",
+  LOCKDOWN: "fa-lock",
 };
 
 export const TRUMP_RARITIES = {
@@ -192,6 +193,16 @@ export const TRUMP_CARDS_CATALOG = {
     targetType: "SINGLE_PLAYER",
     counterable: true, // Can be blocked by SHATTER
     effect: { type: "SKIP_TURNS_ROUND" },
+  },
+  LOCKDOWN: {
+    id: "LOCKDOWN",
+    name: "Lockdown",
+    rarity: "LEGENDARY",
+    description:
+      "Prevent a selected player from using Trump Cards for the remainder of the round.",
+    targetType: "SINGLE_PLAYER",
+    counterable: true, // Can be blocked by SHATTER
+    effect: { type: "DISABLE_TRUMP" },
   },
   CHECKER: {
     id: "CHECKER",

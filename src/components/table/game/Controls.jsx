@@ -285,6 +285,14 @@ export function TrumpTray({
             <span className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#b89b5e]/80 truncate">
               Trump Cards
             </span>
+            {me.trumpsDisabled && (
+              <span className="flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-1.5 py-0.5">
+                <i className="fa-solid fa-lock text-[7px] text-red-400" />
+                <span className="text-[8px] font-semibold uppercase tracking-wider text-red-400">
+                  Locked
+                </span>
+              </span>
+            )}
             <span className="h-px flex-1 bg-gradient-to-r from-[#b89b5e]/25 to-transparent" />
             <span className="text-[10px] text-white/30 font-mono tabular-nums">
               {me.trumps.length}
@@ -302,7 +310,10 @@ export function TrumpTray({
 
               // Check if SACRIFICE is disabled due to insufficient lives
               const isSacrificeDisabled = id === "SACRIFICE" && me.lives <= 1;
-              const isDisabled = !isMyTurn || isSacrificeDisabled;
+              // Check if all trumps are locked down
+              const isTrumpsLocked = me.trumpsDisabled === true;
+              const isDisabled =
+                !isMyTurn || isSacrificeDisabled || isTrumpsLocked;
 
               return (
                 // Drop-in replacement for the <button> inside me.trumps.map(...).
@@ -313,14 +324,18 @@ export function TrumpTray({
                   disabled={isDisabled}
                   onClick={() => pick(id)}
                   title={
-                    isSacrificeDisabled
-                      ? `${cfg.name} (${rarity}) — Cannot use: Need more than 1 life`
-                      : `${cfg.name} (${rarity}) — ${cfg.description ?? ""}`
+                    isTrumpsLocked
+                      ? `${cfg.name} (${rarity}) — Locked down this round`
+                      : isSacrificeDisabled
+                        ? `${cfg.name} (${rarity}) — Cannot use: Need more than 1 life`
+                        : `${cfg.name} (${rarity}) — ${cfg.description ?? ""}`
                   }
                   aria-label={
-                    isSacrificeDisabled
-                      ? `${cfg.name}, ${rarity}. Cannot use: Need more than 1 life`
-                      : `${cfg.name}, ${rarity}. ${cfg.description ?? ""}`
+                    isTrumpsLocked
+                      ? `${cfg.name}, ${rarity}. Locked down this round`
+                      : isSacrificeDisabled
+                        ? `${cfg.name}, ${rarity}. Cannot use: Need more than 1 life`
+                        : `${cfg.name}, ${rarity}. ${cfg.description ?? ""}`
                   }
                   aria-pressed={isAiming}
                   className={`ctl-trump trump-btn group relative touch-manipulation shrink-0 overflow-hidden

@@ -225,6 +225,22 @@ export const EFFECT_EXECUTORS = {
     return `${actor.name} disabled ${target.name} for the rest of this round.`;
   },
 
+  // ── LOCKDOWN ─────────────────────────────────────────────────────────────
+  DISABLE_TRUMP({ target, actor, ctx }) {
+    // Check if target countered with SHATTER
+    if (ctx?.countered && ctx.countered.includes(target.id)) {
+      return `${actor.name} tried to lock down ${target.name}'s trump cards, but ${target.name} countered with SHATTER!`;
+    }
+
+    // BUGFIX: Return message instead of throwing error
+    if (target.isEliminated) {
+      return `${actor.name} tried to lock down ${target.name}'s trump cards, but ${target.name} is already eliminated.`;
+    }
+
+    target.trumpsDisabled = true;
+    return `${actor.name} locked down ${target.name}'s trump cards for the rest of this round!`;
+  },
+
   // ── CHECKER ──────────────────────────────────────────────────────────────
   INSPECT_DECK({ draft, actor, ctx }) {
     // BUGFIX: Return message instead of throwing error

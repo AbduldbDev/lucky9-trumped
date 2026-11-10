@@ -86,6 +86,7 @@ export const GAME_CONFIG = {
     // // ── LEGENDARY ──
     // "SELECT",
     // "DISABLE",
+    "LOCKDOWN",
     // // ── MYTHIC ──
     // "FRIENDSHIP_CARD",
     // "ANGEL_CARD",
