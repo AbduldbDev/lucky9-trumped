@@ -241,6 +241,14 @@ export const EFFECT_EXECUTORS = {
     return `${actor.name} locked down ${target.name}'s trump cards for the rest of this round!`;
   },
 
+  // ── MIRROR ───────────────────────────────────────────────────────────────
+  REFLECT_TRUMP({ actor }) {
+    // Activate mirror shield for this player
+    // The shield will reflect the next counterable trump targeting them
+    actor.mirrorActive = true;
+    return `${actor.name} activated Mirror — ready to reflect the next trump card!`;
+  },
+
   // ── CHECKER ──────────────────────────────────────────────────────────────
   INSPECT_DECK({ draft, actor, ctx }) {
     // BUGFIX: Return message instead of throwing error
@@ -398,10 +406,15 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
 
   let target = null;
   if (card.targetType === "SINGLE_PLAYER") {
-    target = draft.players.find(
-      (p) => p.id === ctx.targetId && p.id !== actor.id && !p.isEliminated,
-    );
-    if (!target) throw new Error("Choose a valid opponent.");
+    // Allow self-targeting when reflected by MIRROR
+    if (ctx.reflected && ctx.targetId === actor.id) {
+      target = actor;
+    } else {
+      target = draft.players.find(
+        (p) => p.id === ctx.targetId && p.id !== actor.id && !p.isEliminated,
+      );
+      if (!target) throw new Error("Choose a valid opponent.");
+    }
   }
 
   // For SHATTER we record the bet delta of the last log entry before calling

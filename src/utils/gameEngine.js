@@ -151,6 +151,7 @@ function startRound(d, firstPlayerOverride = null) {
     p.stood = p.isEliminated || p.isSpectator;
     p.disabled = false;
     p.trumpsDisabled = false; // Clear trump lockdown at start of each round
+    p.mirrorActive = false; // Clear mirror shield at start of each round
     p.lucky9Awarded = false;
 
     // Clear Angel Card protection at the start of each round (only lasts 1 round)
@@ -482,16 +483,80 @@ function executeCounteredTrump(d, request) {
   const card = TRUMP_CARDS_CATALOG[request.trumpId];
   if (!card) return;
 
-  // Collect who countered
+  // Collect who countered with SHATTER
   const countered = Object.keys(request.responses).filter(
-    (playerId) => request.responses[playerId] === true,
+    (playerId) => request.responses[playerId]?.useShatter === true,
   );
 
+  // Collect who reflected with MIRROR
+  const reflected = Object.keys(request.responses).filter(
+    (playerId) => request.responses[playerId]?.useMirror === true,
+  );
+
+  // If someone used MIRROR, reflect the trump back to the attacker
+  if (reflected.length > 0 && card.targetType === "SINGLE_PLAYER") {
+    const reflector = d.players.find((p) => p.id === reflected[0]);
+
+    // Remove the trump card from attacker's inventory (they used it)
+    const idx = attacker.trumps.indexOf(request.trumpId);
+    if (idx !== -1) {
+      attacker.trumps.splice(idx, 1);
+      attacker.stats.trumpsPlayed += 1;
+    }
+
+    // The trump is now reflected - execute on the original attacker as the target
+    const msg = executeTrump(d, attacker, request.trumpId, {
+      targetId: request.attackerId, // Reflected back to attacker
+      rank: request.rank,
+      countered: [], // No longer countered, but reflected
+      reflected: true, // Special flag to allow self-targeting
+    });
+
+    pushLog(
+      d,
+      `${reflector.name} countered ${attacker.name} with MIRROR! ${card.name} reflected back!`,
+    );
+    pushLog(d, msg);
+
+    // Update the original trump play notification to show it was reflected
+    if (d.trumpPlays) {
+      const originalPlay = d.trumpPlays.find(
+        (tp) =>
+          tp.trumpId === request.trumpId &&
+          tp.playerId === request.attackerId &&
+          !tp.reflected,
+      );
+      if (originalPlay) {
+        originalPlay.reflected = true;
+      }
+    }
+
+    // Record reflection notification
+    d.trumpPlays.push({
+      id: `MIRROR-${Date.now()}-${Math.random()}`,
+      trumpId: "MIRROR",
+      playerId: reflected[0],
+      playerName: reflector.name,
+      targetId: request.attackerId,
+      targetName: attacker.name,
+      timestamp: Date.now() + 50,
+      countered: false,
+      reflected: true,
+    });
+
+    // Keep only recent plays
+    const now = Date.now();
+    d.trumpPlays = d.trumpPlays.filter((tp) => now - tp.timestamp < 10000);
+
+    return;
+  }
+
+  // Normal execution (no reflection)
   // Execute the trump with counter information
   const msg = executeTrump(d, attacker, request.trumpId, {
     targetId: request.targetId,
     rank: request.rank,
-    countered, // Pass list of players who countered
+    countered, // Pass list of players who countered with SHATTER
   });
 
   // Remove the trump card from attacker's inventory (if not already done in TRUMP handler)
@@ -1128,7 +1193,7 @@ const HANDLERS = {
   },
 
   // Player responds to a counter request
-  RESPOND_COUNTER(d, { by, requestId, useShatter }) {
+  RESPOND_COUNTER(d, { by, requestId, useShatter, useMirror }) {
     if (!d.counterRequests || !d.counterRequests[requestId]) {
       throw new Error("Invalid counter request.");
     }
@@ -1147,6 +1212,11 @@ const HANDLERS = {
 
     const responder = d.players.find((p) => p.id === by);
 
+    // Cannot use both SHATTER and MIRROR
+    if (useShatter && useMirror) {
+      throw new Error("Cannot use both SHATTER and MIRROR.");
+    }
+
     // If using shatter, check if they have it
     if (useShatter) {
       const shatterIdx = responder.trumps.indexOf("SHATTER");
@@ -1159,12 +1229,28 @@ const HANDLERS = {
       responder.stats.trumpsPlayed += 1;
     }
 
-    // Record response
-    request.responses[by] = useShatter;
-    pushLog(
-      d,
-      `${responder.name} ${useShatter ? "used SHATTER to counter" : "declined to counter"}.`,
-    );
+    // If using mirror, check if they have it in hand
+    if (useMirror) {
+      const mirrorIdx = responder.trumps.indexOf("MIRROR");
+      if (mirrorIdx === -1) {
+        throw new Error("You don't have a MIRROR card.");
+      }
+
+      // Remove MIRROR from their inventory
+      responder.trumps.splice(mirrorIdx, 1);
+      responder.stats.trumpsPlayed += 1;
+    }
+
+    // Record response (now tracks both shatter and mirror)
+    request.responses[by] = { useShatter, useMirror };
+
+    const responseMsg = useMirror
+      ? "reflected with MIRROR"
+      : useShatter
+        ? "used SHATTER to counter"
+        : "declined to counter";
+
+    pushLog(d, `${responder.name} ${responseMsg}.`);
 
     // Check if all responses are in
     const allResponded = request.counterTargets.every(
@@ -1326,6 +1412,7 @@ function getCounterRequestForPlayer(state, playerId) {
       // Check if they have SHATTER
       const player = state.players.find((p) => p.id === playerId);
       const hasShatter = player && player.trumps.includes("SHATTER");
+      const hasMirror = player && player.trumps.includes("MIRROR");
 
       // Check if targeted directly
       const isTargeted = request.targetId === playerId;
@@ -1337,6 +1424,7 @@ function getCounterRequestForPlayer(state, playerId) {
         trumpId: request.trumpId,
         trumpName: request.trumpName,
         hasShatter,
+        hasMirror,
         isTargeted,
         expiresAt: request.expiresAt,
       };

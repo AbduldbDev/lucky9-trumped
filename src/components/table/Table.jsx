@@ -378,15 +378,18 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
         onDismiss={dismissPersonalNotification}
       />
 
-      {/* Counter prompt (SHATTER response) */}
+      {/* Counter prompt (SHATTER/MIRROR response) */}
       {view.counterRequest && (
         <CounterPrompt
           counterRequest={view.counterRequest}
           onAccept={() => {
-            actions.respondCounter(view.counterRequest.requestId, true);
+            actions.respondCounter(view.counterRequest.requestId, true, false);
+          }}
+          onMirror={() => {
+            actions.respondCounter(view.counterRequest.requestId, false, true);
           }}
           onDecline={() => {
-            actions.respondCounter(view.counterRequest.requestId, false);
+            actions.respondCounter(view.counterRequest.requestId, false, false);
           }}
         />
       )}

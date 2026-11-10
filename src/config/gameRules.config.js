@@ -35,11 +35,11 @@ export const GAME_CONFIG = {
   SHUFFLE_DECK_EVERY_ROUND: true,
 
   // TURN SETTINGS
-  TURN_TIMER: 30, // seconds per turn
+  TURN_TIMER: 99999, // seconds per turn
   TIMER_WARNING: 10, // blink/heartbeat threshold (seconds)
   AUTO_ELIMINATE_ON_TIMEOUT: true,
   SKIP_ELIMINATED_PLAYERS: true,
-  COUNTER_PROMPT_TIME_MS: 5000,
+  COUNTER_PROMPT_TIME_MS: 10000,
 
   // ROUND SETTINGS
   ROUND_DURATION_TIMER: true,
@@ -70,19 +70,20 @@ export const GAME_CONFIG = {
     // // ── COMMON ──
     // "BET_UP",
     // "BET_DOWN",
-    // "SHATTER",
-    "SACRIFICE",
+    "SHATTER",
+    // "SACRIFICE",
     // // ── UNCOMMON ──
     // "DOUBLE_BET_UP",
     // "DOUBLE_BET_DOWN",
     // "RETURN",
-    // "DISCARD",
-    "HUSH",
+    "DISCARD",
+    // "HUSH",
     // // ── RARE ──
     // "REFRESH",
-    // "EXCHANGE",
-    // "TARGET",
+    "EXCHANGE",
+    "TARGET",
     // "CHECKER",
+    "MIRROR",
     // // ── LEGENDARY ──
     // "SELECT",
     // "DISABLE",

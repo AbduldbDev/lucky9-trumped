@@ -310,10 +310,11 @@ export function TrumpTray({
 
               // Check if SACRIFICE is disabled due to insufficient lives
               const isSacrificeDisabled = id === "SACRIFICE" && me.lives <= 1;
+              const isMirror = id === "MIRROR";
               // Check if all trumps are locked down
               const isTrumpsLocked = me.trumpsDisabled === true;
               const isDisabled =
-                !isMyTurn || isSacrificeDisabled || isTrumpsLocked;
+                !isMyTurn || isSacrificeDisabled || isTrumpsLocked || isMirror;
 
               return (
                 // Drop-in replacement for the <button> inside me.trumps.map(...).

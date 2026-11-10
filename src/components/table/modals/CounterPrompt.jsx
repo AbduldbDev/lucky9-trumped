@@ -7,7 +7,12 @@ const COUNTER_PROMPT_TIME_MS = GAME_CONFIG.COUNTER_PROMPT_TIME_MS; // 5 seconds 
  * Mobile-first sizing: the base classes are the compact phone layout,
  * and the `sm:` classes restore the roomier desktop sizes.
  */
-export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
+export default function CounterPrompt({
+  counterRequest,
+  onAccept,
+  onDecline,
+  onMirror,
+}) {
   const [timeLeft, setTimeLeft] = useState(COUNTER_PROMPT_TIME_MS / 1000);
   const [responded, setResponded] = useState(false);
 
@@ -46,6 +51,12 @@ export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
     if (responded) return;
     setResponded(true);
     onAccept();
+  };
+
+  const handleMirror = () => {
+    if (responded) return;
+    setResponded(true);
+    onMirror();
   };
 
   const handleDecline = () => {
@@ -147,58 +158,98 @@ export default function CounterPrompt({ counterRequest, onAccept, onDecline }) {
           </div>
         </div>
 
-        {/* Shatter card indicator */}
-        {counterRequest.hasShatter && (
-          <div className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/[0.06] px-2.5 py-1 sm:gap-2 sm:px-3.5 sm:py-1.5">
-            <i className="fa-solid fa-ban text-[8px] text-gold-light sm:text-[10px]" />
-            <span className="text-[8px] font-medium uppercase tracking-[0.15em] text-gold-light sm:text-[10px] sm:tracking-[0.2em]">
-              Shatter blocks this effect
-            </span>
+        {/* Counter card indicators */}
+        {(counterRequest.hasShatter || counterRequest.hasMirror) && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {counterRequest.hasShatter && (
+              <div className="flex items-center gap-1.5 rounded-full border border-gold/30 bg-gold/[0.06] px-2.5 py-1 sm:gap-2 sm:px-3.5 sm:py-1.5">
+                <i className="fa-solid fa-ban text-[8px] text-gold-light sm:text-[10px]" />
+                <span className="text-[8px] font-medium uppercase tracking-[0.15em] text-gold-light sm:text-[10px] sm:tracking-[0.2em]">
+                  Shatter available
+                </span>
+              </div>
+            )}
+            {counterRequest.hasMirror && (
+              <div className="flex items-center gap-1.5 rounded-full border border-purple-400/30 bg-purple-400/[0.06] px-2.5 py-1 sm:gap-2 sm:px-3.5 sm:py-1.5">
+                <i className="fa-solid fa-reflect-horizontal text-[8px] text-purple-300 sm:text-[10px]" />
+                <span className="text-[8px] font-medium uppercase tracking-[0.15em] text-purple-300 sm:text-[10px] sm:tracking-[0.2em]">
+                  Mirror active
+                </span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="grid w-full grid-cols-2 gap-2 sm:gap-2.5">
+        {/* Action buttons - 3 buttons if both available, 2 if only one */}
+        <div
+          className={`grid w-full gap-2 sm:gap-2.5 ${counterRequest.hasShatter && counterRequest.hasMirror ? "grid-cols-3" : "grid-cols-2"}`}
+        >
           <button
             onClick={handleDecline}
             disabled={responded}
-            className="rounded-md border border-white/10 bg-transparent px-2 py-2
-              text-[9px] font-medium uppercase tracking-[0.2em] text-ivory-dim/70
-              transition-all duration-200
-              hover:border-white/25 hover:text-ivory
-              focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60
-              disabled:cursor-not-allowed disabled:opacity-40
-              active:scale-[0.98]
-              sm:rounded-lg sm:px-4 sm:py-2.5 sm:text-[11px] sm:tracking-[0.25em]"
+            className={`rounded-md border border-white/10 bg-transparent px-2 py-2
+            text-[9px] font-medium uppercase tracking-[0.2em] text-ivory-dim/70
+            transition-all duration-200
+            hover:border-white/25 hover:text-ivory
+            focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60
+            disabled:cursor-not-allowed disabled:opacity-40
+            active:scale-[0.98]
+            sm:rounded-lg sm:px-4 sm:py-2.5 sm:text-[11px] sm:tracking-[0.25em]
+            ${!counterRequest.hasShatter && !counterRequest.hasMirror ? "col-span-2" : ""}`}
           >
-            Decline
+            {!counterRequest.hasShatter && !counterRequest.hasMirror
+              ? "Accept Fate"
+              : "Decline"}
           </button>
-          <button
-            onClick={handleAccept}
-            disabled={responded || !counterRequest.hasShatter}
-            className="flex items-center justify-center gap-1.5 rounded-md border border-gold-light/50
-              bg-gradient-to-b from-gold/25 to-gold/10 px-2 py-2
-              text-[9px] font-semibold uppercase tracking-[0.2em] text-gold-light
-              transition-all duration-200
-              hover:border-gold-light/80 hover:from-gold/35
-              focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60
-              disabled:cursor-not-allowed disabled:opacity-35
-              active:scale-[0.98]
-              sm:gap-2 sm:rounded-lg sm:px-4 sm:py-2.5 sm:text-[11px] sm:tracking-[0.25em]"
-            style={{
-              boxShadow: counterRequest.hasShatter
-                ? "0 0 24px -8px rgba(217, 194, 138, 0.5)"
-                : "none",
-            }}
-          >
-            <i className="fa-solid fa-shield text-[8px] sm:text-[10px]" />
-            Use Shatter
-          </button>
+
+          {counterRequest.hasMirror && (
+            <button
+              onClick={handleMirror}
+              disabled={responded}
+              className="flex items-center justify-center gap-1.5 rounded-md border border-purple-400/50
+                bg-gradient-to-b from-purple-400/25 to-purple-400/10 px-2 py-2
+                text-[9px] font-semibold uppercase tracking-[0.2em] text-purple-300
+                transition-all duration-200
+                hover:border-purple-400/80 hover:from-purple-400/35
+                focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-purple-400/60
+                disabled:cursor-not-allowed disabled:opacity-35
+                active:scale-[0.98]
+                sm:gap-2 sm:rounded-lg sm:px-4 sm:py-2.5 sm:text-[11px] sm:tracking-[0.25em]"
+              style={{
+                boxShadow: "0 0 24px -8px rgba(192, 132, 252, 0.5)",
+              }}
+            >
+              <i className="fa-solid fa-reflect-horizontal text-[8px] sm:text-[10px]" />
+              Mirror
+            </button>
+          )}
+
+          {counterRequest.hasShatter && (
+            <button
+              onClick={handleAccept}
+              disabled={responded}
+              className="flex items-center justify-center gap-1.5 rounded-md border border-gold-light/50
+                bg-gradient-to-b from-gold/25 to-gold/10 px-2 py-2
+                text-[9px] font-semibold uppercase tracking-[0.2em] text-gold-light
+                transition-all duration-200
+                hover:border-gold-light/80 hover:from-gold/35
+                focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60
+                disabled:cursor-not-allowed disabled:opacity-35
+                active:scale-[0.98]
+                sm:gap-2 sm:rounded-lg sm:px-4 sm:py-2.5 sm:text-[11px] sm:tracking-[0.25em]"
+              style={{
+                boxShadow: "0 0 24px -8px rgba(217, 194, 138, 0.5)",
+              }}
+            >
+              <i className="fa-solid fa-shield text-[8px] sm:text-[10px]" />
+              Shatter
+            </button>
+          )}
         </div>
 
-        {!counterRequest.hasShatter && (
+        {!counterRequest.hasShatter && !counterRequest.hasMirror && (
           <p className="text-center text-[8px] uppercase tracking-[0.15em] text-ivory-dim/40 sm:text-[10px] sm:tracking-[0.2em]">
-            No Shatter card available
+            No counter cards available
           </p>
         )}
       </div>

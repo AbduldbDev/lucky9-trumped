@@ -28,6 +28,7 @@ export const TRUMP_ICONS = {
   HUSH: "fa-eye-slash",
   SACRIFICE: "fa-heart-crack",
   LOCKDOWN: "fa-lock",
+  MIRROR: "fa-retweet",
 };
 
 export const TRUMP_RARITIES = {
@@ -172,6 +173,15 @@ export const TRUMP_CARDS_CATALOG = {
     targetType: "SINGLE_PLAYER",
     counterable: true, // Can be blocked by SHATTER
     effect: { type: "FORCE_DRAW" },
+  },
+  MIRROR: {
+    id: "MIRROR",
+    name: "Mirror",
+    rarity: "RARE",
+    description:
+      "Use when countering to reflect a trump card targeting you back to its original user.",
+    targetType: "COUNTER", // Special type - only usable as counter
+    effect: { type: "REFLECT_COUNTER" },
   },
 
   // ── LEGENDARY ───────────────────────────────────────────────────────────

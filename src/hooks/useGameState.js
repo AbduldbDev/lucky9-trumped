@@ -396,8 +396,8 @@ export function useGameState({ partyCode, isHost, profile }) {
     resolveShowdown: () => dispatch({ type: "RESOLVE_SHOWDOWN" }),
     playTrump: (trumpId, opts = {}) =>
       dispatch({ type: "TRUMP", trumpId, ...opts }),
-    respondCounter: (requestId, useShatter) =>
-      dispatch({ type: "RESPOND_COUNTER", requestId, useShatter }),
+    respondCounter: (requestId, useShatter, useMirror) =>
+      dispatch({ type: "RESPOND_COUNTER", requestId, useShatter, useMirror }),
     rematchVote: (accept) => dispatch({ type: "REMATCH_VOTE", accept }),
     checkRematchTimer: () => dispatch({ type: "CHECK_REMATCH_TIMER" }),
     reset: () => dispatch({ type: "RESET" }),
