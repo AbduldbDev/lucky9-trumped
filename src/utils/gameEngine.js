@@ -525,6 +525,13 @@ function executeCounteredTrump(d, request) {
     );
     pushLog(d, msg);
 
+    // Check if attacker was disabled and it's their turn - advance turn to prevent stuck
+    const isAttackerTurn = d.players[d.turnIndex]?.id === request.attackerId;
+    if (isAttackerTurn && attacker.disabled) {
+      pushLog(d, `${attacker.name}'s turn ended (disabled by reflection).`);
+      advanceTurn(d);
+    }
+
     // Update the original trump play notification to show it was reflected
     if (d.trumpPlays) {
       const originalPlay = d.trumpPlays.find(
