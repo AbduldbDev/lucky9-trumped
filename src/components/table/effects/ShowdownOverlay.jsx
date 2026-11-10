@@ -1,7 +1,10 @@
-import { useEffect } from "react";
-let audio = null;
+import { useEffect, useRef } from "react";
+import { useAudio } from "../../../contexts/AudioContext.jsx";
 
-function startCountdownAudio() {
+let audio = null;
+const DEFAULT_VOLUME = 0.7;
+
+function startCountdownAudio(volume = DEFAULT_VOLUME) {
   if (!audio) {
     audio = new Audio("/sfx/countdown_tick.mp3");
     audio.preload = "auto";
@@ -10,7 +13,7 @@ function startCountdownAudio() {
   if (!audio.paused && !audio.ended) return;
 
   audio.currentTime = 0;
-  audio.volume = 0.7;
+  audio.volume = volume;
   audio.play().catch((e) => {
     if (e.name !== "AbortError") {
       console.warn("Countdown audio failed:", e);
@@ -25,9 +28,24 @@ function stopCountdownAudio() {
   }
 }
 
+// Safe volume: handles missing values, 0-100 or 0-1 scales, clamps to [0, 1]
+function resolveVolume(audioManager) {
+  if (audioManager?.sfxEnabled === false) return 0;
+
+  const raw = Number(audioManager?.sfxVolume);
+  if (!Number.isFinite(raw)) return DEFAULT_VOLUME;
+
+  const normalized = raw > 1 ? raw / 100 : raw;
+  return Math.min(1, Math.max(0, normalized));
+}
+
 export default function ShowdownOverlay({ countdown }) {
+  const audioManager = useAudio();
+  const volumeRef = useRef(DEFAULT_VOLUME);
+  volumeRef.current = resolveVolume(audioManager);
+
   useEffect(() => {
-    startCountdownAudio();
+    startCountdownAudio(volumeRef.current);
     return () => stopCountdownAudio();
   }, []);
 
@@ -92,7 +110,6 @@ export default function ShowdownOverlay({ countdown }) {
               transformOrigin: "center center",
               fontVariantNumeric: "lining-nums tabular-nums",
               paddingTop: "0.08em",
-              // Static glow: painted once per tick instead of animated shimmer
               textShadow: "0 0 28px rgba(217,194,138,0.35)",
               willChange: "transform, opacity",
             }}
