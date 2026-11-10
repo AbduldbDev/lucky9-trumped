@@ -28,6 +28,7 @@ export default function OvalTable({
   panX = 0,
   panY = 0,
   tableColor = "blue", // Player's preferred table color
+  onShowStats,
 }) {
   const [areaRef, { width, height }] = useElementSize();
   const { scale, cy, seats } = computeSeatLayout(
@@ -173,6 +174,7 @@ export default function OvalTable({
                     )
                   }
                   onTarget={onTarget}
+                  onShowStats={onShowStats}
                   turnStartTime={
                     turnPlayer?.id === opp.id ? view.turnStartTime : null
                   }

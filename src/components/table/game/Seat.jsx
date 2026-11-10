@@ -17,6 +17,7 @@ export default function Seat({
   paused = false,
   turnKey = null,
   ringSide = "left",
+  onShowStats,
 }) {
   const isOut = player.isEliminated || player.isSpectator;
   const lives = player.lives;
@@ -35,7 +36,17 @@ export default function Seat({
   });
 
   const handleClick = () => {
-    if (targetable) onTarget?.(player);
+    if (targetable) {
+      onTarget?.(player);
+    }
+  };
+
+  const handleAvatarClick = (e) => {
+    // Only show stats if not targetable (targeting takes priority)
+    if (!targetable && !isMe && onShowStats) {
+      e.stopPropagation();
+      onShowStats(player);
+    }
   };
 
   const handSize = player.hand.length;
@@ -56,8 +67,29 @@ export default function Seat({
             active={myTurn}
             secondsLeft={secondsLeft}
             paused={paused}
+            name={player.name}
+            onClick={
+              !targetable && !isMe && onShowStats ? handleAvatarClick : null
+            }
           />
         </div>
+
+        {/* Avatar circle (clickable for stats) */}
+        {/* {!isMe && onShowStats && (
+          <button
+            onClick={handleAvatarClick}
+            disabled={targetable}
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gradient-to-br from-gold-faint/50 to-black/50 font-serif text-sm font-bold text-gold-light shadow-[0_0_12px_-6px_rgba(212,175,55,0.3)] transition-all sm:h-8 sm:w-8 ${
+              targetable
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:border-gold/50 hover:shadow-[0_0_16px_-4px_rgba(212,175,55,0.5)] cursor-pointer active:scale-95"
+            }`}
+            title={targetable ? "" : "View player stats"}
+            aria-label={`View ${player.name}'s statistics`}
+          >
+            {(player.name[0] || "?").toUpperCase()}
+          </button>
+        )} */}
 
         {/* Name panel */}
         <div

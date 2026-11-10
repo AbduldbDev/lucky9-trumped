@@ -3,18 +3,12 @@ import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 const R = 12;
 const C = 2 * Math.PI * R;
 
-/**
- * Player avatar icon with a turn-timer ring around it.
- * Sits inline on the left of the seat's name row (not absolutely positioned),
- * and is sized so it can later become a button that opens a player modal.
- *
- *  - active = true  -> ring counts down (gold, red at TIMER_WARNING, amber if paused)
- *  - active = false -> idle: faint ring and a dim icon
- */
 export default function SeatTimerRing({
   secondsLeft = 0,
   paused = false,
   active = true,
+  name = "",
+  onClick = null,
 }) {
   const { TURN_TIMER, TIMER_WARNING } = GAME_CONFIG;
   const progress =
@@ -29,10 +23,14 @@ export default function SeatTimerRing({
         : "#c9a84c";
 
   return (
-    <span
+    <button
       aria-hidden="true"
-      title={active ? "Current turn" : undefined}
-      className="relative flex h-7 w-7 flex-none items-center justify-center rounded-full bg-black/60 sm:h-8 sm:w-8"
+      onClick={onClick ?? undefined}
+      disabled={!onClick}
+      title={`View ${name}'s statistics`}
+      className={`relative flex h-7 w-7 flex-none items-center justify-center rounded-full bg-black/60 sm:h-8 sm:w-8 ${
+        onClick ? "cursor-pointer active:scale-95" : "cursor-default"
+      }`}
     >
       <svg
         viewBox="0 0 28 28"
@@ -76,6 +74,6 @@ export default function SeatTimerRing({
         className="fa-solid fa-user relative z-10 text-[9px] sm:text-[11px]"
         style={{ color }}
       />
-    </span>
+    </button>
   );
 }

@@ -17,6 +17,7 @@ import ShowdownOverlay from "./effects/ShowdownOverlay.jsx";
 import TrumpNotification from "./effects/TrumpNotification.jsx";
 import PersonalNotification from "./effects/PersonalNotification.jsx";
 import CounterPrompt from "./modals/CounterPrompt.jsx";
+import OpponentStatsModal from "./modals/OpponentStatsModal.jsx";
 import { PHASES } from "../../utils/gameEngine.js";
 import { useTurnTimer } from "../../hooks/useTurnTimer.js";
 import { useRematchTimer } from "../../hooks/useRematchTimer.js";
@@ -33,6 +34,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
   const { view, me, isMyTurn, isHost, turnKey, actions } = game;
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [cardsFlipped, setCardsFlipped] = useState(false);
+  const [selectedOpponent, setSelectedOpponent] = useState(null);
 
   // Custom hooks for separated concerns
   const viewControls = useViewControls();
@@ -81,6 +83,14 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
     isHost,
     nextRound: actions.nextRound,
   });
+
+  const handleShowOpponentStats = (player) => {
+    setSelectedOpponent(player);
+  };
+
+  const handleCloseStatsModal = () => {
+    setSelectedOpponent(null);
+  };
 
   if (!view || !me) return null;
 
@@ -265,6 +275,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
         bet={bet}
         targeting={targeting}
         onTarget={onTarget}
+        onShowStats={handleShowOpponentStats}
         secondsLeft={secondsLeft}
         displayedTrumps={displayedTrumps}
         aimCfg={aimCfg}
@@ -377,6 +388,15 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
           onDecline={() => {
             actions.respondCounter(view.counterRequest.requestId, false);
           }}
+        />
+      )}
+
+      {/* Opponent stats modal */}
+      {selectedOpponent && (
+        <OpponentStatsModal
+          playerId={selectedOpponent.id}
+          playerName={selectedOpponent.name}
+          onClose={handleCloseStatsModal}
         />
       )}
     </div>
