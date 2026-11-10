@@ -351,6 +351,45 @@ export const EFFECT_EXECUTORS = {
     return `${actor.name} sacrificed 2 lives and gained 2 trump cards!`;
   },
 
+  // ── ODDS ─────────────────────────────────────────────────────────────────
+  CHECK_NEXT_CARD_RANGE({ draft, actor }) {
+    // Check if deck has cards
+    if (draft.deck.length === 0) {
+      return `${actor.name} tried to check the odds, but the deck is empty.`;
+    }
+
+    // Get the next card (last card in deck array - cards are popped from end)
+    const nextCard = draft.deck[draft.deck.length - 1];
+
+    // Get numeric value for comparison using the rank property
+    const cardRank = nextCard.rank;
+    let numericValue;
+
+    // Convert card rank to number for comparison
+    if (cardRank === "A") {
+      numericValue = 1;
+    } else if (["10", "J", "Q", "K"].includes(cardRank)) {
+      numericValue = 0;
+    } else {
+      numericValue = parseInt(cardRank, 10);
+    }
+
+    // Determine if card is above or below 5
+    // Cards: A(1), 2, 3, 4 are LOW (≤5)
+    // Cards: 6, 7, 8, 9 are HIGH (>5)
+    // Cards: 10, J, Q, K are worth 0 in Lucky 9, so count as LOW
+    const range = numericValue > 5 ? "high" : "low";
+
+    // Store the result privately for this player
+    if (!draft.oddsResults) draft.oddsResults = {};
+    draft.oddsResults[actor.id] = {
+      range: range, // "high" or "low"
+      timestamp: Date.now(),
+    };
+
+    return `${actor.name} used Odds to check the next card range.`;
+  },
+
   // ── FORTUNE TELLER ───────────────────────────────────────────────────────
   PEEK_DECK({ draft, actor }) {
     const peekCount = Math.min(3, draft.deck.length);

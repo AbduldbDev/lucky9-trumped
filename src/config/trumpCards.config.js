@@ -29,6 +29,7 @@ export const TRUMP_ICONS = {
   SACRIFICE: "fa-heart-crack",
   LOCKDOWN: "fa-lock",
   MIRROR: "fa-retweet",
+  ODDS: "fa-dice",
 };
 
 export const TRUMP_RARITIES = {
@@ -99,6 +100,15 @@ export const TRUMP_CARDS_CATALOG = {
       "Lose 2 lives to gain 2 trump cards. Cannot be used if you have 1 or fewer lives remaining.",
     targetType: "SELF",
     effect: { type: "SACRIFICE_FOR_TRUMP" },
+  },
+  ODDS: {
+    id: "ODDS",
+    name: "Odds",
+    rarity: "COMMON",
+    description:
+      "Check whether the next card in the deck is above or below 5 without revealing its exact value.",
+    targetType: "NONE",
+    effect: { type: "CHECK_NEXT_CARD_RANGE" },
   },
 
   // ── UNCOMMON ────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import {
   SpectatorBanner,
   CheckerBanner,
   FortuneBanner,
+  OddsBanner,
 } from "./ui/PanelBanners.jsx";
 import PlayerInfo from "./ui/PlayerInfo.jsx";
 import PlayerHand from "./game/PlayerHand.jsx";
@@ -299,6 +300,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
             deckCount={view.deckCount}
           />
         )}
+        {view.oddsResult && <OddsBanner result={view.oddsResult} />}
 
         <div className="flex flex-col sm:flex-row sm:items-stretch">
           <PlayerInfo

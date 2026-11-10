@@ -70,3 +70,26 @@ export function FortuneBanner({ result, deckCount }) {
     </div>
   );
 }
+
+export function OddsBanner({ result }) {
+  if (!result?.range) return null;
+
+  const isHigh = result.range === "high";
+
+  return (
+    <div className="flex-none px-4 py-1.5 bg-teal-900/40 border-b border-teal-600/20 text-center">
+      <span className="text-xs text-teal-300/70">
+        <i className="fa-solid fa-dice mr-1.5" />
+        Odds — Next card:{" "}
+        <b className={isHigh ? "text-amber-400" : "text-sky-400"}>
+          <i
+            className={`fa-solid ${
+              isHigh ? "fa-arrow-up" : "fa-arrow-down"
+            } mr-1`}
+          />
+          {isHigh ? "Above 5" : "5 or below"}
+        </b>
+      </span>
+    </div>
+  );
+}

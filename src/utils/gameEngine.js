@@ -83,6 +83,7 @@ export function createInitialState({ partyCode, hostPlayer }) {
     personalNotifications: {}, // per-player notifications (playerId -> array of notifications)
     checkerResults: {}, // CHECKER results per playerId (private)
     fortuneResults: {}, // FORTUNE_TELLER results per playerId (private)
+    oddsResults: {}, // ODDS results per playerId (private)
     counterRequests: {}, // pending counter requests per playerId (playerId -> { attackerId, trumpId, ... })
     counterResponses: {}, // collected counter responses (requestId -> { playerId, accepted })
     rematchVotes: {}, // playerId → boolean (REMATCH_VOTE)
@@ -132,6 +133,7 @@ function startRound(d, firstPlayerOverride = null) {
   d.activeTrumpEffects = []; // Clear persistent trump effects for new round
   d.checkerResults = {};
   d.fortuneResults = {}; // Clear fortune teller results for new round
+  d.oddsResults = {}; // Clear odds results for new round
   d.personalNotifications = {}; // Clear personal notifications for new round
   d.rematchVotes = {};
   d.rematchTimerEnd = null;
@@ -203,6 +205,11 @@ function advanceTurn(d) {
   d.counterRequests = {}; // Clear any pending counter requests
   d.totalPauseTime = 0; // Reset pause time for new turn
   d.pauseStartTime = null;
+
+  // Clear odds results when turn advances (banner disappears)
+  if (d.oddsResults) {
+    d.oddsResults = {};
+  }
 
   const n = d.players.length;
   for (let k = 1; k <= n; k++) {
@@ -880,6 +887,7 @@ const HANDLERS = {
         activeTrumpEffects: [],
         checkerResults: {},
         fortuneResults: {},
+        oddsResults: {},
         personalNotifications: {},
         rematchVotes: {},
         rematchTimerEnd: null,
@@ -944,6 +952,7 @@ const HANDLERS = {
       activeTrumpEffects: [],
       checkerResults: {},
       fortuneResults: {},
+      oddsResults: {},
       personalNotifications: {},
       rematchVotes: {},
       rematchTimerEnd: null,
@@ -1314,12 +1323,14 @@ const isRevealPhase = (phase) =>
  */
 export function maskState(state) {
   const reveal = isRevealPhase(state.phase);
-  const { deck, checkerResults, fortuneResults, ...rest } = state; // strip secrets
+  const { deck, checkerResults, fortuneResults, oddsResults, ...rest } = state; // strip secrets
+
   return {
     ...rest,
     deckCount: deck.length,
     checkerResults: {}, // sent via private channel only
     fortuneResults: {}, // sent via private channel only
+    oddsResults: {}, // sent via private channel only
     players: state.players.map((p) => ({
       ...p,
       trumpCount: p.trumps.length,
@@ -1378,6 +1389,8 @@ export function getPrivate(state, playerId) {
       })),
       checkerResult: state.checkerResults?.[playerId] ?? null,
       fortuneResult: state.fortuneResults?.[playerId] ?? null,
+      oddsResult: state.oddsResults?.[playerId] ?? null,
+      oddsResult: state.oddsResults?.[playerId] ?? null,
       personalNotifications,
       waitingForCounterResponse: false, // Spectators don't need this
     };
@@ -1392,6 +1405,7 @@ export function getPrivate(state, playerId) {
     allHands: null,
     checkerResult: state.checkerResults?.[playerId] ?? null,
     fortuneResult: state.fortuneResults?.[playerId] ?? null,
+    oddsResult: state.oddsResults?.[playerId] ?? null,
     personalNotifications,
     counterRequest: getCounterRequestForPlayer(state, playerId),
     waitingForCounterResponse: isWaitingForCounterResponse(state, playerId),
@@ -1459,6 +1473,7 @@ export function applyPrivate(pub, priv, selfId) {
       ...pub,
       checkerResult: priv.checkerResult,
       fortuneResult: priv.fortuneResult,
+      oddsResult: priv.oddsResult,
       personalNotifications: priv.personalNotifications,
       counterRequest: priv.counterRequest,
       waitingForCounterResponse: priv.waitingForCounterResponse,
@@ -1479,6 +1494,7 @@ export function applyPrivate(pub, priv, selfId) {
     ...pub,
     checkerResult: priv.checkerResult,
     fortuneResult: priv.fortuneResult,
+    oddsResult: priv.oddsResult,
     personalNotifications: priv.personalNotifications,
     counterRequest: priv.counterRequest,
     waitingForCounterResponse: priv.waitingForCounterResponse,
