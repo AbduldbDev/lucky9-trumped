@@ -35,7 +35,7 @@ export const GAME_CONFIG = {
   SHUFFLE_DECK_EVERY_ROUND: true,
 
   // TURN SETTINGS
-  TURN_TIMER: 999999, // seconds per turn
+  TURN_TIMER: 30, // seconds per turn
   TIMER_WARNING: 10, // blink/heartbeat threshold (seconds)
   AUTO_ELIMINATE_ON_TIMEOUT: true,
   SKIP_ELIMINATED_PLAYERS: true,
@@ -70,29 +70,29 @@ export const GAME_CONFIG = {
     // ── COMMON ──
     "BET_UP",
     "BET_DOWN",
-    // "SHATTER",
-    // "SACRIFICE",
-    // "ODDS",
-    // // ── UNCOMMON ──
-    // "DOUBLE_BET_UP",
-    // "DOUBLE_BET_DOWN",
-    // "RETURN",
-    // "DISCARD",
-    // "HUSH",
-    // // ── RARE ──
-    // "REFRESH",
-    // "EXCHANGE",
-    // "TARGET",
-    // "CHECKER",
+    "SHATTER",
+    "SACRIFICE",
+    "ODDS",
+    // ── UNCOMMON ──
+    "DOUBLE_BET_UP",
+    "DOUBLE_BET_DOWN",
+    "RETURN",
+    "DISCARD",
+    "HUSH",
+    // ── RARE ──
+    "REFRESH",
+    "EXCHANGE",
+    "TARGET",
+    "CHECKER",
     "MIRROR",
     // ── LEGENDARY ──
-    // "SELECT",
+    "SELECT",
     "DISABLE",
-    // "LOCKDOWN",
-    // // ── MYTHIC ──
-    // "FRIENDSHIP_CARD",
-    // "ANGEL_CARD",
-    // "FORTUNE_TELLER",
+    "LOCKDOWN",
+    // ── MYTHIC ──
+    "FRIENDSHIP_CARD",
+    "ANGEL_CARD",
+    "FORTUNE_TELLER",
   ],
 
   // ORIGINAL TRUMP CARD RARITY SETTINGS

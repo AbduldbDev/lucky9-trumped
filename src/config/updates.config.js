@@ -27,7 +27,7 @@ export const UPDATES = [
       },
       {
         type: "new",
-        text: "Added LOCKDOWN Trump Card (LEGENDARY): Disable all trump card usage for all players for the remainder of the round. This effect can be countered by SHATTER or MIRROR.",
+        text: "Added LOCKDOWN Trump Card (LEGENDARY): Disable all trump card usage for a specific player for the remainder of the round. This effect can be countered by SHATTER or MIRROR.",
       },
       {
         type: "new",
