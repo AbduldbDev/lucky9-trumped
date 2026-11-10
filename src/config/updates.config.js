@@ -7,6 +7,47 @@
  */
 export const UPDATES = [
   {
+    id: "2026-11-10",
+    version: "0.0.2",
+    date: "Nov 10, 2026",
+    title: "Trump Card Update!",
+    items: [
+      // NEW
+      {
+        type: "new",
+        text: "Added animated card dealing system with cards flying from a central deck to each player's seat sequentially, with sound effects for each card dealt.",
+      },
+      {
+        type: "new",
+        text: "Added opponent stats modal accessible by clicking on player seat icons, displaying player stats, equipped card skins, win rate, and match history.",
+      },
+      {
+        type: "new",
+        text: "Added SACRIFICE Trump Card (COMMON): Exchange 2 lives for 2 trump cards. Can only be used when you have more than 1 life remaining.",
+      },
+      {
+        type: "new",
+        text: "Added LOCKDOWN Trump Card (LEGENDARY): Disable all trump card usage for all players for the remainder of the round. This effect can be countered by SHATTER or MIRROR.",
+      },
+      {
+        type: "new",
+        text: "Added MIRROR Trump Card (RARE): Reflect counterable trump cards back to the attacker. Must be used from hand when targeted, with special 3-button counter prompt interface.",
+      },
+      {
+        type: "new",
+        text: "Added ODDS Trump Card (COMMON): Check if the next card in the deck is greater than 5 or equal to/below 5, helping with strategic hit decisions.",
+      },
+      {
+        type: "new",
+        text: "Added visual indicators for locked trump cards when LOCKDOWN is active, with lock icons and disabled states.",
+      },
+      {
+        type: "new",
+        text: "Added dealing status banner and visual feedback during card distribution, with disabled controls and paused timer.",
+      },
+    ],
+  },
+  {
     id: "2026-11-09",
     version: "0.0.1",
     date: "Nov 9, 2026",
