@@ -35,7 +35,7 @@ export const GAME_CONFIG = {
   SHUFFLE_DECK_EVERY_ROUND: true,
 
   // TURN SETTINGS
-  TURN_TIMER: 99999, // seconds per turn
+  TURN_TIMER: 999999, // seconds per turn
   TIMER_WARNING: 10, // blink/heartbeat threshold (seconds)
   AUTO_ELIMINATE_ON_TIMEOUT: true,
   SKIP_ELIMINATED_PLAYERS: true,
@@ -68,8 +68,8 @@ export const GAME_CONFIG = {
   // Example: ["BET_UP", "BET_DOWN", "SHATTER"] - only these 3 cards can appear
   ENABLED_TRUMP_CARDS: [
     // ── COMMON ──
-    // "BET_UP",
-    // "BET_DOWN",
+    "BET_UP",
+    "BET_DOWN",
     // "SHATTER",
     // "SACRIFICE",
     // "ODDS",

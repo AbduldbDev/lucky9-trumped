@@ -19,15 +19,21 @@ export function ActionBar({
   isMyTurn,
   actions,
   waitingForCounterResponse,
+  isDealing = false,
 }) {
   const audio = useAudio();
   const max = GAME_CONFIG.MAX_CARDS_IN_HAND;
   const handFull = me.hand.length >= max;
 
-  // Disable Hit and Stand if waiting for counter responses
+  // Disable Hit and Stand if waiting for counter responses OR during dealing animation
   const canHit =
-    isMyTurn && !me.stood && !handFull && !waitingForCounterResponse;
-  const canStand = isMyTurn && !me.stood && !waitingForCounterResponse;
+    isMyTurn &&
+    !me.stood &&
+    !handFull &&
+    !waitingForCounterResponse &&
+    !isDealing;
+  const canStand =
+    isMyTurn && !me.stood && !waitingForCounterResponse && !isDealing;
 
   const handleHit = () => {
     audio.playSfx(AUDIO_CONFIG.SFX.CARD_DRAW);
@@ -41,6 +47,19 @@ export function ActionBar({
 
   return (
     <div className="controls flex flex-col gap-1">
+      {/* Dealing animation indicator */}
+      {isDealing && (
+        <div className="flex items-center justify-center gap-2 px-3 py-1.5 mb-1 rounded-lg bg-blue-500/10 border border-blue-500/20">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
+          </span>
+          <span className="text-[10px] font-medium text-blue-200/90 uppercase tracking-wider">
+            Dealing cards...
+          </span>
+        </div>
+      )}
+
       {/* Waiting for counter indicator */}
       {waitingForCounterResponse && (
         <div className="flex items-center justify-center gap-2 px-3 py-1.5 mb-1 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
@@ -72,11 +91,13 @@ export function ActionBar({
             ${CAN_HOVER}:border-gold/40
             ${CAN_HOVER}:bg-felt-light/90`}
           title={
-            waitingForCounterResponse
-              ? "Waiting for counter response..."
-              : handFull
-                ? "Hand full — Stand or play a Trump"
-                : `Draw a card (${me.hand.length}/${max})`
+            isDealing
+              ? "Cards are being dealt..."
+              : waitingForCounterResponse
+                ? "Waiting for counter response..."
+                : handFull
+                  ? "Hand full — Stand or play a Trump"
+                  : `Draw a card (${me.hand.length}/${max})`
           }
           aria-label={`Hit, ${me.hand.length} of ${max} cards`}
         >
@@ -113,9 +134,11 @@ export function ActionBar({
             ${CAN_HOVER}:from-gold/25
             ${CAN_HOVER}:to-gold/10`}
           title={
-            waitingForCounterResponse
-              ? "Waiting for counter response..."
-              : "Lock your hand — you will not draw again this round"
+            isDealing
+              ? "Cards are being dealt..."
+              : waitingForCounterResponse
+                ? "Waiting for counter response..."
+                : "Lock your hand — you will not draw again this round"
           }
         >
           <span
@@ -164,13 +187,14 @@ export function TrumpTray({
   onAim,
   onCancelAim,
   waitingForCounterResponse,
+  isDealing = false,
 }) {
   const audio = useAudio();
   const [rank, setRank] = useState("A");
   const aimCfg = aiming ? TRUMP_CARDS_CATALOG[aiming] : null;
 
   const pick = (id) => {
-    if (!isMyTurn) return; // Only check if it's your turn, allow even if stood
+    if (!isMyTurn || isDealing) return; // Only check if it's your turn and not dealing, allow even if stood
     const cfg = TRUMP_CARDS_CATALOG[id];
     if (!cfg) return;
 
@@ -314,7 +338,11 @@ export function TrumpTray({
               // Check if all trumps are locked down
               const isTrumpsLocked = me.trumpsDisabled === true;
               const isDisabled =
-                !isMyTurn || isSacrificeDisabled || isTrumpsLocked || isMirror;
+                !isMyTurn ||
+                isSacrificeDisabled ||
+                isTrumpsLocked ||
+                isMirror ||
+                isDealing;
 
               return (
                 // Drop-in replacement for the <button> inside me.trumps.map(...).
@@ -325,11 +353,13 @@ export function TrumpTray({
                   disabled={isDisabled}
                   onClick={() => pick(id)}
                   title={
-                    isTrumpsLocked
-                      ? `${cfg.name} (${rarity}) — Locked down this round`
-                      : isSacrificeDisabled
-                        ? `${cfg.name} (${rarity}) — Cannot use: Need more than 1 life`
-                        : `${cfg.name} (${rarity}) — ${cfg.description ?? ""}`
+                    isDealing
+                      ? `${cfg.name} (${rarity}) — Cards are being dealt...`
+                      : isTrumpsLocked
+                        ? `${cfg.name} (${rarity}) — Locked down this round`
+                        : isSacrificeDisabled
+                          ? `${cfg.name} (${rarity}) — Cannot use: Need more than 1 life`
+                          : `${cfg.name} (${rarity}) — ${cfg.description ?? ""}`
                   }
                   aria-label={
                     isTrumpsLocked
@@ -408,7 +438,7 @@ export function TrumpTray({
   );
 }
 export default function Controls(props) {
-  const { view, actions } = props;
+  const { view, actions, isDealing = false } = props;
   const audio = useAudio();
   const waitingForCounterResponse = view?.waitingForCounterResponse ?? false;
 
@@ -421,12 +451,14 @@ export default function Controls(props) {
       <ActionBar
         {...props}
         waitingForCounterResponse={waitingForCounterResponse}
+        isDealing={isDealing}
       />
 
       {/* Bottom: Trump cards (full width) */}
       <TrumpTray
         {...props}
         waitingForCounterResponse={waitingForCounterResponse}
+        isDealing={isDealing}
       />
     </div>
   );

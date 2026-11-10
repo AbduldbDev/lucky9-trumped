@@ -1,6 +1,8 @@
+import { useState, useRef } from "react";
 import Seat from "./Seat.jsx";
 import TimerRing from "./Timerring.jsx";
 import ActiveEffects from "../effects/ActiveEffects.jsx";
+import CentralDeck from "./CentralDeck.jsx";
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 import { PHASES } from "../../../utils/gameEngine.js";
 import { useElementSize } from "../../../hooks/useElementSize.js";
@@ -29,6 +31,11 @@ export default function OvalTable({
   panY = 0,
   tableColor = "blue", // Player's preferred table color
   onShowStats,
+  meSkinId = "classic_red", // Player's equipped skin for deck
+  deckRef, // Ref for deck positioning
+  seatRefs, // Refs for seat positioning
+  isDealing = false, // Whether cards are currently being dealt
+  dealingProgress = 0, // How many cards have been dealt so far
 }) {
   const [areaRef, { width, height }] = useElementSize();
   const { scale, cy, seats } = computeSeatLayout(
@@ -87,10 +94,26 @@ export default function OvalTable({
           <div
             className="absolute  left-1/2 z-10 flex flex-col items-center gap-1 pointer-events-none"
             style={{
-              top: cy - 1,
+              top: cy - 70,
               transform: "translate(-50%, 0)",
             }}
           >
+            {/* Central deck */}
+            <div className="flex items-center gap-1 bg-black/30 rounded-full px-3 py-1">
+              <i className="fa-solid fa-heart text-red-500/60 text-[10px]" />
+              <span className="text-xs font-semibold text-white/60 tabular-nums">
+                {bet}
+              </span>
+            </div>
+            <div className="pointer-events-none mt-2 mb-2">
+              <CentralDeck
+                ref={deckRef}
+                deckCount={view.deckCount}
+                view={view}
+                skinId={meSkinId}
+              />
+            </div>
+
             <div className=" z-20 pointer-events-none ">
               {view.phase === PHASES.PLAYING && isMyTurn && (
                 <TimerRing
@@ -101,13 +124,8 @@ export default function OvalTable({
                 />
               )}
             </div>
-            <div className="flex items-center gap-1 bg-black/30 rounded-full px-3 py-1">
-              <i className="fa-solid fa-heart text-red-500/60 text-[10px]" />
-              <span className="text-xs font-semibold text-white/60 tabular-nums">
-                {bet}
-              </span>
-            </div>
-            <span className="text-[10px] sm:text-[11px] text-white/25 font-mono">
+
+            <span className="text-[10px] mt-1 sm:text-[11px] text-white/25 font-mono">
               <i className="fa-solid fa-layer-group mr-1" />
               {view.deckCount} · Round {view.round}
             </span>
@@ -149,6 +167,11 @@ export default function OvalTable({
             return (
               <div
                 key={opp.id}
+                ref={(el) => {
+                  if (seatRefs && el) {
+                    seatRefs.current[opp.id] = el;
+                  }
+                }}
                 className="absolute z-10"
                 style={{
                   left: pos.x,

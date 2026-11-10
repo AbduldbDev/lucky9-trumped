@@ -38,6 +38,13 @@ const SIZES = {
     suit: "text-sm",
     center: "text-4xl",
   },
+  deck: {
+    w: "w-11",
+    h: "h-16",
+    rank: "text-xs",
+    suit: "text-[9px]",
+    center: "text-xl",
+  },
 };
 
 // Scales glow down on small cards so it doesn't turn into a blob

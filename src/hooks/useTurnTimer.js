@@ -4,16 +4,11 @@ import { PHASES } from "../utils/gameEngine.js";
 import { useAudio } from "../contexts/AudioContext.jsx";
 import { AUDIO_CONFIG } from "../config/audio.config.js";
 
+const TICK_MS = 50;
+
 /**
- * @param {object} params
- * @param {boolean} params.active     - true when it is this player's turn
- * @param {string}  params.phase      - current game phase
- * @param {string}  params.turnKey    - a key that changes every time the turn changes
- *                                      (e.g. `${round}-${turnIndex}`)
- * @param {number}  params.turnStartTime - server timestamp (ms) when turn started
- * @param {number}  params.totalPauseTime - accumulated pause time (ms) for current turn
- * @param {boolean} params.paused     - true to pause the timer (e.g., waiting for counter response)
- * @param {function} params.onTimeout - called with no args when the timer hits 0
+ * Returns secondsLeft as a float (e.g. 20.12), counting down to 0.
+ * Params are unchanged from the previous version.
  */
 export function useTurnTimer({
   active,
@@ -29,96 +24,102 @@ export function useTurnTimer({
   const warning = GAME_CONFIG.TIMER_WARNING;
 
   const [secondsLeft, setSecondsLeft] = useState(duration);
+  const secondsLeftRef = useRef(duration);
   const intervalRef = useRef(null);
   const onTimeoutRef = useRef(onTimeout);
+  const audioRef = useRef(audio);
   const heartbeatActiveRef = useRef(false);
   onTimeoutRef.current = onTimeout;
+  audioRef.current = audio;
 
   const isPlaying = phase === PHASES.PLAYING;
 
-  useEffect(() => {
-    // Calculate elapsed time from server timestamp
-    if (turnStartTime) {
-      const elapsed = Math.floor(
-        (Date.now() - turnStartTime - totalPauseTime) / 1000,
-      );
-      const remaining = Math.max(0, duration - elapsed);
-      setSecondsLeft(remaining);
-    } else {
-      setSecondsLeft(duration);
-    }
+  const update = (value) => {
+    secondsLeftRef.current = value;
+    setSecondsLeft(value);
+  };
 
+  const remainingFromServer = () =>
+    Math.max(
+      0,
+      duration - (Date.now() - turnStartTime - totalPauseTime) / 1000,
+    );
+
+  const stopHeartbeat = () => {
     if (heartbeatActiveRef.current) {
-      audio.stopHeartbeat();
+      audioRef.current.stopHeartbeat();
       heartbeatActiveRef.current = false;
     }
-  }, [turnKey, duration, turnStartTime, totalPauseTime, audio]);
+  };
 
+  // Sync displayed time whenever the turn / server timing changes
+  useEffect(() => {
+    update(turnStartTime ? remainingFromServer() : duration);
+    stopHeartbeat();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turnKey, duration, turnStartTime, totalPauseTime]);
+
+  // Run the countdown
   useEffect(() => {
     if (!active || !isPlaying || paused) {
       clearInterval(intervalRef.current);
-      if (heartbeatActiveRef.current) {
-        audio.stopHeartbeat();
-        heartbeatActiveRef.current = false;
-      }
+      stopHeartbeat();
       return;
     }
 
-    // Calculate initial seconds left based on server timestamp
-    let initialSeconds = duration;
-    if (turnStartTime) {
-      const elapsed = Math.floor(
-        (Date.now() - turnStartTime - totalPauseTime) / 1000,
-      );
-      initialSeconds = Math.max(0, duration - elapsed);
-    }
-    setSecondsLeft(initialSeconds);
+    // Deadline from server time, or from the current local value if no timestamp
+    const deadline = turnStartTime
+      ? turnStartTime + totalPauseTime + duration * 1000
+      : Date.now() +
+        (secondsLeftRef.current > 0 ? secondsLeftRef.current : duration) * 1000;
 
-    // If already expired, trigger timeout immediately
-    if (initialSeconds <= 0) {
+    const initial = Math.max(0, (deadline - Date.now()) / 1000);
+    update(initial);
+
+    if (initial <= 0) {
       onTimeoutRef.current?.();
       return;
     }
 
-    // Start countdown
+    let lastWhole = Math.ceil(initial);
+
     intervalRef.current = setInterval(() => {
-      setSecondsLeft((s) => {
-        // Start heartbeat when time is low
-        if (
-          s <= AUDIO_CONFIG.HEARTBEAT_WARNING_TIME &&
-          !heartbeatActiveRef.current &&
-          s > 0
-        ) {
-          heartbeatActiveRef.current = true;
-          audio.playHeartbeat();
-        }
+      const remaining = Math.max(0, (deadline - Date.now()) / 1000);
+      const a = audioRef.current;
 
-        // Play tick sound in last 10 seconds
-        if (s > 0 && s <= 10) {
-          audio.playSfx(AUDIO_CONFIG.SFX.TIMER_TICK);
-        }
+      if (
+        remaining > 0 &&
+        remaining <= AUDIO_CONFIG.HEARTBEAT_WARNING_TIME &&
+        !heartbeatActiveRef.current
+      ) {
+        heartbeatActiveRef.current = true;
+        a.playHeartbeat();
+      }
 
-        if (s <= 1) {
-          clearInterval(intervalRef.current);
-          if (heartbeatActiveRef.current) {
-            audio.stopHeartbeat();
-            heartbeatActiveRef.current = false;
-          }
-          audio.playSfx(AUDIO_CONFIG.SFX.TIMER_EXPIRE);
-          onTimeoutRef.current?.();
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
+      // One tick sound per whole second in the last 10 seconds
+      const whole = Math.ceil(remaining);
+      if (whole !== lastWhole) {
+        if (whole > 0 && whole <= 10) a.playSfx(AUDIO_CONFIG.SFX.TIMER_TICK);
+        lastWhole = whole;
+      }
+
+      if (remaining <= 0) {
+        clearInterval(intervalRef.current);
+        stopHeartbeat();
+        a.playSfx(AUDIO_CONFIG.SFX.TIMER_EXPIRE);
+        update(0);
+        onTimeoutRef.current?.();
+        return;
+      }
+
+      update(remaining);
+    }, TICK_MS);
 
     return () => {
       clearInterval(intervalRef.current);
-      if (heartbeatActiveRef.current) {
-        audio.stopHeartbeat();
-        heartbeatActiveRef.current = false;
-      }
+      stopHeartbeat();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     active,
     isPlaying,
@@ -127,12 +128,11 @@ export function useTurnTimer({
     turnStartTime,
     totalPauseTime,
     duration,
-    audio,
   ]);
 
   const isWarning =
     active && isPlaying && secondsLeft <= warning && secondsLeft > 0;
-  const isExpired = secondsLeft === 0;
+  const isExpired = secondsLeft <= 0;
 
   return { secondsLeft, isWarning, isExpired };
 }

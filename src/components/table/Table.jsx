@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Controls from "./game/Controls.jsx";
 import TopBar from "./ui/TopBar.jsx";
 import OvalTable from "./game/OvalTable.jsx";
@@ -30,6 +30,8 @@ import { useGameAudio } from "../../hooks/useGameAudio.js";
 import { useTrumpTargeting } from "../../hooks/useTrumpTargeting.js";
 import { useTrumpNotifications } from "../../hooks/useTrumpNotifications.js";
 import { useTableDerived } from "../../hooks/useTableDerived.js";
+import { useCardAnimations } from "../../hooks/useCardAnimations.js";
+import FlyingCard from "./game/FlyingCard.jsx";
 
 export default function Table({ game, onLeave, tableColor = "blue" }) {
   const { view, me, isMyTurn, isHost, turnKey, actions } = game;
@@ -37,11 +39,33 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
   const [cardsFlipped, setCardsFlipped] = useState(false);
   const [selectedOpponent, setSelectedOpponent] = useState(null);
 
+  // Refs for positioning
+  const deckRef = useRef(null);
+  const seatRefs = useRef({});
+
+  // Track previous phase and round for animations
+  const prevPhaseRef = useRef(null);
+  const prevRoundRef = useRef(null);
+
+  // Card animations - must be called BEFORE updating prevPhase/prevRound
+  const { flyingCards, isDealing, dealingProgress } = useCardAnimations({
+    view,
+    prevPhase: prevPhaseRef.current,
+    prevRound: prevRoundRef.current,
+  });
+
+  // Update refs AFTER component has rendered and animations have been triggered
+  useEffect(() => {
+    prevPhaseRef.current = view?.phase;
+    prevRoundRef.current = view?.round;
+  });
+
   // Custom hooks for separated concerns
   const viewControls = useViewControls();
   const {
     allPlayers,
     opponents,
+    me: meFiltered,
     turnPlayer,
     revealed,
     bet,
@@ -50,7 +74,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
     amSpectator,
     showControls,
     showStood,
-  } = useTableDerived({ view, me });
+  } = useTableDerived({ view, me, isDealing, dealingProgress });
   const { personalNotification, dismissPersonalNotification } =
     usePersonalNotifications({ view });
   useGameAudio({ view, me });
@@ -66,7 +90,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
     turnKey,
     turnStartTime: view?.turnStartTime,
     totalPauseTime: view?.totalPauseTime ?? 0,
-    paused: view?.pausedForCounter ?? false,
+    paused: view?.pausedForCounter || isDealing, // Pause timer during dealing animation
     onTimeout: actions.timeout,
   });
   const rematchLeft = useRematchTimer(
@@ -94,6 +118,12 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
   };
 
   if (!view || !me) return null;
+
+  // Get the first player's (starting player) skin for the deck and flying cards
+  // The starting player is determined by the turn order at the beginning of the round
+  const firstPlayer =
+    view.players && view.players.length > 0 ? view.players[0] : null;
+  const deckSkinId = firstPlayer?.skinId || me?.skinId || "classic_red";
 
   // Destructure view controls
   const {
@@ -128,7 +158,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
       </span>
       <span className="font-mono">
         <i className="fa-regular fa-clone mr-1" />
-        {me.hand.length}
+        {meFiltered.hand.length}
       </span>
       {isMyTurn && !amSpectator && view.phase === PHASES.PLAYING && (
         <span className="text-gold font-semibold">Your turn</span>
@@ -139,6 +169,47 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-[#040e06]">
       <TopBar view={view} bet={bet} onLeave={onLeave} />
+
+      {/* Flying card animations */}
+      {flyingCards.map((card) => {
+        // Get deck position
+        const deckRect = deckRef.current?.getBoundingClientRect();
+        if (!deckRect) return null;
+
+        const deckX = deckRect.left + deckRect.width / 2;
+        const deckY = deckRect.top + deckRect.height / 2;
+
+        // Determine if this card is for me or an opponent
+        const isForMe = card.playerId === me?.id;
+
+        let seatX, seatY;
+
+        if (isForMe) {
+          // For my cards, target the bottom panel (center bottom of screen)
+          seatX = window.innerWidth / 2;
+          seatY = window.innerHeight - 100; // Near bottom
+        } else {
+          // Get target seat position for opponents
+          const seatEl = seatRefs.current[card.playerId];
+          const seatRect = seatEl?.getBoundingClientRect();
+          if (!seatRect) return null;
+
+          seatX = seatRect.left + seatRect.width / 2;
+          seatY = seatRect.top + seatRect.height / 2;
+        }
+
+        return (
+          <FlyingCard
+            key={card.id}
+            fromX={deckX}
+            fromY={deckY}
+            toX={seatX}
+            toY={seatY}
+            delay={card.delay}
+            skinId={deckSkinId}
+          />
+        );
+      })}
 
       {/* View Controls: toggle + floating pan/zoom */}
       <div
@@ -284,6 +355,11 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
         panX={panX}
         panY={panY}
         tableColor={tableColor}
+        meSkinId={deckSkinId}
+        deckRef={deckRef}
+        seatRefs={seatRefs}
+        isDealing={isDealing}
+        dealingProgress={dealingProgress}
       />
 
       <BottomPanel
@@ -310,7 +386,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
             cardsFlipped={cardsFlipped}
           />
           <PlayerHand
-            me={me}
+            me={meFiltered}
             amSpectator={amSpectator}
             flipped={cardsFlipped}
             onToggleFlip={() => setCardsFlipped((prev) => !prev)}
@@ -326,6 +402,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
             aiming={aiming}
             onAim={setAiming}
             onCancelAim={cancelAim}
+            isDealing={isDealing}
           />
         ) : showStood ? (
           <StoodStatus allPlayers={allPlayers} />

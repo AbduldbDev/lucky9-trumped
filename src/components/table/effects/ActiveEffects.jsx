@@ -8,10 +8,10 @@ import {
 
 const MAX_VISIBLE = 3;
 const GRID_CLASS =
-  "grid grid-cols-1 auto-rows-[34px] gap-1 " +
-  "sm:grid-cols-1 sm:auto-rows-[44px] sm:gap-1.5";
+  "grid grid-cols-2 auto-rows-[26px] gap-1 " +
+  "sm:grid-cols-1 sm:auto-rows-[32px] sm:gap-1";
 
-const TILE_SIZE_CLASS = "w-[84px] h-[34px] sm:w-[112px] sm:h-[44px]";
+const TILE_SIZE_CLASS = "w-[76px] h-[26px] sm:w-[96px] sm:h-[32px]";
 
 export default function ActiveEffects({ effects = [] }) {
   const [open, setOpen] = useState(false);
@@ -80,55 +80,48 @@ function ActiveEffectBadge({ effect, order, isLatest }) {
 
   return (
     <div
-      className={`relative flex items-center gap-1 sm:gap-1.5 px-1 sm:px-2 rounded-md
-        bg-black/70 border backdrop-blur-sm overflow-visible
-        animate-[fadeIn_0.3s_ease-out] ${TILE_SIZE_CLASS}`}
-      style={{
-        borderColor: `${color}80`,
-        boxShadow: `0 0 8px ${color}30`,
-      }}
-      title={`#${order} · ${card.name} by ${effect.playerName}${
-        isLatest ? " (latest)" : ""
-      }`}
+      className={`relative flex items-center gap-1 px-1 rounded-md
+    bg-black/70 border backdrop-blur-sm overflow-visible
+    animate-[fadeIn_0.3s_ease-out] ${TILE_SIZE_CLASS}`}
+      style={{ borderColor: `${color}80`, boxShadow: `0 0 6px ${color}30` }}
+      title={`#${order} · ${card.name} by ${effect.playerName}${isLatest ? " (latest)" : ""}`}
     >
-      {/* Placement number: #1 = placed first */}
+      {/* Placement number */}
       <span
-        className="absolute -top-1.5 -left-1.5 min-w-[13px] sm:min-w-[16px] h-[13px] sm:h-4 px-0.5 sm:px-1 rounded-full
-          bg-neutral-800 border border-white/30 text-[8px] sm:text-[9px] font-bold
-          text-white/80 flex items-center justify-center tabular-nums"
+        className="absolute -top-1 -left-1 min-w-[12px] h-[12px] px-0.5 rounded-full
+      bg-neutral-800 border border-white/30 text-[7px] sm:text-[8px] font-bold
+      text-white/80 flex items-center justify-center tabular-nums"
       >
         {order}
       </span>
 
-      {/* Most recent marker */}
+      {/* Newest marker: a dot instead of a "NEW" pill */}
       {isLatest && (
         <span
-          className="absolute -top-1.5 -right-1.5 px-1 sm:px-1.5 h-[13px] sm:h-4 rounded-full
-            bg-gold text-black text-[7px] sm:text-[8px] font-extrabold tracking-wide
-            flex items-center justify-center"
-        >
-          NEW
-        </span>
+          className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-gold
+        ring-1 ring-black/60"
+          aria-label="Latest"
+        />
       )}
 
       <div
-        className="flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded shrink-0"
+        className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded shrink-0"
         style={{ backgroundColor: `${color}20` }}
       >
         <i
-          className={`fa-solid ${icon} text-[10px] sm:text-xs`}
+          className={`fa-solid ${icon} text-[8px] sm:text-[10px]`}
           style={{ color }}
         />
       </div>
 
       <div className="flex flex-col leading-none min-w-0">
         <span
-          className="text-[8px] sm:text-[9px] font-bold truncate"
+          className="text-[9px] sm:text-[9px] font-bold truncate"
           style={{ color }}
         >
           {card.name}
         </span>
-        <span className="text-[7px] sm:text-[8px] text-white/50 truncate mt-0.5">
+        <span className="text-[6px] sm:text-[7px] text-white/50 truncate mt-px">
           {effect.playerName}
         </span>
       </div>
