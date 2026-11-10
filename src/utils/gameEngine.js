@@ -978,8 +978,18 @@ const HANDLERS = {
     const idx = p.trumps.indexOf(trumpId);
     if (idx === -1) throw new Error("You don't hold that Trump Card.");
 
+    // Validate that this trump card is enabled in the game configuration
+    const enabledIds = GAME_CONFIG.ENABLED_TRUMP_CARDS || [];
+    if (enabledIds && enabledIds.length > 0 && !enabledIds.includes(trumpId)) {
+      throw new Error(`Trump card ${trumpId} is not enabled in this game.`);
+    }
+
     // Import is at the top of the file, we can access TRUMP_CARDS_CATALOG directly
     const card = TRUMP_CARDS_CATALOG[trumpId];
+
+    if (!card) {
+      throw new Error(`Unknown trump card: ${trumpId}`);
+    }
 
     // Check if this trump is counterable
     if (card.counterable) {

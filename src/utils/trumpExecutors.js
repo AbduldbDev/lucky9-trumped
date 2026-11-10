@@ -351,6 +351,12 @@ export const EFFECT_EXECUTORS = {
  * @returns {string} log message
  */
 export function executeTrump(draft, actor, trumpId, ctx = {}) {
+  // Validate that the trump card is enabled
+  const enabledIds = GAME_CONFIG.ENABLED_TRUMP_CARDS || [];
+  if (enabledIds && enabledIds.length > 0 && !enabledIds.includes(trumpId)) {
+    throw new Error(`Trump card ${trumpId} is not enabled in this game.`);
+  }
+
   const card = TRUMP_CARDS_CATALOG[trumpId];
   if (!card) throw new Error(`Unknown trump card: ${trumpId}`);
   const exec = EFFECT_EXECUTORS[card.effect.type];
@@ -392,9 +398,27 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
 
 /**
  * Roll a random trump card ID based rarity probabilities.
+ * Only draws from enabled trump cards specified in GAME_CONFIG.ENABLED_TRUMP_CARDS
  */
 export function rollTrumpCard(rng = Math.random) {
-  const cards = Object.values(TRUMP_CARDS_CATALOG);
+  const enabledIds = GAME_CONFIG.ENABLED_TRUMP_CARDS || [];
+
+  // Get all cards or filter by enabled IDs
+  let cards = Object.values(TRUMP_CARDS_CATALOG);
+
+  // If ENABLED_TRUMP_CARDS is specified and not empty, filter cards
+  if (enabledIds && enabledIds.length > 0) {
+    cards = cards.filter((c) => enabledIds.includes(c.id));
+
+    // Safety check: if no enabled cards, fall back to all cards
+    if (cards.length === 0) {
+      console.warn(
+        "[Lucky9] No enabled trump cards found, falling back to full catalog",
+      );
+      cards = Object.values(TRUMP_CARDS_CATALOG);
+    }
+  }
+
   const rarities = Object.values(TRUMP_RARITIES);
   const total = rarities.reduce((s, r) => s + r.chance, 0);
   let roll = rng() * total;
@@ -406,6 +430,23 @@ export function rollTrumpCard(rng = Math.random) {
       break;
     }
   }
+
+  // Filter enabled cards by rarity
   const pool = cards.filter((c) => c.rarity === rarity.id);
+
+  // If no cards of this rarity are enabled, try another rarity
+  if (pool.length === 0) {
+    // Find any rarity that has enabled cards
+    for (const r of rarities) {
+      const fallbackPool = cards.filter((c) => c.rarity === r.id);
+      if (fallbackPool.length > 0) {
+        return fallbackPool[Math.floor(rng() * fallbackPool.length)].id;
+      }
+    }
+
+    // Ultimate fallback: return any enabled card
+    return cards[Math.floor(rng() * cards.length)].id;
+  }
+
   return pool[Math.floor(rng() * pool.length)].id;
 }
