@@ -3,7 +3,10 @@
 // SRD §3, §5, §8 edge-case rules are all implemented here.
 
 import { GAME_CONFIG } from "../config/gameRules.config.js";
-import { TRUMP_CARDS_CATALOG } from "../config/trumpCards.config.js";
+import {
+  TRUMP_CARDS_CATALOG,
+  ENABLED_TRUMP_CARDS,
+} from "../config/trumpCards.config.js";
 import { createDeck, shuffle, handScore, isNatural } from "./deckEngine.js";
 import { executeTrump, rollTrumpCard } from "./trumpExecutors.js";
 
@@ -1066,7 +1069,7 @@ const HANDLERS = {
     }
 
     // Validate that this trump card is enabled in the game configuration
-    const enabledIds = GAME_CONFIG.ENABLED_TRUMP_CARDS || [];
+    const enabledIds = ENABLED_TRUMP_CARDS || [];
     if (enabledIds && enabledIds.length > 0 && !enabledIds.includes(trumpId)) {
       throw new Error(`Trump card ${trumpId} is not enabled in this game.`);
     }

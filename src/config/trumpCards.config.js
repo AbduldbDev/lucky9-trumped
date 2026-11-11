@@ -1,11 +1,50 @@
 import { GAME_CONFIG } from "./gameRules.config.js";
 
-export const RARITY_COLOR = {
-  COMMON: "#9ca3af",
-  UNCOMMON: "#22c55e",
-  RARE: "#3b82f6",
-  LEGENDARY: "#eab308",
-  MYTHIC: "#a855f7",
+export const ENABLED_TRUMP_CARDS = [
+  // ── COMMON ──
+  "BET_UP",
+  "BET_DOWN",
+  "SHATTER",
+  "SACRIFICE",
+  "ODDS",
+  // ── UNCOMMON ──
+  "DOUBLE_BET_UP",
+  "DOUBLE_BET_DOWN",
+  "RETURN",
+  "DISCARD",
+  "HUSH",
+  // ── RARE ──
+  "REFRESH",
+  "EXCHANGE",
+  "TARGET",
+  "CHECKER",
+  "MIRROR",
+  // ── LEGENDARY ──
+  "SELECT",
+  "DISABLE",
+  "LOCKDOWN",
+  // ── MYTHIC ──
+  "FRIENDSHIP_CARD",
+  "ANGEL_CARD",
+  "FORTUNE_TELLER",
+];
+
+// ORIGINAL TRUMP CARD RARITY SETTINGS
+// export const TRUMP_RARITY = {
+//   COMMON: 45,
+//   UNCOMMON: 27,
+//   RARE: 17,
+//   LEGENDARY: 8,
+//   MYTHIC: 3,
+// };
+
+// BETA TRUMP CARD RARITY SETTINGS
+export const TRUMP_RARITY = {
+  COMMON: 35,
+  UNCOMMON: 25,
+  RARE: 18,
+  LEGENDARY: 12,
+  MYTHIC: 10,
 };
 
 export const TRUMP_ICONS = {
@@ -32,35 +71,43 @@ export const TRUMP_ICONS = {
   ODDS: "fa-dice",
 };
 
+export const RARITY_COLOR = {
+  COMMON: "#9ca3af",
+  UNCOMMON: "#22c55e",
+  RARE: "#3b82f6",
+  LEGENDARY: "#eab308",
+  MYTHIC: "#a855f7",
+};
+
 export const TRUMP_RARITIES = {
   COMMON: {
     id: "COMMON",
     name: "Common",
-    chance: GAME_CONFIG.TRUMP_RARITY.COMMON,
+    chance: TRUMP_RARITY.COMMON,
     color: "#9ca3af",
   },
   UNCOMMON: {
     id: "UNCOMMON",
     name: "Uncommon",
-    chance: GAME_CONFIG.TRUMP_RARITY.UNCOMMON,
+    chance: TRUMP_RARITY.UNCOMMON,
     color: "#22c55e",
   },
   RARE: {
     id: "RARE",
     name: "Rare",
-    chance: GAME_CONFIG.TRUMP_RARITY.RARE,
+    chance: TRUMP_RARITY.RARE,
     color: "#3b82f6",
   },
   LEGENDARY: {
     id: "LEGENDARY",
     name: "Legendary",
-    chance: GAME_CONFIG.TRUMP_RARITY.LEGENDARY,
+    chance: TRUMP_RARITY.LEGENDARY,
     color: "#eab308",
   },
   MYTHIC: {
     id: "MYTHIC",
     name: "Mythic",
-    chance: GAME_CONFIG.TRUMP_RARITY.MYTHIC,
+    chance: TRUMP_RARITY.MYTHIC,
     color: "#a855f7",
   },
 };

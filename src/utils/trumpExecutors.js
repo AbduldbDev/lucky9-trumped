@@ -9,6 +9,7 @@ import { GAME_CONFIG } from "../config/gameRules.config.js";
 import {
   TRUMP_CARDS_CATALOG,
   TRUMP_RARITIES,
+  ENABLED_TRUMP_CARDS,
 } from "../config/trumpCards.config.js";
 import { SUMMONABLE_RANKS } from "./deckEngine.js";
 import { checkLucky9 } from "./gameEngine.js";
@@ -432,7 +433,7 @@ export const EFFECT_EXECUTORS = {
  */
 export function executeTrump(draft, actor, trumpId, ctx = {}) {
   // Validate that the trump card is enabled
-  const enabledIds = GAME_CONFIG.ENABLED_TRUMP_CARDS || [];
+  const enabledIds = ENABLED_TRUMP_CARDS || [];
   if (enabledIds && enabledIds.length > 0 && !enabledIds.includes(trumpId)) {
     throw new Error(`Trump card ${trumpId} is not enabled in this game.`);
   }
@@ -483,10 +484,10 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
 
 /**
  * Roll a random trump card ID based rarity probabilities.
- * Only draws from enabled trump cards specified in GAME_CONFIG.ENABLED_TRUMP_CARDS
+ * Only draws from enabled trump cards specified in ENABLED_TRUMP_CARDS
  */
 export function rollTrumpCard(rng = Math.random) {
-  const enabledIds = GAME_CONFIG.ENABLED_TRUMP_CARDS || [];
+  const enabledIds = ENABLED_TRUMP_CARDS || [];
 
   // Get all cards or filter by enabled IDs
   let cards = Object.values(TRUMP_CARDS_CATALOG);

@@ -168,7 +168,7 @@ export async function refreshProfile(currentProfile) {
             highestWinStreak: st.highest_win_streak,
             favoriteTrumpCard: st.favorite_trump_card ?? "BET_UP",
           }
-        : currentProfile.stats,
+        : (currentProfile.stats ?? emptyStats()),
     };
   } catch (error) {
     console.error("[Lucky9] Failed to refresh profile:", error);

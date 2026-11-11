@@ -257,33 +257,40 @@ export default function Seat({
 
       {/* ── Footer status ──────────────────────────────────────── */}
       <div className="mt-1.5 flex w-full items-center justify-center sm:mt-2">
-        <div className="flex items-center gap-2 pt-2 text-[8px] text-white/30 sm:text-[9px] h-[5px]">
-          {myTurn && (
-            <span className="inline-flex items-center text-gold">
-              <i className="fa-solid fa-hourglass-half mr-1 animate-[spin_2s_linear_infinite]" />
-              Playing
-            </span>
-          )}
-
-          {player.stood && !isOut && !isTurn && !player.disabled && (
-            <span className="text-green-500 font-semibold">
-              <i className="fa-solid fa-hand mr-0.5 sm:mr-1" />
-              Stood
-            </span>
-          )}
-
+        <div className="flex flex-col items-center gap-0.3 pt-2 text-[8px] text-white/30 sm:text-[9px] h-[5px]">
           {player.disabled && (
-            <span className="text-red-600 font-semibold">
+            <div className="text-red-600 font-semibold">
               <i className="fa-solid fa-ban mr-0.5 sm:mr-1" />
               Disabled
-            </span>
+            </div>
           )}
 
-          {player.angelProtected && (
-            <span className="text-purple-400">
-              <i className="fa-solid fa-shield-halved" />
+          {player.trumpsDisabled && (
+            <span className="flex-1 text-red-600 font-semibold">
+              <i className="fa-solid fa-lock mr-1 sm:mr-1" />
+              Locked Down
             </span>
           )}
+          <div className="flex items-center gap-1">
+            {myTurn && (
+              <span className="inline-flex items-center text-gold">
+                <i className="fa-solid fa-hourglass-half mr-1 animate-[spin_2s_linear_infinite]" />
+                Playing
+              </span>
+            )}
+
+            {player.stood && !isOut && !isTurn && !player.disabled && (
+              <span className="text-green-500 font-semibold">
+                <i className="fa-solid fa-hand mr-0.5 sm:mr-1" />
+                Stood
+              </span>
+            )}
+            {player.angelProtected && (
+              <span className="text-purple-400">
+                <i className="fa-solid fa-shield-halved" />
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

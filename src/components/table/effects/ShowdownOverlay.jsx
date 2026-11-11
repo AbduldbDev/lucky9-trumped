@@ -47,7 +47,7 @@ export default function ShowdownOverlay({ countdown }) {
   useEffect(() => {
     startCountdownAudio(volumeRef.current);
     return () => stopCountdownAudio();
-  }, []);
+  }, []); // Play on each countdown change (3, 2, 1)
 
   return (
     <div

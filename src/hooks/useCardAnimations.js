@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { PHASES } from "../utils/gameEngine.js";
-
+import { GAME_CONFIG } from "../config/gameRules.config.js";
 /**
  * Hook to manage card dealing and hit animations
  * Returns flying cards array and dealing state
@@ -111,7 +111,7 @@ export function useCardAnimations({ view, prevPhase, prevRound }) {
     setDealingProgress(0);
 
     const cards = [];
-    const DELAY_PER_CARD = 500; // 0.5 seconds between each card
+    const DELAY_PER_CARD = GAME_CONFIG.DELAY_PER_CARD_ANIMATION;
 
     // Deal cards one at a time, cycling through players
     // Pattern: P1 card1 (0ms), P2 card1 (500ms), P3 card1 (1000ms), P1 card2 (1500ms), P2 card2 (2000ms)...

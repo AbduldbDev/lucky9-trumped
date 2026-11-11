@@ -9,7 +9,7 @@ import {
 const MAX_VISIBLE = 3;
 const GRID_CLASS =
   "grid grid-cols-2 auto-rows-[26px] gap-1 " +
-  "sm:grid-cols-1 sm:auto-rows-[32px] sm:gap-1";
+  "sm:grid-cols-2 sm:auto-rows-[32px] sm:gap-1";
 
 const TILE_SIZE_CLASS = "w-[76px] h-[26px] sm:w-[96px] sm:h-[32px]";
 
