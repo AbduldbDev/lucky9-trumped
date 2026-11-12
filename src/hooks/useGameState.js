@@ -405,6 +405,7 @@ export function useGameState({ partyCode, isHost, profile }) {
     ready: () => dispatch({ type: "READY" }),
     unready: () => dispatch({ type: "UNREADY" }),
     kick: (playerId) => dispatch({ type: "KICK", targetId: playerId }),
+    setSkin: (skinId) => dispatch({ type: "SET_SKIN", skinId }),
   };
 
   const current = view?.players?.[view.turnIndex];

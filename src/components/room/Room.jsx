@@ -11,7 +11,15 @@ import { useAssetGate } from "../../hooks/useAssetGate.js";
 import { PHASES } from "../../utils/gameEngine.js";
 
 /** Mounted only while inside a room so every room gets a fresh game-state hook. */
-export default function Room({ room, profile, onProfile, onRefresh, onExit }) {
+export default function Room({
+  room,
+  profile,
+  onProfile,
+  onRefresh,
+  onExit,
+  onBuy,
+  onEquip,
+}) {
   const game = useGameState({
     partyCode: room.partyCode,
     isHost: room.isHost,
@@ -41,6 +49,11 @@ export default function Room({ room, profile, onProfile, onRefresh, onExit }) {
     onExit();
   };
 
+  const handleEquip = async (skinId) => {
+    await onEquip(skinId);
+    actions.setSkin(skinId);
+  };
+
   const isKicked = useKickDetection({
     view,
     playerId: profile.id,
@@ -65,6 +78,9 @@ export default function Room({ room, profile, onProfile, onRefresh, onExit }) {
         selfId={game.selfId}
         onStart={actions.start}
         onLeave={leave}
+        profile={profile}
+        onBuy={onBuy}
+        onEquip={handleEquip}
         onReady={actions.ready}
         onUnready={actions.unready}
         onKick={actions.kick}

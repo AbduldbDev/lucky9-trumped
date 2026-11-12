@@ -49,10 +49,10 @@ export default function Shop({ profile, onBuy, onEquip, onClose }) {
               Collection
             </span>
             <h2 className="font-serif text-sm font-medium leading-tight tracking-wide text-ivory sm:text-base">
-              Card Shop
+              Casino Shop
             </h2>
             <p className="mt-0.5 text-[9px] text-ivory-dim/50 sm:text-[10px]">
-              Win matches to earn chips
+              Buy and equip card skins
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">

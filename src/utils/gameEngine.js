@@ -703,12 +703,25 @@ const HANDLERS = {
         return false; // reconnect, state unchanged except for spectator flag
       }
 
-      // Regular reconnect (browser refresh) - welcome them back
-      // Ensure host is always ready
-      if (player.id === d.hostId && d.phase === PHASES.LOBBY) {
-        existing.isReady = true;
+      // Regular reconnect. In the lobby, pick up a skin equipped since they sat down.
+      let changed = false;
+      if (
+        d.phase === PHASES.LOBBY &&
+        player.skinId &&
+        existing.skinId !== player.skinId
+      ) {
+        existing.skinId = player.skinId;
+        changed = true;
       }
-      return false; // reconnect, no state change needed
+      if (
+        player.id === d.hostId &&
+        d.phase === PHASES.LOBBY &&
+        !existing.isReady
+      ) {
+        existing.isReady = true;
+        changed = true;
+      }
+      return changed ? undefined : false;
     }
 
     // New player joining
@@ -752,6 +765,14 @@ const HANDLERS = {
     if (!p.isReady) return false; // Already not ready
     p.isReady = false;
     pushLog(d, `${p.name} is not ready.`);
+  },
+
+  SET_SKIN(d, { by, skinId }) {
+    if (d.phase !== PHASES.LOBBY) return false;
+    if (!skinId) return false;
+    const p = d.players.find((player) => player.id === by);
+    if (!p || p.skinId === skinId) return false;
+    p.skinId = skinId;
   },
 
   KICK(d, { by, targetId }) {

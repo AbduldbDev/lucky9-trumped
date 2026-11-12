@@ -19,6 +19,10 @@ export const UPDATES = [
         text: "Added AEGIS Trump Card (LEGENDARY): Halve the life penalty when you lose this round's showdown (deductions round up). Lasts for the current round and can be destroyed by SHATTER.",
       },
       {
+        type: "new",
+        text: "Casino Shop and Leaderboard are now available from the waiting room. Buy and equip card skins before the match starts, and check the hall of fame without leaving the room.",
+      },
+      {
         type: "improved",
         text: "MIRROR Trump Card balance change: MIRROR can no longer be used to counter EXCHANGE or FRIENDSHIP CARD — those can only be blocked with SHATTER.",
       },

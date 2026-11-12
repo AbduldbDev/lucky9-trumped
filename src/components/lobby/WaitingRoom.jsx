@@ -2,6 +2,7 @@ import { useState } from "react";
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
 import { useAudio } from "../../contexts/AudioContext.jsx";
 import { AUDIO_CONFIG } from "../../config/audio.config.js";
+import WaitingRoomMenu from "./WaitingRoomMenu.jsx";
 
 export default function WaitingRoom({
   partyCode,
@@ -9,6 +10,9 @@ export default function WaitingRoom({
   status,
   isHost,
   selfId,
+  profile,
+  onBuy,
+  onEquip,
   onStart,
   onLeave,
   onReady,
@@ -277,6 +281,14 @@ export default function WaitingRoom({
               </button>
             )}
           </div>
+
+          {profile && (
+            <WaitingRoomMenu
+              profile={profile}
+              onBuy={onBuy}
+              onEquip={onEquip}
+            />
+          )}
         </main>
       </div>
     </div>

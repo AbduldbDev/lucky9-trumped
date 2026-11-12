@@ -40,6 +40,8 @@ export default function LobbyPage() {
           onProfile={setProfile}
           onRefresh={refresh}
           onExit={exitRoom}
+          onBuy={buy}
+          onEquip={equip}
         />
       ) : (
         <Lobby
