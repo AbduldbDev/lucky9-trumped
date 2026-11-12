@@ -5,6 +5,7 @@ import {
   RARITY_COLOR,
   TRUMP_ICONS,
   NEW_RELEASE_TRUMP_CARDS,
+  ENABLED_TRUMP_CARDS,
 } from "../../../config/trumpCards.config.js";
 
 export default function TrumpGuideModal({ isOpen, onClose }) {
@@ -25,6 +26,8 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
   // Group cards by rarity
   const cardsByRarity = {};
   Object.values(TRUMP_CARDS_CATALOG).forEach((card) => {
+    if (!ENABLED_TRUMP_CARDS.includes(card.id)) return;
+
     if (!cardsByRarity[card.rarity]) {
       cardsByRarity[card.rarity] = [];
     }

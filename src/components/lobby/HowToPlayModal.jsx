@@ -5,6 +5,7 @@ import {
   TRUMP_RARITIES,
   TRUMP_ICONS,
   NEW_RELEASE_TRUMP_CARDS,
+  ENABLED_TRUMP_CARDS,
 } from "../../config/trumpCards.config.js";
 
 /**
@@ -323,7 +324,9 @@ function GameplayTab() {
 function TrumpsTab() {
   const grouped = RARITY_ORDER.map((id) => ({
     rarity: TRUMP_RARITIES[id],
-    cards: Object.values(TRUMP_CARDS_CATALOG).filter((c) => c.rarity === id),
+    cards: Object.values(TRUMP_CARDS_CATALOG).filter(
+      (c) => c.rarity === id && ENABLED_TRUMP_CARDS.includes(c.id),
+    ),
   })).filter((g) => g.cards.length > 0);
 
   return (

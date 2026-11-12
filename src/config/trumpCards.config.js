@@ -11,38 +11,35 @@ export const NEW_RELEASE_TRUMP_CARDS = [
 ];
 
 export const ENABLED_TRUMP_CARDS = [
-  // // ── COMMON ──
-  // "BET_UP",
-  // "BET_DOWN",
-  // "SHATTER",
-  // "SACRIFICE",
-  // "ODDS",
-  // // ── UNCOMMON ──
-  // "DOUBLE_BET_UP",
-  // "DOUBLE_BET_DOWN",
-  // "RETURN",
-  // "DISCARD",
-  // "HUSH",
-  // // ── RARE ──
-  // "REFRESH",
-  // "EXCHANGE",
-  // "TARGET",
-  // "CHECKER",
-  // "MIRROR",
-  // // ── LEGENDARY ──
-  // "SELECT",
-  // "DISABLE",
-  // "LOCKDOWN",
-  // // "AEGIS",
-  // // ── MYTHIC ──
-  // "FRIENDSHIP_CARD",
-  // "DEVOUR",
-  // "ANGEL_CARD",
-  // "FORTUNE_TELLER",
-  // // "REBIRTH",
-  "MIRROR",
+  // ── COMMON ──
+  "BET_UP",
+  "BET_DOWN",
   "SHATTER",
-  "DEVOUR",
+  "SACRIFICE",
+  "ODDS",
+  // ── UNCOMMON ──
+  "DOUBLE_BET_UP",
+  "DOUBLE_BET_DOWN",
+  "RETURN",
+  "DISCARD",
+  "HUSH",
+  // ── RARE ──
+  "REFRESH",
+  "EXCHANGE",
+  "TARGET",
+  "CHECKER",
+  "MIRROR",
+  // ── LEGENDARY ──
+  "SELECT",
+  "DISABLE",
+  "LOCKDOWN",
+  // "AEGIS",
+  // ── MYTHIC ──
+  "FRIENDSHIP_CARD",
+  // "DEVOUR",
+  "ANGEL_CARD",
+  "FORTUNE_TELLER",
+  // "REBIRTH",
 ];
 
 // ORIGINAL TRUMP CARD RARITY SETTINGS
@@ -325,7 +322,7 @@ export const TRUMP_CARDS_CATALOG = {
   DEVOUR: {
     id: "DEVOUR",
     name: "Devour",
-    rarity: "COMMON",
+    rarity: "MYTHIC",
     description:
       "Steal up to 2 lives from a selected player and transfer them to yourself. The amount stolen cannot exceed the target's remaining lives.",
     targetType: "SINGLE_PLAYER",
