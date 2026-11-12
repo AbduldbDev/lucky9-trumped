@@ -417,6 +417,36 @@ export const EFFECT_EXECUTORS = {
 
     return `${actor.name} used Fortune Teller to peek at the next ${peekCount} card(s) in the deck.`;
   },
+
+  // ── REBIRTH ──────────────────────────────────────────────────────────────
+  REFRESH_TRUMP_CARDS({ actor, card }) {
+    // NOTE: The played Rebirth card is still in actor.trumps at this point —
+    // the engine removes it (at its original index) right after this executor
+    // returns. So: count everything, rebuild with `count` fresh rolls, and
+    // re-insert Rebirth at its old slot for the engine to consume.
+    const playedIdx = actor.trumps.indexOf(card.id);
+    const count = actor.trumps.length;
+
+    if (count === 0) {
+      return `${actor.name} tried to use Rebirth, but has no trump cards.`;
+    }
+
+    // Discard all held trumps and roll the same number of new ones.
+    const fresh = [];
+    for (let i = 0; i < count; i++) fresh.push(rollTrumpCard());
+
+    // Re-insert Rebirth at its original index so the engine's post-execution
+    // splice discards it, leaving exactly `count` new trump cards.
+    let slot = playedIdx;
+    if (slot === -1) {
+      // Defensive fallback (engine always finds the played card, so this
+      // shouldn't happen): park Rebirth last so the splice eats it anyway.
+      slot = count - 1;
+    }
+    actor.trumps = [...fresh.slice(0, slot), card.id, ...fresh.slice(slot)];
+
+    return `${actor.name} used Rebirth! Discarded ${count} trump card(s) and drew ${count} new one(s).`;
+  },
 };
 
 // ---------------------------------------------------------------------------

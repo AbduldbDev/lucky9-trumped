@@ -27,6 +27,7 @@ export const ENABLED_TRUMP_CARDS = [
   "FRIENDSHIP_CARD",
   "ANGEL_CARD",
   "FORTUNE_TELLER",
+  // "REBIRTH",
 ];
 
 // ORIGINAL TRUMP CARD RARITY SETTINGS
@@ -69,6 +70,7 @@ export const TRUMP_ICONS = {
   LOCKDOWN: "fa-lock",
   MIRROR: "fa-retweet",
   ODDS: "fa-dice",
+  REBIRTH: "fa-fire-flame-curved",
 };
 
 export const RARITY_COLOR = {
@@ -308,6 +310,15 @@ export const TRUMP_CARDS_CATALOG = {
     description: "Reveals the next 3 cards in the deck (visible only to you).",
     targetType: "NONE",
     effect: { type: "PEEK_DECK" },
+  },
+  REBIRTH: {
+    id: "REBIRTH",
+    name: "Rebirth",
+    rarity: "MTHIC",
+    description:
+      "Discard all Trump Cards in your hand, including Rebirth, and draw the same number of random new Trump Cards.",
+    targetType: "SELF",
+    effect: { type: "REFRESH_TRUMP_CARDS" },
   },
 };
 

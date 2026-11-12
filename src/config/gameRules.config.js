@@ -58,7 +58,7 @@ export const GAME_CONFIG = {
   REQUIRE_UNANIMOUS_REMATCH: true,
 
   // TRUMP CARD SETTINGS
-  STARTING_TRUMP_CARDS: 10, // trump cards granted at match start
+  STARTING_TRUMP_CARDS: 5, // trump cards granted at match start
   TRUMP_CARDS_FOR_WINNER: 2, // trump cards awarded to round winner(s)
   TRUMP_CARDS_FOR_LOSER: 1, // trump cards awarded to round loser(s)
   TRUMP_CARD_ON_TOTAL_NINE: true, // bonus trump card when hand first hits 9

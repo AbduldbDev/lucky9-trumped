@@ -57,28 +57,38 @@ assert.equal(computeBetTotal(-9), 0);
 // ─── MAX_CARDS_IN_HAND from config ───────────────────────────────────────────
 assert.equal(GAME_CONFIG.MAX_CARDS_IN_HAND, 5, "MAX_CARDS_IN_HAND = 5");
 
-// ─── Trump catalog — all 17 SRD cards ────────────────────────────────────────
+// ─── Trump catalog — all enabled cards ──────────────────────────────────────
 const EXPECTED = [
+  // COMMON
   "BET_UP",
   "BET_DOWN",
+  "SHATTER",
+  "SACRIFICE",
+  "ODDS",
+  // UNCOMMON
   "DOUBLE_BET_UP",
   "DOUBLE_BET_DOWN",
-  "SHATTER",
   "RETURN",
   "DISCARD",
+  "HUSH",
+  // RARE
   "REFRESH",
   "EXCHANGE",
   "TARGET",
-  "HUSH",
+  "CHECKER",
+  "MIRROR",
+  // LEGENDARY
   "SELECT",
   "DISABLE",
-  "CHECKER",
+  "LOCKDOWN",
+  // MYTHIC
   "FRIENDSHIP_CARD",
   "ANGEL_CARD",
   "FORTUNE_TELLER",
+  "REBIRTH",
 ];
 for (const id of EXPECTED) assert.ok(TRUMP_CARDS_CATALOG[id], `missing: ${id}`);
-assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 17);
+assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 22);
 
 // ─── Rarity total = 100 ──────────────────────────────────────────────────────
 const totalChance = Object.values(TRUMP_RARITIES).reduce(
@@ -98,6 +108,7 @@ for (let i = 0; i < 500; i++) assert.ok(trumpIds.includes(rollTrumpCard()));
     hostPlayer: createPlayer({ id: "a", name: "A" }),
   });
   s = gameReducer(s, { type: "JOIN", player: { id: "b", name: "B" } });
+  s = gameReducer(s, { type: "READY", by: "b" });
   s = gameReducer(s, { type: "START", by: "a" });
   assert.equal(s.phase, PHASES.PLAYING);
   const pub = maskState(s);
@@ -121,6 +132,7 @@ for (let i = 0; i < 500; i++) assert.ok(trumpIds.includes(rollTrumpCard()));
     hostPlayer: createPlayer({ id: "a", name: "A" }),
   });
   s = gameReducer(s, { type: "JOIN", player: { id: "b", name: "B" } });
+  s = gameReducer(s, { type: "READY", by: "b" });
   s = gameReducer(s, { type: "START", by: "a" });
   s = gameReducer(s, { type: "STAND", by: s.players[s.turnIndex].id });
   const nextTurn = s.players.find((p) => !p.stood && !p.isEliminated);
@@ -146,6 +158,7 @@ for (let game = 0; game < 300; game++) {
       type: "JOIN",
       player: { id: `p${i}`, name: `P${i}` },
     });
+  for (let i = 1; i < n; i++) s = gameReducer(s, { type: "READY", by: `p${i}` });
   s = gameReducer(s, { type: "START", by: "p0" });
 
   let guard = 0;
@@ -211,5 +224,5 @@ for (let game = 0; game < 300; game++) {
 }
 
 console.log(
-  `✔ All tests passed — MAX_CARDS_IN_HAND=${MAX_HAND}, 300 matches, 17 trump cards.`,
+  `✔ All tests passed — MAX_CARDS_IN_HAND=${MAX_HAND}, 300 matches, ${EXPECTED.length} trump cards.`,
 );
