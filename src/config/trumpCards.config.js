@@ -5,30 +5,30 @@ export const ENABLED_TRUMP_CARDS = [
   "BET_UP",
   "BET_DOWN",
   "SHATTER",
-  // "SACRIFICE",
-  // "ODDS",
-  // // ── UNCOMMON ──
-  // "DOUBLE_BET_UP",
-  // "DOUBLE_BET_DOWN",
-  // "RETURN",
-  // "DISCARD",
-  // "HUSH",
-  // // ── RARE ──
-  // "REFRESH",
-  // "EXCHANGE",
-  // "TARGET",
-  // "CHECKER",
-  // "MIRROR",
-  // // ── LEGENDARY ──
-  // "SELECT",
-  // "DISABLE",
-  // "LOCKDOWN",
-  // "AEGIS",
-  // // ── MYTHIC ──
-  // "FRIENDSHIP_CARD",
+  "SACRIFICE",
+  "ODDS",
+  // ── UNCOMMON ──
+  "DOUBLE_BET_UP",
+  "DOUBLE_BET_DOWN",
+  "RETURN",
+  "DISCARD",
+  "HUSH",
+  // ── RARE ──
+  "REFRESH",
+  "EXCHANGE",
+  "TARGET",
+  "CHECKER",
+  "MIRROR",
+  // ── LEGENDARY ──
+  "SELECT",
+  "DISABLE",
+  "LOCKDOWN",
+  "AEGIS",
+  // ── MYTHIC ──
+  "FRIENDSHIP_CARD",
   "ANGEL_CARD",
-  // "FORTUNE_TELLER",
-  // "REBIRTH",
+  "FORTUNE_TELLER",
+  "REBIRTH",
 ];
 
 // ORIGINAL TRUMP CARD RARITY SETTINGS
@@ -223,6 +223,7 @@ export const TRUMP_CARDS_CATALOG = {
       "Swap your last drawn card with a selected player's last drawn card.",
     targetType: "SINGLE_PLAYER",
     counterable: true, // Can be blocked by SHATTER
+    mirrorable: false, // Cannot be countered with MIRROR
     effect: { type: "SWAP_LAST_CARDS" },
   },
 
@@ -243,6 +244,15 @@ export const TRUMP_CARDS_CATALOG = {
       "Use when countering to reflect a trump card targeting you back to its original user.",
     targetType: "COUNTER", // Special type - only usable as counter
     effect: { type: "REFLECT_COUNTER" },
+  },
+  CHECKER: {
+    id: "CHECKER",
+    name: "Checker",
+    rarity: "RARE",
+    description:
+      "Inspect remaining copies of a selected card rank in the deck (visible only to you).",
+    targetType: "RANK_CHOICE",
+    effect: { type: "INSPECT_DECK" },
   },
 
   // ── LEGENDARY ───────────────────────────────────────────────────────────
@@ -278,20 +288,11 @@ export const TRUMP_CARDS_CATALOG = {
   AEGIS: {
     id: "AEGIS",
     name: "Aegis",
-    rarity: "COMMON",
+    rarity: "LEGENDARY",
     description:
       "Halve the life penalty when you lose this round's showdown (deductions round up). Lasts for the current round. Can be destroyed by Shatter.",
     targetType: "SELF",
     effect: { type: "REDUCE_LOSS_PENALTY" },
-  },
-  CHECKER: {
-    id: "CHECKER",
-    name: "Checker",
-    rarity: "RARE",
-    description:
-      "Inspect remaining copies of a selected card rank in the deck (visible only to you).",
-    targetType: "RANK_CHOICE",
-    effect: { type: "INSPECT_DECK" },
   },
 
   // ── MYTHIC ──────────────────────────────────────────────────────────────
@@ -303,6 +304,7 @@ export const TRUMP_CARDS_CATALOG = {
       "All non-eliminated players (including yourself) draw one additional card.",
     targetType: "ALL_PLAYERS",
     counterable: true, // Can be blocked by SHATTER (each player decides)
+    mirrorable: false, // Cannot be countered with MIRROR
     effect: { type: "MASS_DRAW_ALL" },
   },
   ANGEL_CARD: {
@@ -325,7 +327,7 @@ export const TRUMP_CARDS_CATALOG = {
   REBIRTH: {
     id: "REBIRTH",
     name: "Rebirth",
-    rarity: "MTHIC",
+    rarity: "MYTHIC",
     description:
       "Discard all Trump Cards in your hand, including Rebirth, and draw the same number of random new Trump Cards.",
     targetType: "SELF",
