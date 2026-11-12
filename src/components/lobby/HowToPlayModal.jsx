@@ -4,6 +4,7 @@ import {
   TRUMP_CARDS_CATALOG,
   TRUMP_RARITIES,
   TRUMP_ICONS,
+  NEW_RELEASE_TRUMP_CARDS,
 } from "../../config/trumpCards.config.js";
 
 /**
@@ -575,13 +576,14 @@ function TrumpCardItem({ card }) {
   const rarity = TRUMP_RARITIES[card.rarity];
   const color = rarity.color;
   const icon = TRUMP_ICONS[card.id];
+  const isNew = NEW_RELEASE_TRUMP_CARDS.includes(card.id);
 
   return (
     <div
       className="relative overflow-hidden rounded-lg border p-2.5 sm:p-3"
       style={{
         background: `linear-gradient(180deg, ${color}12 0%, rgba(11,11,12,0.6) 65%)`,
-        borderColor: "rgba(255,255,255,0.07)",
+        borderColor: isNew ? `${color}60` : "rgba(255,255,255,0.07)",
       }}
     >
       {/* Rarity hairline along the top edge */}
@@ -609,6 +611,19 @@ function TrumpCardItem({ card }) {
             <span className="text-[11px] font-medium tracking-wide text-ivory sm:text-[13px]">
               {card.name}
             </span>
+            {isNew && (
+              <span
+                className="rounded-full px-1.5 py-px text-[8px] font-semibold
+                  uppercase tracking-[0.15em] sm:text-[9px]"
+                style={{
+                  color: "#0b0b0c",
+                  backgroundColor: color,
+                  boxShadow: `0 0 10px ${color}80`,
+                }}
+              >
+                New
+              </span>
+            )}
             {card.counterable && (
               <span className="rounded-full border border-white/10 px-1.5 py-px text-[8px] uppercase tracking-[0.15em] text-ivory-dim/50 sm:text-[9px]">
                 Counterable

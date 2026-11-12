@@ -531,6 +531,7 @@ function executeCounteredTrump(d, request) {
       rank: request.rank,
       countered: [], // No longer countered, but reflected
       reflected: true, // Special flag to allow self-targeting
+      reflectedFrom: reflected[0], // Who reflected it (receives reversed effects)
     });
 
     pushLog(

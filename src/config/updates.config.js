@@ -1,16 +1,35 @@
-/**
- * Put this file at: src/config/updates.config.js
- *
- * To announce an update, add a new object at the TOP of the list.
- * Each `id` must be unique and never reused: it is what the browser remembers.
- * type: "new" | "improved" | "fixed"
- */
 export const UPDATES = [
+  {
+    id: "2026-11-12",
+    version: "0.0.3",
+    date: "Nov 12, 2026",
+    title: "Devour Update!",
+    released: false,
+    items: [
+      {
+        type: "new",
+        text: "Added DEVOUR Trump Card (MYTHIC): Steal up to 2 lives from a selected player and transfer them to yourself. If countered by MIRROR, the effect is reversed and you must transfer up to 2 of your lives to the target instead. Players reduced to 0 lives by Devour are not eliminated by this card.",
+      },
+      {
+        type: "new",
+        text: "Added REBIRTH Trump Card (MYTHIC): Discard all Trump Cards in your hand, including Rebirth, and draw the same number of random new Trump Cards.",
+      },
+      {
+        type: "new",
+        text: "Added AEGIS Trump Card (LEGENDARY): Halve the life penalty when you lose this round's showdown (deductions round up). Lasts for the current round and can be destroyed by SHATTER.",
+      },
+      {
+        type: "improved",
+        text: "MIRROR Trump Card balance change: MIRROR can no longer be used to counter EXCHANGE or FRIENDSHIP CARD — those can only be blocked with SHATTER.",
+      },
+    ],
+  },
   {
     id: "2026-11-10",
     version: "0.0.2",
     date: "Nov 10, 2026",
     title: "Trump Card Update!",
+    released: true,
     items: [
       // NEW
       {
@@ -52,6 +71,7 @@ export const UPDATES = [
     version: "0.0.1",
     date: "Nov 9, 2026",
     title: "New features, better balance, and smoother gameplay",
+    released: true,
     items: [
       // NEW
       {

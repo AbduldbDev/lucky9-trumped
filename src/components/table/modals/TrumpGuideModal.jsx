@@ -4,6 +4,7 @@ import {
   TRUMP_RARITIES,
   RARITY_COLOR,
   TRUMP_ICONS,
+  NEW_RELEASE_TRUMP_CARDS,
 } from "../../../config/trumpCards.config.js";
 
 export default function TrumpGuideModal({ isOpen, onClose }) {
@@ -151,19 +152,18 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
     </div>
   );
 }
-
 function TrumpCardItem({ card }) {
   const icon = TRUMP_ICONS[card.id] || "fa-wand-magic-sparkles";
   const color = RARITY_COLOR[card.rarity] || RARITY_COLOR.COMMON;
+  const isNew = NEW_RELEASE_TRUMP_CARDS.includes(card.id);
 
   return (
     <div
       className="group relative flex gap-2.5 overflow-hidden rounded-lg border p-2.5
         transition-all duration-200 hover:brightness-125 sm:gap-3 sm:p-3"
       style={{
-        // Soft rarity wash fading into the dark card body
         background: `linear-gradient(180deg, ${color}14 0%, rgba(11,11,12,0.7) 60%)`,
-        borderColor: "rgba(255,255,255,0.07)",
+        borderColor: isNew ? `${color}60` : "rgba(255,255,255,0.07)",
       }}
     >
       {/* Rarity hairline along the top edge */}
@@ -174,6 +174,21 @@ function TrumpCardItem({ card }) {
           background: `linear-gradient(90deg, transparent, ${color}99, transparent)`,
         }}
       />
+
+      {/* New badge */}
+      {isNew && (
+        <span
+          className="absolute right-2 top-2 rounded-full px-1.5 py-0.5
+            text-[8px] font-semibold uppercase tracking-[0.15em] sm:text-[9px]"
+          style={{
+            color: "#0b0b0c",
+            backgroundColor: color,
+            boxShadow: `0 0 10px ${color}80`,
+          }}
+        >
+          New
+        </span>
+      )}
 
       {/* Icon */}
       <div
@@ -189,7 +204,11 @@ function TrumpCardItem({ card }) {
 
       {/* Info */}
       <div className="min-w-0 flex-1 space-y-0.5">
-        <h3 className="text-[11px] font-medium leading-tight tracking-wide text-ivory sm:text-xs">
+        <h3
+          className={`text-[11px] font-medium leading-tight tracking-wide text-ivory sm:text-xs ${
+            isNew ? "pr-9" : ""
+          }`}
+        >
           {card.name}
         </h3>
         <p className="text-[10px] leading-snug text-ivory-dim/60 sm:text-[11px] sm:leading-relaxed">

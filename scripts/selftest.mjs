@@ -84,12 +84,13 @@ const EXPECTED = [
   "AEGIS",
   // MYTHIC
   "FRIENDSHIP_CARD",
+  "DEVOUR",
   "ANGEL_CARD",
   "FORTUNE_TELLER",
   "REBIRTH",
 ];
 for (const id of EXPECTED) assert.ok(TRUMP_CARDS_CATALOG[id], `missing: ${id}`);
-assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 23);
+assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 24);
 
 // ─── Rarity total = 100 ──────────────────────────────────────────────────────
 const totalChance = Object.values(TRUMP_RARITIES).reduce(
@@ -159,7 +160,8 @@ for (let game = 0; game < 300; game++) {
       type: "JOIN",
       player: { id: `p${i}`, name: `P${i}` },
     });
-  for (let i = 1; i < n; i++) s = gameReducer(s, { type: "READY", by: `p${i}` });
+  for (let i = 1; i < n; i++)
+    s = gameReducer(s, { type: "READY", by: `p${i}` });
   s = gameReducer(s, { type: "START", by: "p0" });
 
   let guard = 0;

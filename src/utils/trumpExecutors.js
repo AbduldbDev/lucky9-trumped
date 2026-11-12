@@ -81,7 +81,8 @@ export const EFFECT_EXECUTORS = {
 
       // Cancel the effect on its owner
       const victim = draft.players.find((p) => p.id === target.playerId);
-      const cardName = TRUMP_CARDS_CATALOG[target.trumpId]?.name || target.trumpId;
+      const cardName =
+        TRUMP_CARDS_CATALOG[target.trumpId]?.name || target.trumpId;
       if (victim) {
         if (target.trumpId === "ANGEL_CARD") victim.angelProtected = false;
         if (target.trumpId === "AEGIS") victim.aegisActive = false;
@@ -193,6 +194,49 @@ export const EFFECT_EXECUTORS = {
     checkLucky9(draft, actor);
     checkLucky9(draft, target);
     return `${actor.name} exchanged their last card with ${target.name}.`;
+  },
+
+  // ── DEVOUR ─────────────────────────────────────────────────────────────
+  STEAL_LIFE({ draft, actor, target, ctx }) {
+    const MAX_TRANSFER = 2;
+
+    // Reflected by MIRROR: the effect is reversed — the attacker must
+    // transfer up to 2 of their own lives to the reflector (the original
+    // target). The transfer is capped by the attacker's remaining lives.
+    if (ctx?.reflected && ctx?.reflectedFrom) {
+      const reflector = draft.players.find((p) => p.id === ctx.reflectedFrom);
+      if (!reflector) throw new Error("Reflector not found.");
+
+      const give = Math.min(MAX_TRANSFER, actor.lives);
+      if (give <= 0) {
+        return `${actor.name}'s Devour was reversed by MIRROR, but ${actor.name} has no lives to transfer.`;
+      }
+      actor.lives -= give;
+      reflector.lives += give;
+      // A player reaching 0 lives through the reversed Devour is NOT
+      // eliminated by this card — elimination only happens at showdown.
+      return `${actor.name}'s Devour was reversed by MIRROR! ${actor.name} transferred ${give} life${give === 1 ? "" : "s"} to ${reflector.name}.`;
+    }
+
+    // Normal steal
+    if (!target) throw new Error("Choose a valid opponent.");
+
+    // Check if target countered with SHATTER
+    if (ctx?.countered && ctx.countered.includes(target.id)) {
+      return `${actor.name} tried to devour ${target.name}'s lives, but ${target.name} countered with SHATTER!`;
+    }
+
+    // The amount stolen cannot exceed the target's remaining lives
+    // (a target with only 1 life loses only 1 life).
+    const steal = Math.min(MAX_TRANSFER, target.lives);
+    if (steal <= 0) {
+      return `${actor.name} tried to devour ${target.name}'s lives, but ${target.name} has no lives left.`;
+    }
+    target.lives -= steal;
+    actor.lives += steal;
+    // A player reaching 0 lives through Devour is NOT eliminated by this
+    // card — elimination only happens at showdown resolution.
+    return `${actor.name} devoured ${steal} life${steal === 1 ? "" : "s"} from ${target.name}!`;
   },
 
   // ── TARGET ───────────────────────────────────────────────────────────────
