@@ -1265,6 +1265,11 @@ const HANDLERS = {
 
     // If using mirror, check if they have it in hand
     if (useMirror) {
+      // MIRROR cannot counter cards flagged mirrorable: false
+      if (TRUMP_CARDS_CATALOG[request.trumpId]?.mirrorable === false) {
+        throw new Error("MIRROR cannot counter this Trump Card.");
+      }
+
       const mirrorIdx = responder.trumps.indexOf("MIRROR");
       if (mirrorIdx === -1) {
         throw new Error("You don't have a MIRROR card.");
@@ -1451,7 +1456,12 @@ function getCounterRequestForPlayer(state, playerId) {
       // Check if they have SHATTER
       const player = state.players.find((p) => p.id === playerId);
       const hasShatter = player && player.trumps.includes("SHATTER");
-      const hasMirror = player && player.trumps.includes("MIRROR");
+
+      // MIRROR cannot counter cards flagged mirrorable: false
+      // (e.g. EXCHANGE, FRIENDSHIP_CARD)
+      const canMirror =
+        TRUMP_CARDS_CATALOG[request.trumpId]?.mirrorable !== false;
+      const hasMirror = player && player.trumps.includes("MIRROR") && canMirror;
 
       // Check if targeted directly
       const isTargeted = request.targetId === playerId;
