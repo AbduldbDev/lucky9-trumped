@@ -240,11 +240,11 @@ export default function Seat({
               <div
                 key={i}
                 className={`transition-all duration-300 ease-out ${
-                  i === 0 ? "" : fanned ? "-ml-6 sm:-ml-8" : "ml-0.5"
+                  i === 0 ? "" : fanned ? "-ml-8 sm:-ml-8" : "ml-0.5"
                 }`}
                 style={{
                   transformOrigin: "50% 100%",
-                  transform: fanned ? `rotate(${offset * 15}deg)` : "none",
+                  transform: fanned ? `rotate(${offset * 17}deg)` : "none",
                   zIndex: i,
                 }}
               >
