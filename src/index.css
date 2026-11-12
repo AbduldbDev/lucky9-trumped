@@ -887,3 +887,69 @@ body {
     opacity: 0;
   }
 }
+@property --edge-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0deg;
+}
+
+.edge-glow {
+  --edge-speed: 3s;
+  --edge-radius: 0.5rem;
+  --edge-blur: 6px;
+  position: relative;
+  border-radius: var(--edge-radius);
+}
+
+/* Soft light that fades in and out along the edge, with no hard stops */
+.edge-glow__light,
+.edge-glow__bloom {
+  position: absolute;
+  pointer-events: none;
+  border-radius: var(--edge-radius);
+  background: conic-gradient(
+    from var(--edge-angle),
+    transparent 0deg,
+    rgba(var(--glow), 0.15) 40deg,
+    rgba(var(--glow), 0.7) 90deg,
+    rgba(var(--glow), 0.15) 140deg,
+    transparent 190deg,
+    transparent 360deg
+  );
+  animation: edgeSpin var(--edge-speed) linear infinite;
+}
+
+/* Thin lit edge: the gradient is masked down to just the border */
+.edge-glow__light {
+  inset: 0;
+  padding: 1.5px;
+  z-index: 2;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+}
+
+/* Blurred copy behind it, which gives the glow */
+.edge-glow__bloom {
+  inset: -2px;
+  z-index: 0;
+  filter: blur(var(--edge-blur));
+  opacity: 0.9;
+}
+
+@keyframes edgeSpin {
+  to {
+    --edge-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edge-glow__light,
+  .edge-glow__bloom {
+    animation: none;
+  }
+}

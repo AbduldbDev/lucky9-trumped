@@ -3,12 +3,16 @@ export const UPDATES = [
     id: "2026-11-12",
     version: "0.0.3",
     date: "Nov 12, 2026",
-    title: "Devour Update!",
-    released: false,
+    title: "Trump Card Update 2!",
+    released: true,
     items: [
       {
         type: "new",
-        text: "Added DEVOUR Trump Card (MYTHIC): Steal up to 2 lives from a selected player and transfer them to yourself. If countered by MIRROR, the effect is reversed and you must transfer up to 2 of your lives to the target instead. Players reduced to 0 lives by Devour are not eliminated by this card.",
+        text: "Added BOND Trump Card (MYTHIC): Create a mystical bond between two players for 3 rounds. Bonded players share negative trump card effects - when one is targeted by DISABLE, LOCKDOWN, or TARGET, both receive the effect. Players who are already bonded cannot be targeted for new bonds.",
+      },
+      {
+        type: "new",
+        text: "Added DEVOUR Trump Card (MYTHIC): Steal up to 2 lives from a selected player. If the target is bonded, both bonded players lose 1 life each and you gain 2 lives total. If countered by MIRROR, the effect is reversed. ",
       },
       {
         type: "new",
@@ -25,6 +29,10 @@ export const UPDATES = [
       {
         type: "improved",
         text: "MIRROR Trump Card balance change: MIRROR can no longer be used to counter EXCHANGE or FRIENDSHIP CARD — those can only be blocked with SHATTER.",
+      },
+      {
+        type: "improved",
+        text: "Trump card targeting system now supports two-player selection for BOND card with sequential target selection interface.",
       },
     ],
   },

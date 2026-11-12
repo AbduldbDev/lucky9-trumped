@@ -22,6 +22,34 @@ function returnToDeck(draft, card) {
   draft.deck.splice(randInt(draft.deck.length + 1), 0, card);
 }
 
+/**
+ * Apply bond sharing for negative effects.
+ * If the target is bonded with another player, apply the effect to both.
+ * Returns true if bond was triggered (effect should be shared).
+ */
+function applyBondSharing(draft, target, effectCallback) {
+  if (!target.bondedWith || target.bondRoundsLeft <= 0) {
+    // No active bond, apply normally
+    effectCallback(target);
+    return false;
+  }
+
+  // Find bonded partner
+  const partner = draft.players.find((p) => p.id === target.bondedWith);
+  if (!partner || partner.isEliminated) {
+    // Partner not found or eliminated, clear bond and apply normally
+    target.bondedWith = null;
+    target.bondRoundsLeft = 0;
+    effectCallback(target);
+    return false;
+  }
+
+  // Bond is active - apply to both players
+  effectCallback(target);
+  effectCallback(partner);
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Effect executors keyed by effect.type
 // ---------------------------------------------------------------------------
@@ -207,14 +235,31 @@ export const EFFECT_EXECUTORS = {
       const reflector = draft.players.find((p) => p.id === ctx.reflectedFrom);
       if (!reflector) throw new Error("Reflector not found.");
 
+      // If REFLECTOR is bonded, both bonded players receive 1 life each, attacker loses 2
+      if (reflector.bondedWith && reflector.bondRoundsLeft > 0) {
+        const partner = draft.players.find(
+          (p) => p.id === reflector.bondedWith,
+        );
+        if (partner && !partner.isEliminated) {
+          const actorLoss = Math.min(2, actor.lives);
+
+          if (actorLoss <= 0) {
+            return `${actor.name}'s Devour was reversed by MIRROR, but ${actor.name} has no lives to transfer.`;
+          }
+
+          actor.lives -= actorLoss;
+          reflector.lives += 1;
+          partner.lives += 1;
+          return `${reflector.name} used MIRROR! Due to their Bond with ${partner.name}, both gained 1 life and ${actor.name} lost ${actorLoss} life${actorLoss === 1 ? "" : "s"}.`;
+        }
+      }
+
       const give = Math.min(MAX_TRANSFER, actor.lives);
       if (give <= 0) {
         return `${actor.name}'s Devour was reversed by MIRROR, but ${actor.name} has no lives to transfer.`;
       }
       actor.lives -= give;
       reflector.lives += give;
-      // A player reaching 0 lives through the reversed Devour is NOT
-      // eliminated by this card — elimination only happens at showdown.
       return `${actor.name}'s Devour was reversed by MIRROR! ${actor.name} transferred ${give} life${give === 1 ? "" : "s"} to ${reflector.name}.`;
     }
 
@@ -223,11 +268,48 @@ export const EFFECT_EXECUTORS = {
 
     // Check if target countered with SHATTER
     if (ctx?.countered && ctx.countered.includes(target.id)) {
+      // If target is bonded, both bonded players give 1 life each
+      if (target.bondedWith && target.bondRoundsLeft > 0) {
+        const partner = draft.players.find((p) => p.id === target.bondedWith);
+        if (partner && !partner.isEliminated) {
+          const targetGive = Math.min(1, target.lives);
+          const partnerGive = Math.min(1, partner.lives);
+          const totalGive = targetGive + partnerGive;
+
+          if (totalGive <= 0) {
+            return `${target.name} and ${partner.name} countered ${actor.name}'s Devour with SHATTER, but they have no lives to give!`;
+          }
+
+          target.lives -= targetGive;
+          partner.lives -= partnerGive;
+          actor.lives += totalGive;
+          return `${target.name} countered with SHATTER! Due to their Bond, both ${target.name} and ${partner.name} gave ${totalGive} life${totalGive === 1 ? "" : "s"} to ${actor.name}.`;
+        }
+      }
       return `${actor.name} tried to devour ${target.name}'s lives, but ${target.name} countered with SHATTER!`;
     }
 
-    // The amount stolen cannot exceed the target's remaining lives
-    // (a target with only 1 life loses only 1 life).
+    // No counter - normal devour
+    // If target is bonded, both bonded players lose 1 life each, attacker gains 2
+    if (target.bondedWith && target.bondRoundsLeft > 0) {
+      const partner = draft.players.find((p) => p.id === target.bondedWith);
+      if (partner && !partner.isEliminated) {
+        const targetLoss = Math.min(1, target.lives);
+        const partnerLoss = Math.min(1, partner.lives);
+        const totalLoss = targetLoss + partnerLoss;
+
+        if (totalLoss <= 0) {
+          return `${actor.name} tried to devour ${target.name}'s lives, but ${target.name} and ${partner.name} have no lives left.`;
+        }
+
+        target.lives -= targetLoss;
+        partner.lives -= partnerLoss;
+        actor.lives += totalLoss;
+        return `${actor.name} devoured ${totalLoss} life${totalLoss === 1 ? "" : "s"} from ${target.name}! Due to their Bond, ${partner.name} also lost 1 life.`;
+      }
+    }
+
+    // Regular devour (no bond)
     const steal = Math.min(MAX_TRANSFER, target.lives);
     if (steal <= 0) {
       return `${actor.name} tried to devour ${target.name}'s lives, but ${target.name} has no lives left.`;
@@ -255,9 +337,30 @@ export const EFFECT_EXECUTORS = {
       return `${actor.name} tried to force ${target.name} to draw, but the deck is empty.`;
     }
 
+    // Apply bond sharing - both bonded players draw if bonded
+    let partnerDrew = false;
+    if (target.bondedWith && target.bondRoundsLeft > 0) {
+      const partner = draft.players.find((p) => p.id === target.bondedWith);
+      if (
+        partner &&
+        !partner.isEliminated &&
+        draft.deck.length > 1 &&
+        partner.hand.length < GAME_CONFIG.MAX_CARDS_IN_HAND
+      ) {
+        partner.hand.push(draft.deck.pop());
+        checkLucky9(draft, partner);
+        partnerDrew = true;
+      }
+    }
+
     target.hand.push(draft.deck.pop());
-    // Check Lucky 9 for target after forced draw
     checkLucky9(draft, target);
+
+    if (partnerDrew) {
+      const partner = draft.players.find((p) => p.id === target.bondedWith);
+      return `${actor.name} forced ${target.name} to draw a card. Due to their Bond, ${partner.name} also draws!`;
+    }
+
     return `${actor.name} forced ${target.name} to draw a card.`;
   },
 
@@ -284,7 +387,7 @@ export const EFFECT_EXECUTORS = {
   },
 
   // ── DISABLE ──────────────────────────────────────────────────────────────
-  SKIP_TURNS_ROUND({ target, actor, ctx }) {
+  SKIP_TURNS_ROUND({ draft, target, actor, ctx }) {
     // Check if target countered with SHATTER
     if (ctx?.countered && ctx.countered.includes(target.id)) {
       return `${actor.name} tried to disable ${target.name}, but ${target.name} countered with SHATTER!`;
@@ -295,13 +398,22 @@ export const EFFECT_EXECUTORS = {
       return `${actor.name} tried to disable ${target.name}, but ${target.name} is already eliminated.`;
     }
 
-    target.disabled = true;
-    target.stood = true; // treated as stood so advanceTurn skips them
+    // Apply bond sharing
+    const bonded = applyBondSharing(draft, target, (p) => {
+      p.disabled = true;
+      p.stood = true; // treated as stood so advanceTurn skips them
+    });
+
+    if (bonded) {
+      const partner = draft.players.find((p) => p.id === target.bondedWith);
+      return `${actor.name} disabled ${target.name} for the rest of this round. Due to their Bond, ${partner.name} is also disabled!`;
+    }
+
     return `${actor.name} disabled ${target.name} for the rest of this round.`;
   },
 
   // ── LOCKDOWN ─────────────────────────────────────────────────────────────
-  DISABLE_TRUMP({ target, actor, ctx }) {
+  DISABLE_TRUMP({ draft, target, actor, ctx }) {
     // Check if target countered with SHATTER
     if (ctx?.countered && ctx.countered.includes(target.id)) {
       return `${actor.name} tried to lock down ${target.name}'s trump cards, but ${target.name} countered with SHATTER!`;
@@ -312,8 +424,17 @@ export const EFFECT_EXECUTORS = {
       return `${actor.name} tried to lock down ${target.name}'s trump cards, but ${target.name} is already eliminated.`;
     }
 
-    target.trumpsDisabled = true;
-    return `${actor.name} locked down ${target.name}'s trump cards for the rest of this round!`;
+    // Apply bond sharing
+    const bonded = applyBondSharing(draft, target, (p) => {
+      p.trumpsDisabled = true;
+    });
+
+    if (bonded) {
+      const partner = draft.players.find((p) => p.id === target.bondedWith);
+      return `${actor.name} locked down ${target.name}'s trump cards for this round. Due to their Bond, ${partner.name}'s trumps are also locked!`;
+    }
+
+    return `${actor.name} locked down ${target.name}'s trump cards for this round.`;
   },
 
   // ── MIRROR ───────────────────────────────────────────────────────────────
@@ -348,8 +469,18 @@ export const EFFECT_EXECUTORS = {
       // Skip only eliminated players (stood players can still draw)
       if (p.isEliminated) continue;
 
-      // Skip players who countered with SHATTER
-      if (countered.includes(p.id)) {
+      // Check if player countered with SHATTER
+      let playerCountered = countered.includes(p.id);
+
+      // If player is bonded and their partner countered, skip both
+      if (!playerCountered && p.bondedWith && p.bondRoundsLeft > 0) {
+        const partner = draft.players.find((pl) => pl.id === p.bondedWith);
+        if (partner && countered.includes(partner.id)) {
+          playerCountered = true; // Skip this player because their partner countered
+        }
+      }
+
+      if (playerCountered) {
         continue;
       }
 
@@ -370,7 +501,7 @@ export const EFFECT_EXECUTORS = {
     const counteredCount = countered.length;
     let msg = `${actor.name} played Friendship Card! ${drew} player(s) drew a card.`;
     if (counteredCount > 0) {
-      msg += ` ${counteredCount} player(s) countered with SHATTER.`;
+      msg += ` ${counteredCount} player(s) (and their bonded partners) countered with SHATTER.`;
     }
     if (skipped > 0) {
       msg += ` ${skipped} player(s) had full hands.`;
@@ -532,6 +663,79 @@ export const EFFECT_EXECUTORS = {
     actor.trumps = [...fresh.slice(0, slot), card.id, ...fresh.slice(slot)];
 
     return `${actor.name} used Rebirth! Discarded ${count} trump card(s) and drew ${count} new one(s).`;
+  },
+
+  // ── BOND ─────────────────────────────────────────────────────────────────
+  CREATE_BOND({ draft, actor, ctx, effect }) {
+    const target1Id = ctx?.targetId;
+    const target2Id = ctx?.target2Id;
+
+    if (!target1Id || !target2Id) {
+      throw new Error("Bond requires two target players.");
+    }
+
+    if (target1Id === target2Id) {
+      throw new Error("Cannot bond the same player with themselves.");
+    }
+
+    if (target1Id === actor.id || target2Id === actor.id) {
+      throw new Error("Cannot include yourself in the bond.");
+    }
+
+    const target1 = draft.players.find((p) => p.id === target1Id);
+    const target2 = draft.players.find((p) => p.id === target2Id);
+
+    if (!target1 || !target2) {
+      throw new Error("Invalid target players.");
+    }
+
+    if (target1.isEliminated || target1.isSpectator) {
+      throw new Error(`${target1.name} is eliminated or spectating.`);
+    }
+
+    if (target2.isEliminated || target2.isSpectator) {
+      throw new Error(`${target2.name} is eliminated or spectating.`);
+    }
+
+    // Check counter status
+    const countered = ctx?.countered || [];
+    const target1Countered = countered.includes(target1Id);
+    const target2Countered = countered.includes(target2Id);
+
+    // If both countered, no bond is created
+    if (target1Countered && target2Countered) {
+      return `${actor.name} tried to bond ${target1.name} and ${target2.name}, but both countered with SHATTER!`;
+    }
+
+    // If one countered, bond actor with the other
+    if (target1Countered) {
+      // Target1 countered, bond actor with target2
+      const duration = effect.duration || 3;
+      actor.bondedWith = target2.id;
+      actor.bondRoundsLeft = duration;
+      target2.bondedWith = actor.id;
+      target2.bondRoundsLeft = duration;
+      return `${target1.name} countered with SHATTER! ${actor.name} is now bonded with ${target2.name} for ${duration} rounds.`;
+    }
+
+    if (target2Countered) {
+      // Target2 countered, bond actor with target1
+      const duration = effect.duration || 3;
+      actor.bondedWith = target1.id;
+      actor.bondRoundsLeft = duration;
+      target1.bondedWith = actor.id;
+      target1.bondRoundsLeft = duration;
+      return `${target2.name} countered with SHATTER! ${actor.name} is now bonded with ${target1.name} for ${duration} rounds.`;
+    }
+
+    // Neither countered, bond the two targets together
+    const duration = effect.duration || 3;
+    target1.bondedWith = target2.id;
+    target1.bondRoundsLeft = duration;
+    target2.bondedWith = target1.id;
+    target2.bondRoundsLeft = duration;
+
+    return `${actor.name} created a Bond between ${target1.name} and ${target2.name}! They will share negative effects for ${duration} rounds.`;
   },
 };
 

@@ -2,7 +2,18 @@ import FogBadge from "../../cards/FogBadge.jsx";
 import { GAME_CONFIG } from "../../../config/gameRules.config.js";
 import { PHASES } from "../../../utils/gameEngine.js";
 
-export default function PlayerInfo({ me, phase, amSpectator, cardsFlipped }) {
+export default function PlayerInfo({
+  me,
+  allPlayers = [],
+  phase,
+  amSpectator,
+  cardsFlipped,
+}) {
+  // Get bonded partner's name
+  const bondedPartner = me.bondedWith
+    ? allPlayers.find((p) => p.id === me.bondedWith)
+    : null;
+
   return (
     <div
       className="flex flex-wrap items-center gap-x-2 gap-y-0.5 px-2 pt-1 pb-0.5
@@ -22,6 +33,12 @@ export default function PlayerInfo({ me, phase, amSpectator, cardsFlipped }) {
             className="fa-solid fa-shield-halved text-amber-400 text-[10px] sm:text-xs"
             title="Aegis active — life loss halved this round"
           />
+        )}
+        {me.bondedWith && me.bondRoundsLeft > 0 && (
+          <span className="flex items-center gap-0.5 text-[8px] sm:text-[9px] text-purple-300/80">
+            <i className="fa-solid fa-link" />
+            {bondedPartner?.name || "Bonded"} ({me.bondRoundsLeft}r)
+          </span>
         )}
         {phase === PHASES.PLAYING && me.stood && !amSpectator && (
           <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-gold/70">

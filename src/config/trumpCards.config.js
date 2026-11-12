@@ -8,6 +8,7 @@ export const NEW_RELEASE_TRUMP_CARDS = [
   "AEGIS",
   "REBIRTH",
   "DEVOUR",
+  "BOND",
 ];
 
 export const ENABLED_TRUMP_CARDS = [
@@ -33,31 +34,23 @@ export const ENABLED_TRUMP_CARDS = [
   "SELECT",
   "DISABLE",
   "LOCKDOWN",
-  // "AEGIS",
+  "AEGIS",
   // ── MYTHIC ──
   "FRIENDSHIP_CARD",
-  // "DEVOUR",
+  "DEVOUR",
   "ANGEL_CARD",
   "FORTUNE_TELLER",
-  // "REBIRTH",
+  "REBIRTH",
+  "BOND",
 ];
 
-// ORIGINAL TRUMP CARD RARITY SETTINGS
-// export const TRUMP_RARITY = {
-//   COMMON: 45,
-//   UNCOMMON: 27,
-//   RARE: 17,
-//   LEGENDARY: 8,
-//   MYTHIC: 3,
-// };
-
-// BETA TRUMP CARD RARITY SETTINGS
 export const TRUMP_RARITY = {
   COMMON: 35,
   UNCOMMON: 25,
   RARE: 18,
   LEGENDARY: 12,
   MYTHIC: 10,
+  SECRET: 1,
 };
 
 export const TRUMP_ICONS = {
@@ -85,14 +78,16 @@ export const TRUMP_ICONS = {
   MIRROR: "fa-retweet",
   ODDS: "fa-dice",
   REBIRTH: "fa-fire-flame-curved",
+  BOND: "fa-link",
 };
 
 export const RARITY_COLOR = {
-  COMMON: "#9ca3af",
+  COMMON: "#6b7280",
   UNCOMMON: "#22c55e",
   RARE: "#3b82f6",
   LEGENDARY: "#eab308",
   MYTHIC: "#a855f7",
+  SECRET: "#ffffff",
 };
 
 export const TRUMP_RARITIES = {
@@ -100,7 +95,7 @@ export const TRUMP_RARITIES = {
     id: "COMMON",
     name: "Common",
     chance: TRUMP_RARITY.COMMON,
-    color: "#9ca3af",
+    color: "#6b7280",
   },
   UNCOMMON: {
     id: "UNCOMMON",
@@ -125,6 +120,12 @@ export const TRUMP_RARITIES = {
     name: "Mythic",
     chance: TRUMP_RARITY.MYTHIC,
     color: "#a855f7",
+  },
+  SECRET: {
+    id: "SECRET",
+    name: "Secret",
+    chance: TRUMP_RARITY.SECRET,
+    color: "#ffffff",
   },
 };
 
@@ -248,15 +249,6 @@ export const TRUMP_CARDS_CATALOG = {
     counterable: true, // Can be blocked by SHATTER
     effect: { type: "FORCE_DRAW" },
   },
-  MIRROR: {
-    id: "MIRROR",
-    name: "Mirror",
-    rarity: "RARE",
-    description:
-      "Use when countering to reflect a trump card targeting you back to its original user.",
-    targetType: "COUNTER", // Special type - only usable as counter
-    effect: { type: "REFLECT_COUNTER" },
-  },
   CHECKER: {
     id: "CHECKER",
     name: "Checker",
@@ -265,6 +257,15 @@ export const TRUMP_CARDS_CATALOG = {
       "Inspect remaining copies of a selected card rank in the deck (visible only to you).",
     targetType: "RANK_CHOICE",
     effect: { type: "INSPECT_DECK" },
+  },
+  MIRROR: {
+    id: "MIRROR",
+    name: "Mirror",
+    rarity: "RARE",
+    description:
+      "Use when countering to reflect a trump card targeting you back to its original user.",
+    targetType: "COUNTER", // Special type - only usable as counter
+    effect: { type: "REFLECT_COUNTER" },
   },
 
   // ── LEGENDARY ───────────────────────────────────────────────────────────
@@ -286,6 +287,14 @@ export const TRUMP_CARDS_CATALOG = {
     targetType: "SINGLE_PLAYER",
     counterable: true, // Can be blocked by SHATTER
     effect: { type: "SKIP_TURNS_ROUND" },
+  },
+  FORTUNE_TELLER: {
+    id: "FORTUNE_TELLER",
+    name: "Fortune Teller",
+    rarity: "LEGENDARY",
+    description: "Reveals the next 3 cards in the deck (visible only to you).",
+    targetType: "NONE",
+    effect: { type: "PEEK_DECK" },
   },
   LOCKDOWN: {
     id: "LOCKDOWN",
@@ -319,6 +328,15 @@ export const TRUMP_CARDS_CATALOG = {
     mirrorable: false, // Cannot be countered with MIRROR
     effect: { type: "MASS_DRAW_ALL" },
   },
+  ANGEL_CARD: {
+    id: "ANGEL_CARD",
+    name: "Angel Card",
+    rarity: "MYTHIC",
+    description:
+      "Prevents death when running out of lives. Protection lasts only for the current round. Can be destroyed by Shatter.",
+    targetType: "SELF",
+    effect: { type: "DEATH_PROTECTION" },
+  },
   DEVOUR: {
     id: "DEVOUR",
     name: "Devour",
@@ -329,38 +347,38 @@ export const TRUMP_CARDS_CATALOG = {
     counterable: true, // Can be blocked by SHATTER / reflected by MIRROR
     effect: { type: "STEAL_LIFE" },
   },
-  ANGEL_CARD: {
-    id: "ANGEL_CARD",
-    name: "Angel Card",
-    rarity: "MYTHIC",
-    description:
-      "Prevents death when running out of lives. Protection lasts only for the current round. Can be destroyed by Shatter.",
-    targetType: "SELF",
-    effect: { type: "DEATH_PROTECTION" },
-  },
-  FORTUNE_TELLER: {
-    id: "FORTUNE_TELLER",
-    name: "Fortune Teller",
-    rarity: "MYTHIC",
-    description: "Reveals the next 3 cards in the deck (visible only to you).",
-    targetType: "NONE",
-    effect: { type: "PEEK_DECK" },
-  },
   REBIRTH: {
     id: "REBIRTH",
     name: "Rebirth",
     rarity: "MYTHIC",
     description:
-      "Discard all Trump Cards in your hand, including Rebirth, and draw the same number of random new Trump Cards.",
+      "Discard all Trump Cards in your hand, and replace with the same amount of new Trump Cards.",
     targetType: "SELF",
     effect: { type: "REFRESH_TRUMP_CARDS" },
+  },
+  BOND: {
+    id: "BOND",
+    name: "Bond",
+    rarity: "MYTHIC",
+    description:
+      "Bond two players for 3 rounds. Negative targeted Trump effects are shared equally. Either can use SHATTER to counter, if both counter, no bond forms.",
+    targetType: "TWO_PLAYERS",
+    counterable: true, // Both targets can counter with SHATTER
+    mirrorable: false, // Cannot be reflected with MIRROR
+    effect: { type: "CREATE_BOND", duration: 3 },
   },
 };
 
 /**
  * Helper to determine which players can counter a trump card
  */
-export function getCounterableTargets(trumpId, actorId, targetId, allPlayers) {
+export function getCounterableTargets(
+  trumpId,
+  actorId,
+  targetId,
+  allPlayers,
+  target2Id = null,
+) {
   const card = TRUMP_CARDS_CATALOG[trumpId];
   if (!card || !card.counterable) return [];
 
@@ -369,6 +387,10 @@ export function getCounterableTargets(trumpId, actorId, targetId, allPlayers) {
   if (card.targetType === "SINGLE_PLAYER" && targetId) {
     // Single target can counter
     targets.push(targetId);
+  } else if (card.targetType === "TWO_PLAYERS" && targetId && target2Id) {
+    // Both targets can counter
+    targets.push(targetId);
+    targets.push(target2Id);
   } else if (card.targetType === "ALL_PLAYERS") {
     // All players except actor can counter
     allPlayers.forEach((p) => {

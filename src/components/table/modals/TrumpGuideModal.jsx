@@ -35,7 +35,14 @@ export default function TrumpGuideModal({ isOpen, onClose }) {
   });
 
   // Sort rarities by their order (Common to Mythic)
-  const rarityOrder = ["COMMON", "UNCOMMON", "RARE", "LEGENDARY", "MYTHIC"];
+  const rarityOrder = [
+    "COMMON",
+    "UNCOMMON",
+    "RARE",
+    "LEGENDARY",
+    "MYTHIC",
+    "SECRET",
+  ];
 
   return (
     <div

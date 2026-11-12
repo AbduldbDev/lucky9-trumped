@@ -15,7 +15,14 @@ import {
 
 const BODY = "text-[11px] leading-relaxed text-ivory-dim/70 sm:text-[13px]";
 
-const RARITY_ORDER = ["COMMON", "UNCOMMON", "RARE", "LEGENDARY", "MYTHIC"];
+const RARITY_ORDER = [
+  "COMMON",
+  "UNCOMMON",
+  "RARE",
+  "LEGENDARY",
+  "MYTHIC",
+  "SECRET",
+];
 
 const counterSeconds = Math.round(GAME_CONFIG.COUNTER_PROMPT_TIME_MS / 1000);
 
@@ -545,15 +552,32 @@ function Section({ icon, title, children }) {
     </section>
   );
 }
-
 function RarityBadge({ rarity }) {
   const { color, name, chance } = rarity;
-  return (
+  const isSecret = Number(chance) === 1;
+
+  const hexToRgb = (hex) => {
+    const h = hex.replace("#", "");
+    const n = parseInt(
+      h.length === 3
+        ? h
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : h,
+      16,
+    );
+    return `${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}`;
+  };
+
+  const badge = (
     <div
-      className="relative flex items-center justify-between overflow-hidden rounded-lg border px-3 py-2"
+      className="relative z-[1] flex items-center justify-between overflow-hidden rounded-lg border px-3 py-2"
       style={{
-        borderColor: "rgba(255,255,255,0.07)",
-        background: `linear-gradient(90deg, ${color}14, rgba(11,11,12,0.5) 70%)`,
+        borderColor: isSecret ? "transparent" : "rgba(255,255,255,0.07)",
+
+        backgroundColor: "#0b0b0c",
+        backgroundImage: `linear-gradient(90deg, ${color}${isSecret ? "26" : "14"}, rgba(11,11,12,0.5) 70%)`,
       }}
     >
       <div className="flex items-center gap-2.5">
@@ -569,8 +593,21 @@ function RarityBadge({ rarity }) {
         </span>
       </div>
       <span className="font-mono text-[10px] tabular-nums text-ivory-dim/50 sm:text-[11px]">
-        {chance}%
+        {isSecret ? "?" : `${chance}%`}
       </span>
+    </div>
+  );
+
+  if (!isSecret) return badge;
+
+  return (
+    <div
+      className="edge-glow"
+      style={{ "--glow": hexToRgb(color), "--edge-speed": "3s" }}
+    >
+      <span className="edge-glow__bloom" aria-hidden="true" />
+      {badge}
+      <span className="edge-glow__light" aria-hidden="true" />
     </div>
   );
 }

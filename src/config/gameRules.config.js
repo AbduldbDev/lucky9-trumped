@@ -11,28 +11,11 @@ export const GAME_CONFIG = {
   MAX_LIVES: 12,
   STARTING_BET: 1,
 
-  PARTY_CODE_LENGTH: 6,
-
-  // DECK SETTINGS
-  DECK_SIZE: 52,
-  SUITS: ["hearts", "spades", "clubs", "diamonds"],
-  CARD_VALUES: [
-    "A",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "J",
-    "Q",
-    "K",
-  ],
-  RESET_DECK_EVERY_ROUND: true,
-  SHUFFLE_DECK_EVERY_ROUND: true,
+  // TRUMP CARD SETTINGS
+  STARTING_TRUMP_CARDS: 5, // trump cards granted at match start
+  TRUMP_CARDS_FOR_WINNER: 2, // trump cards awarded to round winner(s)
+  TRUMP_CARDS_FOR_LOSER: 1, // trump cards awarded to round loser(s)
+  TRUMP_CARD_ON_TOTAL_NINE: true, // bonus trump card when hand first hits 9
 
   // TURN SETTINGS
   TURN_TIMER: 30, // 30secs
@@ -56,12 +39,7 @@ export const GAME_CONFIG = {
   ENABLE_REMATCH: true,
   REMATCH_VOTING_TIMER: 30,
   REQUIRE_UNANIMOUS_REMATCH: true,
-
-  // TRUMP CARD SETTINGS
-  STARTING_TRUMP_CARDS: 5, // trump cards granted at match start
-  TRUMP_CARDS_FOR_WINNER: 2, // trump cards awarded to round winner(s)
-  TRUMP_CARDS_FOR_LOSER: 1, // trump cards awarded to round loser(s)
-  TRUMP_CARD_ON_TOTAL_NINE: true, // bonus trump card when hand first hits 9
+  PARTY_CODE_LENGTH: 6,
 
   // CHIP ECONOMY
   WIN_REWARD_MIN: 100,
@@ -73,4 +51,25 @@ export const GAME_CONFIG = {
   ENABLE_HEARTBEAT_SOUND: true,
   DEFAULT_MUSIC_VOLUME: 0.5,
   DEFAULT_SFX_VOLUME: 0.7,
+
+  // DECK SETTINGS
+  DECK_SIZE: 52,
+  SUITS: ["hearts", "spades", "clubs", "diamonds"],
+  CARD_VALUES: [
+    "A",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "J",
+    "Q",
+    "K",
+  ],
+  RESET_DECK_EVERY_ROUND: true,
+  SHUFFLE_DECK_EVERY_ROUND: true,
 };

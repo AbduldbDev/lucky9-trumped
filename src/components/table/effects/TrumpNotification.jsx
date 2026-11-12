@@ -38,6 +38,90 @@ export default function TrumpNotification({ notification, onDismiss }) {
 
   if (!notification) return null;
 
+  // Handle bond notifications specially
+  if (notification.isBondNotification) {
+    const bondColor = "#a78bfa"; // purple-400
+    const bondLightColor = "#c4b5fd"; // purple-300
+
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className={`fixed top-14 sm:top-20 left-1/2 -translate-x-1/2 z-50
+          max-w-[calc(100vw-1.5rem)]
+          transition-all duration-300 ease-out pointer-events-none
+          ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+      >
+        <div
+          className="relative flex items-center gap-2.5 sm:gap-3
+            pl-2.5 pr-3.5 py-2 sm:pl-3 sm:pr-4 sm:py-2.5
+            rounded-md overflow-hidden
+            bg-[#0b0c0e]/85 backdrop-blur-xl border"
+          style={{
+            borderColor: `${bondColor}40`,
+            boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 24px ${bondColor}14`,
+          }}
+        >
+          {/* Hairline accent along the top edge */}
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-px"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${bondColor}, transparent)`,
+            }}
+          />
+
+          {/* Icon: Link */}
+          <div
+            className="flex shrink-0 items-center justify-center
+              w-7 h-7 sm:w-9 sm:h-9 rounded-full border"
+            style={{
+              borderColor: `${bondColor}55`,
+              backgroundColor: `${bondColor}12`,
+            }}
+          >
+            <i
+              className="fa-solid fa-link text-[11px] sm:text-sm"
+              style={{ color: bondColor }}
+            />
+          </div>
+
+          {/* Content */}
+          <div className="flex flex-col min-w-0 leading-tight">
+            <span className="text-[9px] sm:text-[10px] text-white/45 tracking-wide truncate">
+              <span className="font-medium" style={{ color: bondLightColor }}>
+                {notification.bondedPlayer1Name}{" "}
+              </span>
+              <span className="text-white/30"> & </span>
+              <span className="font-medium" style={{ color: bondLightColor }}>
+                {notification.bondedPlayer2Name}
+              </span>
+            </span>
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
+              <span
+                className="font-semibold text-[11px] sm:text-[13px] tracking-wide"
+                style={{ color: bondColor }}
+              >
+                Bonded
+              </span>
+              <span
+                className="shrink-0 text-[7px] sm:text-[8px] font-medium uppercase
+                  tracking-[0.14em] px-1 py-px rounded-sm border"
+                style={{
+                  color: `${bondColor}d9`,
+                  borderColor: `${bondColor}33`,
+                }}
+              >
+                MYTHIC
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular trump card notification
   const card = TRUMP_CARDS_CATALOG[notification.trumpId];
   if (!card) return null;
 
@@ -95,6 +179,17 @@ export default function TrumpNotification({ notification, onDismiss }) {
             </span>{" "}
             {notification.countered ? (
               <span className="text-red-400">countered with</span>
+            ) : notification.target2Name ? (
+              <>
+                used on{" "}
+                <span className="text-white/75 font-medium">
+                  {notification.targetName}
+                </span>
+                {" and "}
+                <span className="text-white/75 font-medium">
+                  {notification.target2Name}
+                </span>
+              </>
             ) : notification.targetName ? (
               <>
                 used on{" "}

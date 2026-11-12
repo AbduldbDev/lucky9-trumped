@@ -7,6 +7,7 @@ import useTurnCountdown from "../../../hooks/useTurnCountdown.js";
 
 export default function Seat({
   player,
+  allPlayers = [],
   isTurn,
   revealed,
   targetable,
@@ -18,6 +19,7 @@ export default function Seat({
   turnKey = null,
   ringSide = "left",
   onShowStats,
+  selected = false,
 }) {
   const isOut = player.isEliminated || player.isSpectator;
   const lives = player.lives;
@@ -25,6 +27,11 @@ export default function Seat({
   const [expanded, setExpanded] = useState(false);
 
   const myTurn = isTurn && !isOut;
+
+  // Get bonded partner's name
+  const bondedPartner = player.bondedWith
+    ? allPlayers.find((p) => p.id === player.bondedWith)
+    : null;
 
   // Countdown for this player's turn (logic lives in the hook)
   const secondsLeft = useTurnCountdown({
@@ -108,6 +115,7 @@ export default function Seat({
             : "border-white/[0.07] bg-ink/50"
         }
         ${targetable ? "targetable-panel border-red-400/60 cursor-pointer" : ""}
+        ${selected ? "border-amber-400/60 bg-amber-500/5" : ""}
         ${isMe && !myTurn && !targetable ? "border-gold/25" : ""}
       `}
           style={{
@@ -115,7 +123,9 @@ export default function Seat({
               ? "0 0 18px -8px rgba(217,194,138,0.55), inset 0 1px 0 rgba(255,255,255,0.05)"
               : targetable
                 ? "0 0 12px rgba(239,68,68,0.18), inset 0 1px 0 rgba(255,255,255,0.04)"
-                : "inset 0 1px 0 rgba(255,255,255,0.04)",
+                : selected
+                  ? "0 0 12px rgba(251,191,36,0.25), inset 0 1px 0 rgba(255,255,255,0.04)"
+                  : "inset 0 1px 0 rgba(255,255,255,0.04)",
             backgroundColor: "rgba(11, 15, 13, 0.82)",
           }}
         >
@@ -143,6 +153,16 @@ export default function Seat({
             rounded-full border border-red-300/40 bg-red-500/90 shadow-lg animate-beat"
             >
               <i className="fa-solid fa-crosshairs text-[8px] text-white" />
+            </div>
+          )}
+
+          {/* Selected indicator (TWO_PLAYERS) */}
+          {selected && (
+            <div
+              className="absolute -left-1 -top-1 z-20 flex h-4 w-4 items-center justify-center
+            rounded-full border border-amber-300/60 bg-amber-500/90 shadow-lg"
+            >
+              <span className="text-[6px] font-bold text-white">✓</span>
             </div>
           )}
 
@@ -258,6 +278,15 @@ export default function Seat({
       {/* ── Footer status ──────────────────────────────────────── */}
       <div className="mt-1.5 flex w-full items-center justify-center sm:mt-2">
         <div className="flex flex-col items-center gap-0.3 pt-2 text-[8px] text-white/30 sm:text-[9px] h-[5px]">
+          {/* Bond indicator */}
+          {player.bondedWith && player.bondRoundsLeft > 0 && (
+            <div className="flex items-center gap-1">
+              <i className="fa-solid fa-link text-[6px] text-purple-400 sm:text-[7px]" />
+              <span className="text-[7px] font-medium text-purple-300/80 sm:text-[8px] truncate max-w-[80px]">
+                {bondedPartner?.name || "Bonded"} ({player.bondRoundsLeft}r)
+              </span>
+            </div>
+          )}
           {player.disabled && (
             <div className="text-red-600 font-semibold">
               <i className="fa-solid fa-ban mr-0.5 sm:mr-1" />

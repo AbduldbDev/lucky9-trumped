@@ -22,6 +22,8 @@ export default function OvalTable({
   revealed,
   bet,
   targeting,
+  twoPlayerTargeting,
+  target1,
   onTarget,
   secondsLeft,
   displayedTrumps = [],
@@ -179,19 +181,29 @@ export default function OvalTable({
                     >
                       <Seat
                         player={opp}
+                        allPlayers={allPlayers}
                         ringSide={pos.ringSide}
                         isTurn={turnPlayer?.id === opp.id}
                         revealed={revealed}
                         targetable={
-                          targeting &&
+                          (targeting || twoPlayerTargeting) &&
                           !opp.isEliminated &&
                           !opp.isSpectator &&
+                          // For TWO_PLAYERS: can't target the same player twice
+                          !(twoPlayerTargeting && target1 === opp.id) &&
+                          // For BOND: can't target already bonded players
+                          !(
+                            twoPlayerTargeting &&
+                            aimCfg?.id === "BOND" &&
+                            opp.bondedWith
+                          ) &&
                           // Can't target players with full hands for cards that add cards
                           !(
                             aimCfg?.id === "TARGET" &&
                             opp.hand.length >= GAME_CONFIG.MAX_CARDS_IN_HAND
                           )
                         }
+                        selected={twoPlayerTargeting && target1 === opp.id}
                         onTarget={onTarget}
                         onShowStats={onShowStats}
                         turnStartTime={

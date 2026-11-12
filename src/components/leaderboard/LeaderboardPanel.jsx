@@ -92,7 +92,7 @@ function LeaderboardCard({ player, rank, isYou }) {
             <span>
               {player.total_wins}W / {player.total_losses}L
             </span>
-            {player.level != null && (
+            {/* {player.level != null && (
               <span className="uppercase tracking-wider text-ivory-dim/45">
                 Lv {player.level}
               </span>
@@ -101,7 +101,7 @@ function LeaderboardCard({ player, rank, isYou }) {
               <span className="truncate text-gold-light/70">
                 {player.current_rank}
               </span>
-            )}
+            )} */}
             {streak > 0 && (
               <span className="flex items-center gap-1">
                 <i className="fa-solid fa-fire-flame-curved text-[8px] text-orange-400/80" />

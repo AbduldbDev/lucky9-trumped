@@ -78,8 +78,16 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
   const { personalNotification, dismissPersonalNotification } =
     usePersonalNotifications({ view });
   useGameAudio({ view, me });
-  const { aiming, aimCfg, targeting, setAiming, onTarget, cancelAim } =
-    useTrumpTargeting({ isMyTurn, actions });
+  const {
+    aiming,
+    aimCfg,
+    targeting,
+    twoPlayerTargeting,
+    target1,
+    setAiming,
+    onTarget,
+    cancelAim,
+  } = useTrumpTargeting({ isMyTurn, actions });
   const { notification, displayedTrumps, dismissNotification } =
     useTrumpNotifications({ view });
 
@@ -346,6 +354,8 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
         revealed={revealed}
         bet={bet}
         targeting={targeting}
+        twoPlayerTargeting={twoPlayerTargeting}
+        target1={target1}
         onTarget={onTarget}
         onShowStats={handleShowOpponentStats}
         secondsLeft={secondsLeft}
@@ -381,6 +391,7 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
         <div className="flex flex-col sm:flex-row sm:items-stretch">
           <PlayerInfo
             me={me}
+            allPlayers={allPlayers}
             phase={view.phase}
             amSpectator={amSpectator}
             cardsFlipped={cardsFlipped}
@@ -402,6 +413,8 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
             aiming={aiming}
             onAim={setAiming}
             onCancelAim={cancelAim}
+            twoPlayerTargeting={twoPlayerTargeting}
+            target1={target1}
             isDealing={isDealing}
           />
         ) : showStood ? (

@@ -49,8 +49,12 @@ export function createPlayer({ id, name, skinId = "classic_red" }) {
     trumps: [], // trump card IDs in inventory
     stood: false,
     disabled: false, // DISABLE trump effect — skipped this round
+    trumpsDisabled: false, // LOCKDOWN trump effect — cannot use trumps this round
+    mirrorActive: false, // MIRROR trump shield active
     angelProtected: false, // ANGEL_CARD protection active
     aegisActive: false, // AEGIS shield active (halves life loss this round)
+    bondedWith: null, // BOND trump effect — player ID bonded with
+    bondRoundsLeft: 0, // Number of rounds the bond lasts
     consecutiveTimeouts: 0, // Track consecutive timeout rounds
     lucky9Awarded: false, // flag: bonus trump card already given this round
     stats: {
@@ -164,6 +168,14 @@ function startRound(d, firstPlayerOverride = null) {
     p.angelProtected = false;
     // Clear Aegis shield at the start of each round (only lasts 1 round)
     p.aegisActive = false;
+
+    // Decrement bond duration and clear if expired
+    if (p.bondRoundsLeft > 0) {
+      p.bondRoundsLeft--;
+      if (p.bondRoundsLeft === 0) {
+        p.bondedWith = null;
+      }
+    }
 
     // Re-enable timeout-eliminated players (temporary elimination only for previous round)
     if (p.timeoutEliminated && !p.isEliminated) {
@@ -528,6 +540,7 @@ function executeCounteredTrump(d, request) {
     // The trump is now reflected - execute on the original attacker as the target
     const msg = executeTrump(d, attacker, request.trumpId, {
       targetId: request.attackerId, // Reflected back to attacker
+      target2Id: request.target2Id, // Pass second target if exists
       rank: request.rank,
       countered: [], // No longer countered, but reflected
       reflected: true, // Special flag to allow self-targeting
@@ -584,6 +597,7 @@ function executeCounteredTrump(d, request) {
   // Execute the trump with counter information
   const msg = executeTrump(d, attacker, request.trumpId, {
     targetId: request.targetId,
+    target2Id: request.target2Id, // Pass second target for TWO_PLAYERS
     rank: request.rank,
     countered, // Pass list of players who countered with SHATTER
   });
@@ -636,6 +650,52 @@ function executeCounteredTrump(d, request) {
         timestamp: Date.now() + 100, // Slightly later to show after original
         countered: true, // This is a counter notification
         multipleCounters: countered.length > 1, // Flag for multiple counters
+      });
+    }
+  }
+
+  // If BOND card was played, add a bond notification when bonds are successfully created
+  if (request.trumpId === "BOND") {
+    const bondTarget1Id = request.targetId;
+    const bondTarget2Id = request.target2Id;
+
+    // Get the bond information from the players
+    const actor = d.players.find((pl) => pl.id === request.attackerId);
+    const target1 = bondTarget1Id
+      ? d.players.find((pl) => pl.id === bondTarget1Id)
+      : null;
+    const target2 = bondTarget2Id
+      ? d.players.find((pl) => pl.id === bondTarget2Id)
+      : null;
+
+    // Determine who is bonded
+    let bondedPlayer1 = null;
+    let bondedPlayer2 = null;
+
+    if (actor && target2 && actor.bondedWith === target2.id) {
+      bondedPlayer1 = actor;
+      bondedPlayer2 = target2;
+    } else if (actor && target1 && actor.bondedWith === target1.id) {
+      bondedPlayer1 = actor;
+      bondedPlayer2 = target1;
+    } else if (target1 && target2 && target1.bondedWith === target2.id) {
+      bondedPlayer1 = target1;
+      bondedPlayer2 = target2;
+    }
+
+    // Add bond as a trump play notification (will be rendered specially in TrumpNotification)
+    if (bondedPlayer1 && bondedPlayer2 && actor && target1 && target2) {
+      d.trumpPlays.push({
+        id: `BOND-${Date.now()}-${Math.random()}`,
+        trumpId: "BOND",
+        playerId: request.attackerId,
+        playerName: actor.name, // Who used the BOND card
+        targetName: target1.name, // First target
+        target2Name: target2.name, // Second target
+        bondedPlayer1Name: bondedPlayer1.name, // Who actually got bonded
+        bondedPlayer2Name: bondedPlayer2.name, // Who actually got bonded
+        isBondNotification: true,
+        timestamp: Date.now(),
       });
     }
   }
@@ -1094,7 +1154,7 @@ const HANDLERS = {
     return;
   },
 
-  TRUMP(d, { by, trumpId, targetId, rank }) {
+  TRUMP(d, { by, trumpId, targetId, target2Id, rank }) {
     const p = assertTurn(d, by);
     const idx = p.trumps.indexOf(trumpId);
     if (idx === -1) throw new Error("You don't hold that Trump Card.");
@@ -1128,6 +1188,16 @@ const HANDLERS = {
         if (target && !target.isEliminated && !target.isSpectator) {
           counterTargets.push(targetId);
         }
+      } else if (card.targetType === "TWO_PLAYERS" && targetId && target2Id) {
+        // Both targets can counter
+        const target1 = d.players.find((pl) => pl.id === targetId);
+        const target2 = d.players.find((pl) => pl.id === target2Id);
+        if (target1 && !target1.isEliminated && !target1.isSpectator) {
+          counterTargets.push(targetId);
+        }
+        if (target2 && !target2.isEliminated && !target2.isSpectator) {
+          counterTargets.push(target2Id);
+        }
       } else if (card.targetType === "ALL_PLAYERS") {
         // All players except actor can counter
         d.players.forEach((pl) => {
@@ -1149,6 +1219,7 @@ const HANDLERS = {
           trumpId,
           trumpName: card.name,
           targetId,
+          target2Id, // Add second target for TWO_PLAYERS
           rank,
           counterTargets, // List of player IDs who can counter
           responses: {}, // Will collect responses here
@@ -1165,6 +1236,9 @@ const HANDLERS = {
         const targetPlayer = targetId
           ? d.players.find((pl) => pl.id === targetId)
           : null;
+        const target2Player = target2Id
+          ? d.players.find((pl) => pl.id === target2Id)
+          : null;
 
         d.trumpPlays.push({
           id: `${by}-${trumpId}-${Date.now()}`,
@@ -1173,6 +1247,8 @@ const HANDLERS = {
           playerName: p.name,
           targetId: targetId || null,
           targetName: targetPlayer?.name || null,
+          target2Id: target2Id || null,
+          target2Name: target2Player?.name || null,
           timestamp: Date.now(),
           countered: false,
         });
@@ -1184,7 +1260,7 @@ const HANDLERS = {
     }
 
     // Not counterable or no valid targets - execute immediately
-    const msg = executeTrump(d, p, trumpId, { targetId, rank });
+    const msg = executeTrump(d, p, trumpId, { targetId, target2Id, rank });
     p.trumps.splice(idx, 1);
     p.stats.trumpsPlayed += 1;
     pushLog(d, msg);
@@ -1206,6 +1282,52 @@ const HANDLERS = {
       targetName: targetPlayer?.name || null,
       timestamp: Date.now(),
     });
+
+    // If BOND card was played, add a bond notification when bonds are successfully created
+    if (trumpId === "BOND") {
+      const bondTarget1Id = targetId;
+      const bondTarget2Id = target2Id; // target2Id parameter from function args
+
+      // Get the bond information from the players
+      const actor = d.players.find((pl) => pl.id === by);
+      const target1 = bondTarget1Id
+        ? d.players.find((pl) => pl.id === bondTarget1Id)
+        : null;
+      const target2 = bondTarget2Id
+        ? d.players.find((pl) => pl.id === bondTarget2Id)
+        : null;
+
+      // Determine who is bonded
+      let bondedPlayer1 = null;
+      let bondedPlayer2 = null;
+
+      if (actor && target2 && actor.bondedWith === target2.id) {
+        bondedPlayer1 = actor;
+        bondedPlayer2 = target2;
+      } else if (actor && target1 && actor.bondedWith === target1.id) {
+        bondedPlayer1 = actor;
+        bondedPlayer2 = target1;
+      } else if (target1 && target2 && target1.bondedWith === target2.id) {
+        bondedPlayer1 = target1;
+        bondedPlayer2 = target2;
+      }
+
+      // Add bond as a trump play notification (will be rendered specially in TrumpNotification)
+      if (bondedPlayer1 && bondedPlayer2 && actor && target1 && target2) {
+        d.trumpPlays.push({
+          id: `BOND-${Date.now()}-${Math.random()}`,
+          trumpId: "BOND",
+          playerId: by,
+          playerName: actor.name, // Who used the BOND card
+          targetName: target1.name, // First target
+          target2Name: target2.name, // Second target
+          bondedPlayer1Name: bondedPlayer1.name, // Who actually got bonded
+          bondedPlayer2Name: bondedPlayer2.name, // Who actually got bonded
+          isBondNotification: true,
+          timestamp: Date.now(),
+        });
+      }
+    }
 
     // Keep only recent plays (last 10 seconds)
     const now = Date.now();

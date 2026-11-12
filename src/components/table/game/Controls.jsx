@@ -185,6 +185,8 @@ export function TrumpTray({
   aiming,
   onAim,
   onCancelAim,
+  twoPlayerTargeting,
+  target1,
   waitingForCounterResponse,
   isDealing = false,
 }) {
@@ -204,7 +206,11 @@ export function TrumpTray({
 
     audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
 
-    if (cfg.targetType === "SINGLE_PLAYER" || cfg.targetType === "RANK_CHOICE")
+    if (
+      cfg.targetType === "SINGLE_PLAYER" ||
+      cfg.targetType === "RANK_CHOICE" ||
+      cfg.targetType === "TWO_PLAYERS"
+    )
       onAim(id);
     else {
       actions.playTrump(id);
@@ -297,6 +303,34 @@ export function TrumpTray({
               Play {rank}
             </button>
           </div>
+        </div>
+      )}
+      {/* Two-player targeting banner */}
+      {aimCfg?.targetType === "TWO_PLAYERS" && (
+        <div
+          role="status"
+          className="flex items-center gap-1.5 sm:gap-2 rounded-md sm:rounded-lg bg-[#0b0b0c]/85 backdrop-blur-md
+            border border-white/10 pl-2 sm:pl-3 pr-0.5 py-0 sm:py-0.5 animate-fadeUp"
+        >
+          <span className="relative flex h-1.5 w-1.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#d9c28a] opacity-60" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#d9c28a]" />
+          </span>
+          <p className="flex-1 min-w-0 text-[10px] sm:text-[11px] leading-tight text-white/50">
+            <span className="font-medium tracking-wide text-[#f1e6c8]">
+              {aimCfg.name}
+            </span>
+            <span className="mx-1 sm:mx-1.5 text-white/20">/</span>
+            {target1 ? "Select second player" : "Select first player"}
+          </p>
+          <button
+            onClick={onCancelAim}
+            aria-label="Cancel targeting"
+            className={`${TAP} shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded
+              text-white/30 ${CAN_HOVER}:text-white/80 transition-colors`}
+          >
+            <i className="fa-solid fa-xmark text-[10px] sm:text-xs" />
+          </button>
         </div>
       )}
       {/* Trump cards */}
