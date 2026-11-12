@@ -454,7 +454,7 @@ body {
     gap: 8px;
   }
   .ctl-btn {
-    min-height: 46px;
+    min-height: 35px;
     font-size: 14px;
     padding-inline: 12px;
   }

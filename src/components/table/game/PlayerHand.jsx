@@ -1,12 +1,18 @@
 import Card from "../../cards/Card.jsx";
 
+// On mobile the whole hand is scaled down with CSS `zoom` (layout-aware, unlike
+// transform: scale). From the `sm` breakpoint up it returns to 100%.
+const MOBILE_ZOOM = "[zoom:0.72] sm:[zoom:1]";
+
 export default function PlayerHand({ me, amSpectator, flipped, onToggleFlip }) {
   return (
-    <div className="flex-1 min-w-0  flex flex-col justify-center px-3 pb-2 pt-1 sm:py-2">
-      <div className="overflow-x-auto overflow-y-hidden no-scrollbar pt-2">
-        <div className="flex gap-1.5 w-max mx-auto sm:mx-0">
+    <div className="flex-1 min-w-0 flex flex-col justify-center px-2 pb-1 pt-0.5 sm:px-3 sm:pb-2 sm:pt-1 sm:py-2">
+      <div className="overflow-x-auto overflow-y-hidden no-scrollbar pt-1 sm:pt-2">
+        <div
+          className={`flex gap-1 sm:gap-1.5 w-max mx-auto sm:mx-0 ${MOBILE_ZOOM}`}
+        >
           {amSpectator ? (
-            <div className="text-xs text-red-400/60 py-4">
+            <div className="text-[10px] sm:text-xs text-red-400/60 py-2 sm:py-4">
               <i className="fa-solid fa-skull mr-1" />
               Out
             </div>
@@ -85,7 +91,7 @@ export default function PlayerHand({ me, amSpectator, flipped, onToggleFlip }) {
                   width: "56px",
                   height: "80px",
                 }}
-                className="flex h-20 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/30 text-white/40 transition-all hover:border-white/20 hover:bg-black/50 hover:text-white/70 active:scale-95"
+                className="flex shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/30 text-white/40 transition-all hover:border-white/20 hover:bg-black/50 hover:text-white/70 active:scale-95"
                 title="Flip card (Only visible to you)"
               >
                 <i
