@@ -50,6 +50,7 @@ export function createPlayer({ id, name, skinId = "classic_red" }) {
     stood: false,
     disabled: false, // DISABLE trump effect — skipped this round
     angelProtected: false, // ANGEL_CARD protection active
+    aegisActive: false, // AEGIS shield active (halves life loss this round)
     consecutiveTimeouts: 0, // Track consecutive timeout rounds
     lucky9Awarded: false, // flag: bonus trump card already given this round
     stats: {
@@ -161,6 +162,8 @@ function startRound(d, firstPlayerOverride = null) {
 
     // Clear Angel Card protection at the start of each round (only lasts 1 round)
     p.angelProtected = false;
+    // Clear Aegis shield at the start of each round (only lasts 1 round)
+    p.aegisActive = false;
 
     // Re-enable timeout-eliminated players (temporary elimination only for previous round)
     if (p.timeoutEliminated && !p.isEliminated) {
@@ -312,7 +315,15 @@ function resolveShowdown(d) {
 
   // Process losers - they always lose lives (even in a winners' draw)
   for (const l of losers) {
-    const loss = Math.min(bet, l.lives);
+    let loss = Math.min(bet, l.lives);
+
+    // Aegis halves the life penalty (odd deductions round up), once per round
+    if (l.aegisActive && loss > 0) {
+      loss = Math.ceil(loss / 2);
+      l.aegisActive = false; // shield consumed
+      pushLog(d, `${l.name}'s Aegis halved the life penalty!`);
+    }
+
     l.lives -= loss;
 
     // SRD §3.3 / §8.6: Angel Card protects from life-loss elimination (not timer)
@@ -640,6 +651,7 @@ function executeCounteredTrump(d, request) {
     "DOUBLE_BET_UP",
     "DOUBLE_BET_DOWN",
     "ANGEL_CARD",
+    "AEGIS",
   ];
 
   if (persistentEffects.includes(request.trumpId)) {
@@ -880,6 +892,7 @@ const HANDLERS = {
         p.hand = [];
         p.disabled = false;
         p.angelProtected = false;
+        p.aegisActive = false;
         p.lucky9Awarded = false;
         p.trumps = [];
         for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++)
@@ -946,6 +959,7 @@ const HANDLERS = {
       p.hand = [];
       p.disabled = false;
       p.angelProtected = false;
+      p.aegisActive = false;
       p.lucky9Awarded = false;
       p.trumps = [];
       for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(p);
@@ -1183,6 +1197,7 @@ const HANDLERS = {
       "DOUBLE_BET_UP",
       "DOUBLE_BET_DOWN",
       "ANGEL_CARD",
+      "AEGIS",
     ];
 
     if (persistentEffects.includes(trumpId)) {

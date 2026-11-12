@@ -38,33 +38,63 @@ export const EFFECT_EXECUTORS = {
 
   // ── SHATTER ──────────────────────────────────────────────────────────────
   CANCEL_LAST_TRUMP({ draft, actor }) {
-    // Find the most recent BET MODIFIER (BET_UP/DOWN/DOUBLE_*) placed by an opponent
-    // We track a trumpLog array on the state for this purpose.
+    // Destroyable persistent "table" effects placed by opponents
+    const TABLE_EFFECTS = ["ANGEL_CARD", "AEGIS"];
 
-    if (!draft.trumpLog || draft.trumpLog.length === 0) {
-      return `${actor.name} tried to use Shatter, but there are no trump cards to cancel.`;
+    // Newest opponent-placed persistent effect (Angel Card / Aegis shield)
+    let effectIdx = -1;
+    let effectTime = -1;
+    if (draft.activeTrumpEffects) {
+      draft.activeTrumpEffects.forEach((e, i) => {
+        if (
+          e.playerId !== actor.id &&
+          TABLE_EFFECTS.includes(e.trumpId) &&
+          (e.timestamp || 0) > effectTime
+        ) {
+          effectTime = e.timestamp || 0;
+          effectIdx = i;
+        }
+      });
     }
 
-    // Find the most recent bet modifier from opponents (iterate backwards)
-    let targetLogIndex = -1;
-    for (let i = draft.trumpLog.length - 1; i >= 0; i--) {
+    // Newest opponent-placed bet modifier (iterate backwards)
+    let logIdx = -1;
+    let logTime = -1;
+    for (let i = (draft.trumpLog?.length || 0) - 1; i >= 0; i--) {
       const entry = draft.trumpLog[i];
-      // Check if it's a bet modifier AND placed by someone else
       if (entry.betDelta !== undefined && entry.playerId !== actor.id) {
-        targetLogIndex = i;
+        logTime = entry.timestamp || 0;
+        logIdx = i;
         break;
       }
     }
 
-    // No bet modifier found from opponents
-    if (targetLogIndex === -1) {
-      return `${actor.name} used Shatter, but there are no opponent bet modifications to cancel.`;
+    // Nothing to destroy
+    if (effectIdx === -1 && logIdx === -1) {
+      return `${actor.name} used Shatter, but there are no opponent trump effects to cancel.`;
     }
 
-    const targetEntry = draft.trumpLog[targetLogIndex];
+    // Destroy whichever opponent effect was placed most recently
+    if (effectTime >= logTime) {
+      const target = draft.activeTrumpEffects[effectIdx];
+      draft.activeTrumpEffects.splice(effectIdx, 1);
+
+      // Cancel the effect on its owner
+      const victim = draft.players.find((p) => p.id === target.playerId);
+      const cardName = TRUMP_CARDS_CATALOG[target.trumpId]?.name || target.trumpId;
+      if (victim) {
+        if (target.trumpId === "ANGEL_CARD") victim.angelProtected = false;
+        if (target.trumpId === "AEGIS") victim.aegisActive = false;
+      }
+
+      return `${actor.name} used Shatter! Destroyed ${target.playerName}'s ${cardName} on the table.`;
+    }
+
+    // Bet modifier path (unchanged behavior)
+    const targetEntry = draft.trumpLog[logIdx];
 
     // Remove the entry from trumpLog
-    draft.trumpLog.splice(targetLogIndex, 1);
+    draft.trumpLog.splice(logIdx, 1);
 
     // Reverse the bet effect
     if (targetEntry.betDelta !== undefined) {
@@ -313,6 +343,18 @@ export const EFFECT_EXECUTORS = {
 
     actor.angelProtected = true;
     return `${actor.name} activated Angel Card — protected from death by life loss!`;
+  },
+
+  // ── AEGIS ────────────────────────────────────────────────────────────────
+  REDUCE_LOSS_PENALTY({ actor }) {
+    if (actor.aegisActive) {
+      return `${actor.name} tried to activate Aegis, but the shield is already active.`;
+    }
+
+    // Consumed by resolveShowdown when the player loses this round:
+    // life penalty is halved (odd deductions round up).
+    actor.aegisActive = true;
+    return `${actor.name} raised Aegis — life penalties are halved if they lose this round!`;
   },
 
   // ── HUSH ─────────────────────────────────────────────────────────────────

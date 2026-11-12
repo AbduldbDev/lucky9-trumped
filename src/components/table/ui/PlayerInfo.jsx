@@ -17,6 +17,12 @@ export default function PlayerInfo({ me, phase, amSpectator, cardsFlipped }) {
         {me.angelProtected && (
           <i className="fa-solid fa-shield-halved text-purple-400 text-xs" />
         )}
+        {me.aegisActive && (
+          <i
+            className="fa-solid fa-shield-halved text-amber-400 text-xs"
+            title="Aegis active — life loss halved this round"
+          />
+        )}
         {phase === PHASES.PLAYING && me.stood && !amSpectator && (
           <span className="text-[10px] uppercase tracking-wider text-gold/70">
             <i className="fa-solid fa-hand mr-1" />

@@ -5,28 +5,29 @@ export const ENABLED_TRUMP_CARDS = [
   "BET_UP",
   "BET_DOWN",
   "SHATTER",
-  "SACRIFICE",
-  "ODDS",
-  // ── UNCOMMON ──
-  "DOUBLE_BET_UP",
-  "DOUBLE_BET_DOWN",
-  "RETURN",
-  "DISCARD",
-  "HUSH",
-  // ── RARE ──
-  "REFRESH",
-  "EXCHANGE",
-  "TARGET",
-  "CHECKER",
-  "MIRROR",
-  // ── LEGENDARY ──
-  "SELECT",
-  "DISABLE",
-  "LOCKDOWN",
-  // ── MYTHIC ──
-  "FRIENDSHIP_CARD",
+  // "SACRIFICE",
+  // "ODDS",
+  // // ── UNCOMMON ──
+  // "DOUBLE_BET_UP",
+  // "DOUBLE_BET_DOWN",
+  // "RETURN",
+  // "DISCARD",
+  // "HUSH",
+  // // ── RARE ──
+  // "REFRESH",
+  // "EXCHANGE",
+  // "TARGET",
+  // "CHECKER",
+  // "MIRROR",
+  // // ── LEGENDARY ──
+  // "SELECT",
+  // "DISABLE",
+  // "LOCKDOWN",
+  // "AEGIS",
+  // // ── MYTHIC ──
+  // "FRIENDSHIP_CARD",
   "ANGEL_CARD",
-  "FORTUNE_TELLER",
+  // "FORTUNE_TELLER",
   // "REBIRTH",
 ];
 
@@ -68,6 +69,7 @@ export const TRUMP_ICONS = {
   HUSH: "fa-eye-slash",
   SACRIFICE: "fa-heart-crack",
   LOCKDOWN: "fa-lock",
+  AEGIS: "fa-shield-halved",
   MIRROR: "fa-retweet",
   ODDS: "fa-dice",
   REBIRTH: "fa-fire-flame-curved",
@@ -137,7 +139,7 @@ export const TRUMP_CARDS_CATALOG = {
     name: "Shatter",
     rarity: "COMMON",
     description:
-      "Destroy a Trump Card on the table or counter an opponent's Trump Card, canceling its effect.",
+      "Destroy an opponent's Trump Card effect on the table (bet changes, Angel Card, Aegis) or counter their Trump Card, canceling its effect.",
     targetType: "NONE",
     effect: { type: "CANCEL_LAST_TRUMP" },
   },
@@ -273,6 +275,15 @@ export const TRUMP_CARDS_CATALOG = {
     counterable: true, // Can be blocked by SHATTER
     effect: { type: "DISABLE_TRUMP" },
   },
+  AEGIS: {
+    id: "AEGIS",
+    name: "Aegis",
+    rarity: "COMMON",
+    description:
+      "Halve the life penalty when you lose this round's showdown (deductions round up). Lasts for the current round. Can be destroyed by Shatter.",
+    targetType: "SELF",
+    effect: { type: "REDUCE_LOSS_PENALTY" },
+  },
   CHECKER: {
     id: "CHECKER",
     name: "Checker",
@@ -299,7 +310,7 @@ export const TRUMP_CARDS_CATALOG = {
     name: "Angel Card",
     rarity: "MYTHIC",
     description:
-      "Prevents death when running out of lives. Protection lasts only for the current round.",
+      "Prevents death when running out of lives. Protection lasts only for the current round. Can be destroyed by Shatter.",
     targetType: "SELF",
     effect: { type: "DEATH_PROTECTION" },
   },

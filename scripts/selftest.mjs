@@ -81,6 +81,7 @@ const EXPECTED = [
   "SELECT",
   "DISABLE",
   "LOCKDOWN",
+  "AEGIS",
   // MYTHIC
   "FRIENDSHIP_CARD",
   "ANGEL_CARD",
@@ -88,7 +89,7 @@ const EXPECTED = [
   "REBIRTH",
 ];
 for (const id of EXPECTED) assert.ok(TRUMP_CARDS_CATALOG[id], `missing: ${id}`);
-assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 22);
+assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 23);
 
 // ─── Rarity total = 100 ──────────────────────────────────────────────────────
 const totalChance = Object.values(TRUMP_RARITIES).reduce(
