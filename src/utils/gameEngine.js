@@ -7,6 +7,7 @@ import {
   TRUMP_CARDS_CATALOG,
   ENABLED_TRUMP_CARDS,
 } from "../config/trumpCards.config.js";
+import { getShopItem } from "../config/trumpShop.config.js";
 import { createDeck, shuffle, handScore, isNatural } from "./deckEngine.js";
 import { executeTrump, rollTrumpCard } from "./trumpExecutors.js";
 
@@ -1461,6 +1462,81 @@ const HANDLERS = {
         d.pauseStartTime = Date.now();
       }
     }
+  },
+
+  // Host grants purchased Trump Cards into a player's match inventory.
+  // The host has ALREADY verified the DB purchase receipt (verified + marked
+  // consumed via `verify_trump_purchase`) and rolled the cards with the
+  // existing rarity logic; this handler validates and applies the grant.
+  GRANT_TRUMPS(d, { by, cards, purchaseId, bundleId }) {
+    const buyer = d.players.find((p) => p.id === by);
+    if (!buyer || buyer.isEliminated || buyer.isSpectator) {
+      throw new Error("Invalid buyer.");
+    }
+    if (d.phase === PHASES.GAMEOVER) {
+      throw new Error("Shop purchases cannot be granted after the match ends.");
+    }
+
+    const bundle = getShopItem(bundleId);
+    if (!bundle) throw new Error("Unknown shop bundle.");
+
+    if (!Array.isArray(cards) || cards.length !== bundle.quantity) {
+      throw new Error("Purchase card count mismatch.");
+    }
+    for (const cardId of cards) {
+      if (!TRUMP_CARDS_CATALOG[cardId]) {
+        throw new Error("Unknown Trump Card in purchase.");
+      }
+    }
+
+    // Duplicate protection: a retransmitted action must never double-grant.
+    if (!d.processedPurchases) d.processedPurchases = [];
+    if (d.processedPurchases.includes(purchaseId)) return false;
+    d.processedPurchases.push(purchaseId);
+    if (d.processedPurchases.length > 200) d.processedPurchases.shift();
+
+    buyer.trumps.push(...cards);
+
+    pushLog(
+      d,
+      `🛒 ${buyer.name} purchased ${cards.length} random Trump Card${
+        cards.length === 1 ? "" : "s"
+      } from the Trump Shop.`,
+    );
+
+    // Global notification — every player sees the purchase toast.
+    if (!d.trumpPlays) d.trumpPlays = [];
+    d.trumpPlays.push({
+      id: `SHOP-${purchaseId}`,
+      isShopNotification: true,
+      playerId: by,
+      playerName: buyer.name,
+      quantity: cards.length,
+      timestamp: Date.now(),
+    });
+    // Keep only recent plays (same window as trump executions)
+    const now = Date.now();
+    d.trumpPlays = d.trumpPlays.filter((tp) => now - tp.timestamp < 10000);
+
+    // Private reward payload for the buyer (rolled card details), delivered
+    // through the per-player private channel like Lucky-9 notifications.
+    if (!d.personalNotifications) d.personalNotifications = {};
+    if (!d.personalNotifications[by]) d.personalNotifications[by] = [];
+    d.personalNotifications[by].push({
+      id: `shop-${purchaseId}`,
+      type: "TRUMP_SHOP",
+      purchaseId,
+      bundleName: bundle.name,
+      cards: cards.map((cardId) => ({
+        id: cardId,
+        name: TRUMP_CARDS_CATALOG[cardId].name,
+        rarity: TRUMP_CARDS_CATALOG[cardId].rarity,
+      })),
+      message: `You received ${cards.length} random Trump Card${
+        cards.length === 1 ? "" : "s"
+      }!`,
+      timestamp: Date.now(),
+    });
   },
 };
 

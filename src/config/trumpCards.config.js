@@ -50,7 +50,7 @@ export const TRUMP_RARITY = {
   RARE: 18,
   LEGENDARY: 12,
   MYTHIC: 10,
-  SECRET: 1,
+  SECRET: 0,
 };
 
 export const TRUMP_ICONS = {

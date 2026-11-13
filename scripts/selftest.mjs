@@ -24,6 +24,7 @@ import {
 } from "../src/config/trumpCards.config.js";
 import { GAME_CONFIG } from "../src/config/gameRules.config.js";
 import { rollTrumpCard } from "../src/utils/trumpExecutors.js";
+import { getShopItem } from "../src/config/trumpShop.config.js";
 
 const MAX_HAND = GAME_CONFIG.MAX_CARDS_IN_HAND; // 5
 
@@ -88,9 +89,10 @@ const EXPECTED = [
   "ANGEL_CARD",
   "FORTUNE_TELLER",
   "REBIRTH",
+  "BOND",
 ];
 for (const id of EXPECTED) assert.ok(TRUMP_CARDS_CATALOG[id], `missing: ${id}`);
-assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 24);
+assert.equal(Object.keys(TRUMP_CARDS_CATALOG).length, 25);
 
 // ─── Rarity total = 100 ──────────────────────────────────────────────────────
 const totalChance = Object.values(TRUMP_RARITIES).reduce(
@@ -146,6 +148,103 @@ for (let i = 0; i < 500; i++) assert.ok(trumpIds.includes(rollTrumpCard()));
     s = gameReducer(s, { type: "NEXT_ROUND", by: "a" });
     assert.equal(s.betModifiers, 0, "betModifiers reset each round");
   }
+}
+
+// ─── GRANT_TRUMPS (Trump Shop purchases) ─────────────────────────────────────
+{
+  // Fresh match with two players, both holding STARTING_TRUMP_CARDS cards.
+  let s = createInitialState({
+    partyCode: "SHOP01",
+    hostPlayer: createPlayer({ id: "a", name: "A" }),
+  });
+  s = gameReducer(s, { type: "JOIN", player: { id: "b", name: "B" } });
+  s = gameReducer(s, { type: "READY", by: "b" });
+  s = gameReducer(s, { type: "START", by: "a" });
+  assert.equal(s.phase, PHASES.PLAYING);
+  const buyer = s.players.find((p) => p.id === "b");
+  const before = buyer.trumps.length;
+
+  // Shop config sanity: bundles come from config, not hardcoded values.
+  const duo = getShopItem("duo");
+  assert.ok(duo && duo.quantity === 2 && duo.price === 280);
+  assert.ok(!getShopItem("nonexistent"));
+
+  // Valid grant: +2 cards, global shop notification, private reward packet.
+  const cards = [rollTrumpCard(), rollTrumpCard()];
+  const s2 = gameReducer(s, {
+    type: "GRANT_TRUMPS",
+    by: "b",
+    cards,
+    purchaseId: "shop-test-1",
+    bundleId: "duo",
+  });
+  assert.notEqual(s2, s, "grant must change state");
+  const buyer2 = s2.players.find((p) => p.id === "b");
+  assert.equal(buyer2.trumps.length, before + 2);
+  assert.equal(buyer2.trumps[before], cards[0]);
+  assert.equal(buyer2.trumps[before + 1], cards[1]);
+  const play = s2.trumpPlays.find((tp) => tp.isShopNotification);
+  assert.ok(play, "global shop notification pushed");
+  assert.equal(play.playerId, "b");
+  assert.equal(play.quantity, 2);
+  const note = s2.personalNotifications.b.find(
+    (n) => n.type === "TRUMP_SHOP" && n.purchaseId === "shop-test-1",
+  );
+  assert.ok(note, "buyer private reward packet");
+  assert.deepEqual(
+    note.cards.map((x) => x.id),
+    cards,
+  );
+
+  // Duplicate purchaseId: exactly-once, state unchanged (same reference).
+  const s3 = gameReducer(s2, {
+    type: "GRANT_TRUMPS",
+    by: "b",
+    cards,
+    purchaseId: "shop-test-1",
+    bundleId: "duo",
+  });
+  assert.equal(s3, s2, "duplicate purchaseId must not double-grant");
+
+  // Card count mismatch (bundle says 2): rejected, state unchanged.
+  assert.equal(
+    gameReducer(s2, {
+      type: "GRANT_TRUMPS",
+      by: "b",
+      cards: [rollTrumpCard()],
+      purchaseId: "shop-test-2",
+      bundleId: "duo",
+    }),
+    s2,
+    "wrong card count rejected",
+  );
+
+  // Unknown card id in grant: rejected.
+  assert.equal(
+    gameReducer(s2, {
+      type: "GRANT_TRUMPS",
+      by: "b",
+      cards: ["NOT_A_TRUMP", rollTrumpCard()],
+      purchaseId: "shop-test-3",
+      bundleId: "duo",
+    }),
+    s2,
+    "unknown card id rejected",
+  );
+
+  // Grants are refused after the match ends.
+  const over = { ...s2, phase: PHASES.GAMEOVER };
+  assert.equal(
+    gameReducer(over, {
+      type: "GRANT_TRUMPS",
+      by: "b",
+      cards,
+      purchaseId: "shop-test-4",
+      bundleId: "duo",
+    }),
+    over,
+    "GAMEOVER rejects purchases",
+  );
 }
 
 // ─── 300 randomized full matches ─────────────────────────────────────────────

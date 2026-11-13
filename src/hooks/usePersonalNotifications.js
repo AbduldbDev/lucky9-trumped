@@ -51,6 +51,13 @@ export function usePersonalNotifications({ view }) {
     const key = `${view.round}:${latest.id}`;
     if (shownPersonalKeys.current.has(key)) return;
 
+    // Trump Shop purchases are surfaced by the shop modal's RewardReveal —
+    // don't also pop the generic personal-notification toast for them.
+    if (latest.type === "TRUMP_SHOP") {
+      shownPersonalKeys.current.add(key);
+      return;
+    }
+
     shownPersonalKeys.current.add(key);
     setPersonalNotification(latest);
 

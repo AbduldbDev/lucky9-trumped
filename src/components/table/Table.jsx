@@ -19,6 +19,7 @@ import TrumpNotification from "./effects/TrumpNotification.jsx";
 import PersonalNotification from "./effects/PersonalNotification.jsx";
 import CounterPrompt from "./modals/CounterPrompt.jsx";
 import OpponentStatsModal from "./modals/OpponentStatsModal.jsx";
+import TrumpShop from "../shop/TrumpShop.jsx";
 import { PHASES } from "../../utils/gameEngine.js";
 import { useTurnTimer } from "../../hooks/useTurnTimer.js";
 import { useRematchTimer } from "../../hooks/useRematchTimer.js";
@@ -33,7 +34,13 @@ import { useTableDerived } from "../../hooks/useTableDerived.js";
 import { useCardAnimations } from "../../hooks/useCardAnimations.js";
 import FlyingCard from "./game/FlyingCard.jsx";
 
-export default function Table({ game, onLeave, tableColor = "blue" }) {
+export default function Table({
+  game,
+  onLeave,
+  tableColor = "blue",
+  profile,
+  trumpShop,
+}) {
   const { view, me, isMyTurn, isHost, turnKey, actions } = game;
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [cardsFlipped, setCardsFlipped] = useState(false);
@@ -176,7 +183,12 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-[#040e06]">
-      <TopBar view={view} bet={bet} onLeave={onLeave} />
+      <TopBar
+        view={view}
+        bet={bet}
+        onLeave={onLeave}
+        onOpenShop={trumpShop?.openShop}
+      />
 
       {/* Flying card animations */}
       {flyingCards.map((card) => {
@@ -493,6 +505,11 @@ export default function Table({ game, onLeave, tableColor = "blue" }) {
           playerName={selectedOpponent.name}
           onClose={handleCloseStatsModal}
         />
+      )}
+
+      {/* Trump Shop (in-game purchases) */}
+      {trumpShop?.open && (
+        <TrumpShop shop={trumpShop} profile={profile} onClose={trumpShop.closeShop} />
       )}
     </div>
   );

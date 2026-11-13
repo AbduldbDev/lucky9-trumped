@@ -54,7 +54,7 @@ export default function ShowdownOverlay({ countdown }) {
       role="status"
       aria-live="polite"
       aria-label={`Showdown in ${countdown}`}
-      className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center"
+      className="pointer-events-none fixed inset-0 z-[80] flex flex-col items-center justify-center"
       style={{
         background:
           "radial-gradient(circle at 50% 50%, rgba(10,10,11,0.88) 0%, rgba(0,0,0,0.96) 78%)",

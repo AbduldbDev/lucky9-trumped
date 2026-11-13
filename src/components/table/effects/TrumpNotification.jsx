@@ -38,6 +38,87 @@ export default function TrumpNotification({ notification, onDismiss }) {
 
   if (!notification) return null;
 
+  // Trump Shop purchase notifications (global broadcast to every player)
+  if (notification.isShopNotification) {
+    const shopColor = "#d4af37"; // gold
+    const qty = notification.quantity ?? 1;
+
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className={`fixed top-14 sm:top-20 left-1/2 -translate-x-1/2 z-50
+          max-w-[calc(100vw-1.5rem)]
+          transition-all duration-300 ease-out pointer-events-none
+          ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+      >
+        <div
+          className="relative flex items-center gap-2.5 sm:gap-3
+            pl-2.5 pr-3.5 py-2 sm:pl-3 sm:pr-4 sm:py-2.5
+            rounded-md overflow-hidden
+            bg-[#0b0c0e]/85 backdrop-blur-xl border"
+          style={{
+            borderColor: `${shopColor}40`,
+            boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 24px ${shopColor}14`,
+          }}
+        >
+          {/* Hairline accent along the top edge */}
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-0 h-px"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${shopColor}, transparent)`,
+            }}
+          />
+
+          {/* Icon: Gift */}
+          <div
+            className="flex shrink-0 items-center justify-center
+              w-7 h-7 sm:w-9 sm:h-9 rounded-full border"
+            style={{
+              borderColor: `${shopColor}55`,
+              backgroundColor: `${shopColor}12`,
+            }}
+          >
+            <i
+              className="fa-solid fa-gift text-[11px] sm:text-sm"
+              style={{ color: shopColor }}
+            />
+          </div>
+
+          {/* Content */}
+          <div className="flex flex-col min-w-0 leading-tight">
+            <span className="text-[9px] sm:text-[10px] text-white/45 tracking-wide truncate">
+              <span className="text-white/75 font-medium">
+                {notification.playerName}
+              </span>{" "}
+              purchased {qty} random Trump{qty === 1 ? "" : "s"} from the Trump
+              Shop!
+            </span>
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
+              <span
+                className="font-semibold text-[11px] sm:text-[13px] tracking-wide"
+                style={{ color: shopColor }}
+              >
+                Trump Shop
+              </span>
+              <span
+                className="shrink-0 text-[7px] sm:text-[8px] font-medium uppercase
+                  tracking-[0.14em] px-1 py-px rounded-sm border"
+                style={{
+                  color: `${shopColor}d9`,
+                  borderColor: `${shopColor}33`,
+                }}
+              >
+                PURCHASE
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Handle bond notifications specially
   if (notification.isBondNotification) {
     const bondColor = "#a78bfa"; // purple-400

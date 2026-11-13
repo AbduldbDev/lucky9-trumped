@@ -8,6 +8,7 @@ import { useMatchTimer } from "../../hooks/useMatchTimer.js";
 import { useMatchSettlement } from "../../hooks/useMatchSettlement.js";
 import { useKickDetection } from "../../hooks/useKickDetection.js";
 import { useAssetGate } from "../../hooks/useAssetGate.js";
+import { useTrumpShop } from "../../hooks/useTrumpShop.js";
 import { PHASES } from "../../utils/gameEngine.js";
 
 /** Mounted only while inside a room so every room gets a fresh game-state hook. */
@@ -42,6 +43,15 @@ export default function Room({
   });
 
   const { assetsLoaded, markLoaded } = useAssetGate(view?.phase);
+
+  // Trump Shop: chips → random Trump Cards (in-game purchases only).
+  const trumpShop = useTrumpShop({
+    partyCode: room.partyCode,
+    profile,
+    view,
+    dispatch: game.dispatch,
+    setProfile: onProfile,
+  });
 
   const leave = () => {
     actions.leave();
@@ -102,6 +112,8 @@ export default function Room({
       game={game}
       onLeave={leave}
       tableColor={profile.tableColor || "green"}
+      profile={profile}
+      trumpShop={trumpShop}
     />
   );
 }

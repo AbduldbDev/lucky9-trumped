@@ -8,6 +8,10 @@ export const UPDATES = [
     items: [
       {
         type: "new",
+        text: "Added the Trump Shop: during a match, spend Chips on bundles of random Trump Cards — Starter (1 Trump, 150 Chips), Duo (2 Trumps, 280 Chips), Value (5 Trumps, 650 Chips), or Mega (7 Trumps, 850 Chips). Confirm before you buy, and everyone in the room sees your purchase!",
+      },
+      {
+        type: "new",
         text: "Added BOND Trump Card (MYTHIC): Create a mystical bond between two players for 3 rounds. Bonded players share negative trump card effects - when one is targeted by DISABLE, LOCKDOWN, or TARGET, both receive the effect. Players who are already bonded cannot be targeted for new bonds.",
       },
       {

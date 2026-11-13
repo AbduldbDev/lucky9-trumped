@@ -19,6 +19,7 @@ import {
   viewFor,
 } from "../utils/gameEngine.js";
 import { GAME_CONFIG } from "../config/gameRules.config.js";
+import { rollTrumpCard } from "../utils/trumpExecutors.js";
 import { useSupabaseRealtime } from "./useSupabaseRealtime.js";
 import { supabase } from "../services/supabaseClient.js";
 
@@ -88,6 +89,45 @@ export function useGameState({ partyCode, isHost, profile }) {
     [selfId, partyCode],
   );
 
+  // ── Trump Shop: verify the buyer's DB purchase receipt, then grant ────────
+  // The guest pays through the `purchase_trump_bundle` RPC (server-side price
+  // validation + atomic chip deduction) and sends the receipt id here. The
+  // HOST consumes the receipt exactly once (`verify_trump_purchase`), rolls
+  // the cards with the existing rarity logic, and applies GRANT_TRUMPS.
+  const grantVerifiedPurchase = useCallback(
+    async (action) => {
+      if (!supabase || !fullRef.current) return;
+
+      const { data, error } = await supabase.rpc("verify_trump_purchase", {
+        p_purchase_id: action.purchaseId,
+        p_user_id: action.by,
+        p_party_code: partyCode,
+      });
+      if (error || !data?.ok) {
+        console.warn(
+          "[Lucky9] Trump purchase verification failed:",
+          error?.message ?? data?.reason ?? data,
+        );
+        return;
+      }
+
+      // Authoritative host-side random generation (existing pool + rarity)
+      const cards = Array.from(
+        { length: data.quantity },
+        () => rollTrumpCard(),
+      );
+      const next = gameReducer(fullRef.current, {
+        type: "GRANT_TRUMPS",
+        by: action.by,
+        cards,
+        purchaseId: action.purchaseId,
+        bundleId: action.bundleId,
+      });
+      if (next !== fullRef.current) commit(next);
+    },
+    [commit, partyCode],
+  );
+
   const hostApply = useCallback(
     (action) => {
       const cur = fullRef.current;
@@ -116,11 +156,17 @@ export function useGameState({ partyCode, isHost, profile }) {
         return;
       }
 
+      // Special handling for Trump Shop purchases: async DB verification
+      if (action.type === "BUY_TRUMPS") {
+        grantVerifiedPurchase(action);
+        return;
+      }
+
       // Normal action handling
       const next = gameReducer(cur, action);
       if (next !== cur) commit(next);
     },
-    [commit],
+    [commit, grantVerifiedPurchase],
   );
 
   // Auto-timeout mechanism: Host AND guests check if current turn has exceeded time limit
@@ -421,5 +467,6 @@ export function useGameState({ partyCode, isHost, profile }) {
     turnKey,
     me: view?.players?.find((p) => p.id === selfId) ?? null,
     actions,
+    dispatch,
   };
 }

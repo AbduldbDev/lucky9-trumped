@@ -554,7 +554,7 @@ function Section({ icon, title, children }) {
 }
 function RarityBadge({ rarity }) {
   const { color, name, chance } = rarity;
-  const isSecret = Number(chance) === 1;
+  const isSecret = Number(chance) === 0;
 
   const hexToRgb = (hex) => {
     const h = hex.replace("#", "");
