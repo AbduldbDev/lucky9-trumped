@@ -21,7 +21,10 @@ import {
 import { GAME_CONFIG } from "../config/gameRules.config.js";
 import { useSupabaseRealtime } from "./useSupabaseRealtime.js";
 import { verifyTrumpPurchase } from "../services/trumpShopService.js";
-import { rollTrumpCards } from "../utils/trumpExecutors.js";
+import {
+  rollTrumpCards,
+  activePlayerCount,
+} from "../utils/trumpExecutors.js";
 import { supabase } from "../services/supabaseClient.js";
 
 export function useGameState({ partyCode, isHost, profile }) {
@@ -106,8 +109,13 @@ export function useGameState({ partyCode, isHost, profile }) {
       );
       if (!receipt.ok) return;
 
-      // Authoritative host-side random generation (existing pool + rarity)
-      const cards = rollTrumpCards(receipt.quantity);
+      // Authoritative host-side random generation (existing pool + rarity),
+      // gated by the current match size (card `minPlayers`)
+      const cards = rollTrumpCards(
+        receipt.quantity,
+        Math.random,
+        activePlayerCount(fullRef.current),
+      );
       const next = gameReducer(fullRef.current, {
         type: "GRANT_TRUMPS",
         by: action.by,

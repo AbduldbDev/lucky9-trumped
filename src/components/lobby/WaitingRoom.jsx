@@ -251,7 +251,6 @@ export default function WaitingRoom({
             </button>
 
             {isHost ? (
-              /* Host: gold primary, disabled until everyone is ready */
               <button
                 disabled={!canStart}
                 onClick={handleStart}
@@ -262,7 +261,6 @@ export default function WaitingRoom({
                 {allReady ? "Start Game" : "Waiting for players..."}
               </button>
             ) : isReady ? (
-              /* Ready: subdued gold outline so the primary action reads as "done" */
               <button
                 onClick={handleUnready}
                 className="group relative flex-1 overflow-hidden rounded-2xl border border-gold/30 bg-gold-faint/10 py-3 text-sm font-semibold tracking-wide text-gold-light/80 transition-all hover:border-gold/50 hover:bg-gold-faint/20 hover:text-gold-light active:scale-[0.98] sm:py-4 sm:text-base"
@@ -273,7 +271,6 @@ export default function WaitingRoom({
                 <i className="fa-solid fa-xmark ml-2 text-xs opacity-60" />
               </button>
             ) : (
-              /* Not ready: gold primary call to action */
               <button onClick={handleReady} className={primaryBtn}>
                 {shine}
                 <i className="fa-solid fa-circle-check mr-2 text-xs sm:mr-2.5" />
@@ -282,12 +279,15 @@ export default function WaitingRoom({
             )}
           </div>
 
+          {/* Wrapper keeps the menu a single child of <main> */}
           {profile && (
-            <WaitingRoomMenu
-              profile={profile}
-              onBuy={onBuy}
-              onEquip={onEquip}
-            />
+            <div>
+              <WaitingRoomMenu
+                profile={profile}
+                onBuy={onBuy}
+                onEquip={onEquip}
+              />
+            </div>
           )}
         </main>
       </div>

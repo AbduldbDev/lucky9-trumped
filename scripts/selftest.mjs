@@ -105,6 +105,67 @@ assert.equal(totalChance, 100);
 const trumpIds = Object.keys(TRUMP_CARDS_CATALOG);
 for (let i = 0; i < 500; i++) assert.ok(trumpIds.includes(rollTrumpCard()));
 
+// ─── minPlayers gate (BOND needs 3+ active players) ─────────────────────────
+{
+  // Roll filter: in a 2-player match BOND can never be rolled.
+  for (let i = 0; i < 300; i++) {
+    const rolled = rollTrumpCard(Math.random, 2);
+    assert.notEqual(rolled, "BOND", "BOND must not roll below minPlayers");
+    assert.ok(trumpIds.includes(rolled));
+  }
+
+  // Play validation: holding BOND in a 2-player match cannot play it.
+  let two = createInitialState({
+    partyCode: "MINP02",
+    hostPlayer: createPlayer({ id: "a", name: "A" }),
+  });
+  two = gameReducer(two, { type: "JOIN", player: { id: "b", name: "B" } });
+  two = gameReducer(two, { type: "READY", by: "b" });
+  two = gameReducer(two, { type: "START", by: "a" });
+  const actorId = two.players[two.turnIndex].id;
+  const otherId = two.players.find((p) => p.id !== actorId).id;
+  const holder = two.players.find((p) => p.id === actorId);
+  holder.trumps.push("BOND");
+  assert.equal(
+    gameReducer(two, {
+      type: "TRUMP",
+      by: actorId,
+      trumpId: "BOND",
+      targetId: otherId,
+      target2Id: null,
+      rank: null,
+    }),
+    two,
+    "BOND rejected with only 2 active players",
+  );
+
+  // With 3 active players it can be played (counter request created).
+  let three = createInitialState({
+    partyCode: "MINP03",
+    hostPlayer: createPlayer({ id: "a", name: "A" }),
+  });
+  three = gameReducer(three, { type: "JOIN", player: { id: "b", name: "B" } });
+  three = gameReducer(three, { type: "JOIN", player: { id: "c", name: "C" } });
+  three = gameReducer(three, { type: "READY", by: "b" });
+  three = gameReducer(three, { type: "READY", by: "c" });
+  three = gameReducer(three, { type: "START", by: "a" });
+  const tActor = three.players[three.turnIndex];
+  const targets = three.players
+    .filter((p) => p.id !== tActor.id)
+    .map((p) => p.id);
+  tActor.trumps.push("BOND");
+  const played = gameReducer(three, {
+    type: "TRUMP",
+    by: tActor.id,
+    trumpId: "BOND",
+    targetId: targets[0],
+    target2Id: targets[1],
+    rank: null,
+  });
+  assert.notEqual(played, three, "BOND playable with 3 active players");
+  assert.ok(played.counterRequests, "counter request created");
+}
+
 // ─── Fog of war ──────────────────────────────────────────────────────────────
 {
   let s = createInitialState({

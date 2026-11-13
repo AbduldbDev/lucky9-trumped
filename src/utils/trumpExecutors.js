@@ -563,8 +563,8 @@ export const EFFECT_EXECUTORS = {
     actor.lives -= 2;
 
     // Gain 2 trump cards
-    actor.trumps.push(rollTrumpCard());
-    actor.trumps.push(rollTrumpCard());
+    actor.trumps.push(rollTrumpCard(Math.random, activePlayerCount(draft)));
+    actor.trumps.push(rollTrumpCard(Math.random, activePlayerCount(draft)));
 
     return `${actor.name} sacrificed 2 lives and gained 2 trump cards!`;
   },
@@ -636,7 +636,7 @@ export const EFFECT_EXECUTORS = {
   },
 
   // ── REBIRTH ──────────────────────────────────────────────────────────────
-  REFRESH_TRUMP_CARDS({ actor, card }) {
+  REFRESH_TRUMP_CARDS({ draft, actor, card }) {
     // NOTE: The played Rebirth card is still in actor.trumps at this point —
     // the engine removes it (at its original index) right after this executor
     // returns. So: count everything, rebuild with `count` fresh rolls, and
@@ -650,7 +650,8 @@ export const EFFECT_EXECUTORS = {
 
     // Discard all held trumps and roll the same number of new ones.
     const fresh = [];
-    for (let i = 0; i < count; i++) fresh.push(rollTrumpCard());
+    for (let i = 0; i < count; i++)
+      fresh.push(rollTrumpCard(Math.random, activePlayerCount(draft)));
 
     // Re-insert Rebirth at its original index so the engine's post-execution
     // splice discards it, leaving exactly `count` new trump cards.
@@ -806,7 +807,7 @@ export function executeTrump(draft, actor, trumpId, ctx = {}) {
  * Roll a random trump card ID based rarity probabilities.
  * Only draws from enabled trump cards specified in ENABLED_TRUMP_CARDS
  */
-export function rollTrumpCard(rng = Math.random) {
+export function rollTrumpCard(rng = Math.random, playerCount = Infinity) {
   const enabledIds = ENABLED_TRUMP_CARDS || [];
 
   // Get all cards or filter by enabled IDs
@@ -824,6 +825,19 @@ export function rollTrumpCard(rng = Math.random) {
       cards = Object.values(TRUMP_CARDS_CATALOG);
     }
   }
+
+  // Player-count gate (card config `minPlayers`): cards that need more
+  // players than the match has are excluded from the roll pool.
+  let minPlayerCards = cards;
+  if (Number.isFinite(playerCount)) {
+    minPlayerCards = cards.filter((c) => (c.minPlayers ?? 1) <= playerCount);
+    if (minPlayerCards.length === 0) {
+      // Every enabled card needs more players than we have — ignore the
+      // gate rather than roll nothing.
+      minPlayerCards = cards;
+    }
+  }
+  cards = minPlayerCards;
 
   const rarities = Object.values(TRUMP_RARITIES);
   const total = rarities.reduce((s, r) => s + r.chance, 0);
@@ -861,6 +875,16 @@ export function rollTrumpCard(rng = Math.random) {
  * Roll a batch of random Trump Card ids (e.g. for shop purchase grants).
  * Uses the same pool/rarity logic as rollTrumpCard.
  */
-export function rollTrumpCards(count, rng = Math.random) {
-  return Array.from({ length: count }, () => rollTrumpCard(rng));
+export function rollTrumpCards(count, rng = Math.random, playerCount = Infinity) {
+  return Array.from({ length: count }, () => rollTrumpCard(rng, playerCount));
+}
+
+/**
+ * Number of players actively participating in the match right now
+ * (eliminated players and spectators don't count for player-count gates).
+ */
+export function activePlayerCount(d) {
+  return (d?.players ?? []).filter(
+    (p) => !p.isEliminated && !p.isSpectator,
+  ).length;
 }

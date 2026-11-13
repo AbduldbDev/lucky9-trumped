@@ -552,6 +552,7 @@ function Section({ icon, title, children }) {
     </section>
   );
 }
+
 function RarityBadge({ rarity }) {
   const { color, name, chance } = rarity;
   const isSecret = Number(chance) === 0;

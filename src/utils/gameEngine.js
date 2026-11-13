@@ -9,7 +9,7 @@ import {
 } from "../config/trumpCards.config.js";
 import { getShopItem } from "../config/trumpShop.config.js";
 import { createDeck, shuffle, handScore, isNatural } from "./deckEngine.js";
-import { executeTrump, rollTrumpCard } from "./trumpExecutors.js";
+import { executeTrump, rollTrumpCard, activePlayerCount } from "./trumpExecutors.js";
 
 export const PHASES = {
   LOBBY: "lobby",
@@ -125,9 +125,11 @@ function assertHost(d, by) {
   if (d.hostId !== by) throw new Error("Host only.");
 }
 
-/** Grant a trump card to a player — unlimited inventory. */
-function grantTrump(player) {
-  player.trumps.push(rollTrumpCard());
+/** Grant a trump card to a player — unlimited inventory. Respects the
+ * card's `minPlayers` gate (rolls never deal cards the match is too small
+ * to use). */
+function grantTrump(d, player) {
+  player.trumps.push(rollTrumpCard(Math.random, activePlayerCount(d)));
 }
 
 // ---------------------------------------------------------------------------
@@ -400,7 +402,7 @@ function resolveShowdown(d) {
   // Winners get TRUMP_CARDS_FOR_WINNER, losers get TRUMP_CARDS_FOR_LOSER
   for (const w of winners) {
     for (let i = 0; i < GAME_CONFIG.TRUMP_CARDS_FOR_WINNER; i++) {
-      grantTrump(w);
+      grantTrump(d, w);
     }
   }
 
@@ -408,7 +410,7 @@ function resolveShowdown(d) {
     // Only award trump cards to losers who are still in the game (not eliminated)
     if (!l.isEliminated) {
       for (let i = 0; i < GAME_CONFIG.TRUMP_CARDS_FOR_LOSER; i++) {
-        grantTrump(l);
+        grantTrump(d, l);
       }
     }
   }
@@ -488,7 +490,7 @@ export function checkLucky9(d, player) {
 
   if (score === 9) {
     player.lucky9Awarded = true;
-    grantTrump(player);
+    grantTrump(d, player);
     pushLog(d, `⭐ ${player.name} hit 9! Bonus Trump Card awarded.`);
 
     // Create personal notification for the player
@@ -928,7 +930,7 @@ const HANDLERS = {
     // Clear existing trump cards first (in case of rematch)
     for (const p of d.players) {
       p.trumps = []; // Clear existing trump cards
-      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(p);
+      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(d, p);
     }
     startRound(d);
   },
@@ -1045,7 +1047,7 @@ const HANDLERS = {
       p.aegisActive = false;
       p.lucky9Awarded = false;
       p.trumps = [];
-      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(p);
+      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(d, p);
     }
     Object.assign(d, {
       phase: PHASES.LOBBY,
@@ -1176,6 +1178,15 @@ const HANDLERS = {
 
     if (!card) {
       throw new Error(`Unknown trump card: ${trumpId}`);
+    }
+
+    // Player-count gate (card config `minPlayers`): the card can only be
+    // played while enough players are active in the match.
+    const minPlayers = card.minPlayers ?? 1;
+    if (activePlayerCount(d) < minPlayers) {
+      throw new Error(
+        `${card.name} needs at least ${minPlayers} active players.`,
+      );
     }
 
     // Check if this trump is counterable

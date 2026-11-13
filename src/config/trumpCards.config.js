@@ -206,7 +206,7 @@ export const TRUMP_CARDS_CATALOG = {
     rarity: "UNCOMMON",
     description: "Remove the most recently drawn card of a selected player.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHATTER
+    counterable: true,
     effect: { type: "REMOVE_TARGET_LAST_CARD" },
   },
   HUSH: {
@@ -235,8 +235,8 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Swap your last drawn card with a selected player's last drawn card.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHATTER
-    mirrorable: false, // Cannot be countered with MIRROR
+    counterable: true,
+    mirrorable: false,
     effect: { type: "SWAP_LAST_CARDS" },
   },
 
@@ -246,7 +246,7 @@ export const TRUMP_CARDS_CATALOG = {
     rarity: "RARE",
     description: "Force a selected player to draw 1 additional card.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHATTER
+    counterable: true,
     effect: { type: "FORCE_DRAW" },
   },
   CHECKER: {
@@ -264,7 +264,7 @@ export const TRUMP_CARDS_CATALOG = {
     rarity: "RARE",
     description:
       "Use when countering to reflect a trump card targeting you back to its original user.",
-    targetType: "COUNTER", // Special type - only usable as counter
+    targetType: "COUNTER",
     effect: { type: "REFLECT_COUNTER" },
   },
 
@@ -285,7 +285,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Prevent a selected player from taking turns for the remainder of the round.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHATTER
+    counterable: true,
     effect: { type: "SKIP_TURNS_ROUND" },
   },
   FORTUNE_TELLER: {
@@ -303,7 +303,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Prevent a selected player from using Trump Cards for the remainder of the round.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHATTER
+    counterable: true,
     effect: { type: "DISABLE_TRUMP" },
   },
   AEGIS: {
@@ -324,8 +324,8 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "All non-eliminated players (including yourself) draw one additional card.",
     targetType: "ALL_PLAYERS",
-    counterable: true, // Can be blocked by SHATTER (each player decides)
-    mirrorable: false, // Cannot be countered with MIRROR
+    counterable: true,
+    mirrorable: false,
     effect: { type: "MASS_DRAW_ALL" },
   },
   ANGEL_CARD: {
@@ -344,7 +344,7 @@ export const TRUMP_CARDS_CATALOG = {
     description:
       "Steal up to 2 lives from a selected player and transfer them to yourself. The amount stolen cannot exceed the target's remaining lives.",
     targetType: "SINGLE_PLAYER",
-    counterable: true, // Can be blocked by SHATTER / reflected by MIRROR
+    counterable: true,
     effect: { type: "STEAL_LIFE" },
   },
   REBIRTH: {
@@ -359,12 +359,13 @@ export const TRUMP_CARDS_CATALOG = {
   BOND: {
     id: "BOND",
     name: "Bond",
-    rarity: "MYTHIC",
+    rarity: "COMMON",
     description:
       "Bond two players for 3 rounds. Negative targeted Trump effects are shared equally. Either can use SHATTER to counter, if both counter, no bond forms.",
     targetType: "TWO_PLAYERS",
-    counterable: true, // Both targets can counter with SHATTER
-    mirrorable: false, // Cannot be reflected with MIRROR
+    counterable: true,
+    mirrorable: false,
+    minPlayers: 3,
     effect: { type: "CREATE_BOND", duration: 3 },
   },
 };
