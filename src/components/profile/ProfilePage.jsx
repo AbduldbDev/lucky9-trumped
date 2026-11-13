@@ -4,6 +4,7 @@ import { supabase } from "../../services/supabaseClient";
 import { CARD_SKINS_SHOP, getSkin } from "../../config/cardSkins.config";
 import { RARITY_COLOR } from "../../config/trumpCards.config.js";
 import { GAME_CONFIG } from "../../config/gameRules.config.js";
+import { AUDIO_CONFIG } from "../../config/audio.config.js";
 
 const FALLBACK_HEX = "#9ca3af";
 
@@ -135,6 +136,12 @@ export default function ProfilePage({
   const cancelRename = () => {
     setEditingName(false);
     setNameError("");
+  };
+
+  const handleLogout = async () => {
+    audio.playSfx(AUDIO_CONFIG.SFX.UI_CLICK);
+    await signOut();
+    navigate("/auth");
   };
 
   const winRate =
@@ -324,6 +331,13 @@ export default function ProfilePage({
                   {profile.currentRank} · Level {profile.level}
                 </p>
               </div>
+              <button
+                onClick={handleLogout}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-red-500/30 bg-red-950/20 text-red-400 transition-all hover:border-red-500/50 hover:bg-red-950/40 active:scale-95"
+                title="Logout"
+              >
+                <i className="fa-solid fa-right-from-bracket text-xs" />
+              </button>
             </div>
 
             {/* Stats */}

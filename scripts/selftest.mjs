@@ -247,6 +247,86 @@ for (let i = 0; i < 500; i++) assert.ok(trumpIds.includes(rollTrumpCard()));
   );
 }
 
+// ─── LOCKDOWN blocks counters (SHATTER/MIRROR unusable, prompt hides them) ───
+{
+  let s = createInitialState({
+    partyCode: "LOCK01",
+    hostPlayer: createPlayer({ id: "a", name: "A" }),
+  });
+  s = gameReducer(s, { type: "JOIN", player: { id: "b", name: "B" } });
+  s = gameReducer(s, { type: "READY", by: "b" });
+  s = gameReducer(s, { type: "START", by: "a" });
+
+  // Inject a counter request: A played LOCKDOWN targeting B, who holds both
+  // counter cards but is locked down (trumpsDisabled) for this round.
+  s = {
+    ...s,
+    counterRequests: {
+      c1: {
+        requestId: "c1",
+        attackerId: "a",
+        attackerName: "A",
+        trumpId: "LOCKDOWN",
+        trumpName: "Lockdown",
+        targetId: "b",
+        target2Id: null,
+        rank: null,
+        counterTargets: ["b"],
+        responses: {},
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 10000,
+      },
+    },
+  };
+  const victim = s.players.find((p) => p.id === "b");
+  victim.trumps.push("SHATTER", "MIRROR");
+  victim.trumpsDisabled = true;
+
+  // The prompt must NOT offer SHATTER/MIRROR — only "Accept Fate".
+  const view = viewFor(s, "b");
+  assert.ok(view.counterRequest, "counter request visible to target");
+  assert.equal(view.counterRequest.hasShatter, false, "shatter hidden");
+  assert.equal(view.counterRequest.hasMirror, false, "mirror hidden");
+
+  // Engine rejects the counters even if a client bypasses the UI.
+  assert.equal(
+    gameReducer(s, {
+      type: "RESPOND_COUNTER",
+      by: "b",
+      requestId: "c1",
+      useShatter: true,
+      useMirror: false,
+    }),
+    s,
+    "locked-down player cannot SHATTER",
+  );
+  assert.equal(
+    gameReducer(s, {
+      type: "RESPOND_COUNTER",
+      by: "b",
+      requestId: "c1",
+      useShatter: false,
+      useMirror: true,
+    }),
+    s,
+    "locked-down player cannot MIRROR",
+  );
+
+  // Accepting fate (decline) is still allowed.
+  const declined = gameReducer(s, {
+    type: "RESPOND_COUNTER",
+    by: "b",
+    requestId: "c1",
+    useShatter: false,
+    useMirror: false,
+  });
+  assert.notEqual(declined, s, "decline still allowed");
+  assert.ok(
+    declined.players.find((p) => p.id === "b").trumps.includes("SHATTER"),
+    "SHATTER not consumed on decline",
+  );
+}
+
 // ─── 300 randomized full matches ─────────────────────────────────────────────
 for (let game = 0; game < 300; game++) {
   const n = 2 + (game % 5);

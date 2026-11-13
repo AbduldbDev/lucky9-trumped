@@ -1391,6 +1391,11 @@ const HANDLERS = {
 
     const responder = d.players.find((p) => p.id === by);
 
+    // LOCKDOWN disables all trump cards for the round — no counters allowed.
+    if (responder.trumpsDisabled && (useShatter || useMirror)) {
+      throw new Error("Your trump cards are locked down for this round.");
+    }
+
     // Cannot use both SHATTER and MIRROR
     if (useShatter && useMirror) {
       throw new Error("Cannot use both SHATTER and MIRROR.");
@@ -1674,14 +1679,22 @@ function getCounterRequestForPlayer(state, playerId) {
       if (request.responses[playerId] !== undefined) continue;
 
       // Check if they have SHATTER
+      // LOCKDOWN disables ALL trump cards for the round, including
+      // SHATTER/MIRROR used as counters — the player must accept fate.
       const player = state.players.find((p) => p.id === playerId);
-      const hasShatter = player && player.trumps.includes("SHATTER");
+      const lockedDown = Boolean(player?.trumpsDisabled);
+      const hasShatter =
+        player && !lockedDown && player.trumps.includes("SHATTER");
 
       // MIRROR cannot counter cards flagged mirrorable: false
       // (e.g. EXCHANGE, FRIENDSHIP_CARD)
       const canMirror =
         TRUMP_CARDS_CATALOG[request.trumpId]?.mirrorable !== false;
-      const hasMirror = player && player.trumps.includes("MIRROR") && canMirror;
+      const hasMirror =
+        player &&
+        !lockedDown &&
+        player.trumps.includes("MIRROR") &&
+        canMirror;
 
       // Check if targeted directly
       const isTargeted = request.targetId === playerId;
