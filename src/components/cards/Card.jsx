@@ -4,8 +4,8 @@ import { useState } from "react";
 
 const SIZES = {
   xs: {
-    w: "w-9",
-    h: "h-12",
+    w: "w-10",
+    h: "h-14",
     rank: "text-[10px]",
     suit: "text-[8px]",
     center: "text-lg",

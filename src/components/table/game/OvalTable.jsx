@@ -12,6 +12,8 @@ import { getActivePlayers } from "../../../utils/tableHelpers.js";
 const MAX_TABLE = 700;
 // The circle may be up to this many times taller than the visible area.
 const MAX_CROP = 1.4;
+// Gap kept above the table (px). Was 28 (Tailwind top-7); smaller = seats sit higher.
+const TABLE_TOP_GAP = 15;
 
 export default function OvalTable({
   view,
@@ -58,13 +60,23 @@ export default function OvalTable({
   );
 
   const feltInset = Math.max(6, Math.round(side * 0.02));
+  // On short screens the circle is taller than the stage. Instead of cropping
+  // equally top and bottom, shift the felt down so its top edge stays visible
+  // and only the bottom (under the panel) is cut. 0 when nothing is cropped.
+  const feltDrop = Math.max(0, (side - stageH) / 10);
+  // Vertical centre of the felt circle. The centre info cluster sticks to it.
+  const tableCy = cy + feltDrop;
   const active = getActivePlayers(allPlayers);
   const stood = active.filter((p) => p.stood).length;
 
   return (
     <div className="flex-1 min-h-0 relative overflow-hidden">
       {/* Full-height box: runs underneath the floating panel */}
-      <div ref={boxRef} className="absolute inset-x-0 bottom-0 top-7">
+      <div
+        ref={boxRef}
+        className="absolute inset-x-0 bottom-0"
+        style={{ top: TABLE_TOP_GAP }}
+      >
         {/* Centres the stage inside the visible area above the panel */}
         <div
           className="flex items-center justify-center transition-[height] duration-300 ease-out"
@@ -83,10 +95,11 @@ export default function OvalTable({
                   transformOrigin: "center center",
                 }}
               >
-                {/* Felt: full circle centred on the stage, extends beneath the panel */}
+                {/* Felt: full circle, top edge kept visible, extends beneath the panel */}
                 <div
-                  className={`felt-surface felt-${tableColor} table-border pointer-events-none absolute left-1/2 top-1/2`}
+                  className={`felt-surface felt-${tableColor} table-border pointer-events-none absolute left-1/2`}
                   style={{
+                    top: tableCy,
                     width: side - feltInset * 2,
                     height: side - feltInset * 2,
                     transform: "translate(-50%, -50%)",
@@ -95,11 +108,11 @@ export default function OvalTable({
                   }}
                 />
 
-                {/* Centre info cluster: centred on the table, scales with it */}
+                {/* Centre info cluster: stuck to the felt centre, scales with the table */}
                 <div
                   className="absolute left-1/2 z-10 flex flex-col items-center gap-1 pointer-events-none"
                   style={{
-                    top: cy,
+                    top: tableCy,
                     transform: `translate(-50%, -50%) scale(${centerScale})`,
                     transformOrigin: "center center",
                   }}

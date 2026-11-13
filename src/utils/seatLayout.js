@@ -2,6 +2,11 @@ export const SEAT_W = 100;
 export const SEAT_H = 98;
 const MIN_SCALE = 0.45;
 
+// ── Top row (seat at the very top of the ring) ─────────────────────
+// Padding kept above the top seat. Smaller = seat sits higher.
+// The global `pad` (6–20px) is still used for every other seat.
+const TOP_PAD = 2;
+
 // ── Lower row (bottom-left / bottom-right) ─────────────────────────
 // Fractions of the ring radius.
 const LOWER_PUSH_X = 0.18; // lower-left → further left, lower-right → further right
@@ -47,6 +52,7 @@ export function computeSeatLayout(count, width, height) {
   const maxX = width - halfW - pad;
   const minY = halfH + pad;
   const maxY = height - halfH - pad;
+  const topMinY = halfH + TOP_PAD; // top-row seat may sit closer to the edge
 
   // Even steps around the ring, centred on the top (270°).
   const step = 360 / count;
@@ -63,6 +69,7 @@ export function computeSeatLayout(count, width, height) {
 
     const isLowerRow = sin > 0;
     const isSecondRow = sin <= 0 && sin > -0.95 && side !== 0;
+    const isTopRow = sin <= -0.95;
 
     if (isLowerRow) {
       x += side * rx * LOWER_PUSH_X * sin;
@@ -70,10 +77,12 @@ export function computeSeatLayout(count, width, height) {
     } else if (isSecondRow) {
       x += side * rx * ROW2.dx;
       y += ry * ROW2.dy;
+    } else if (isTopRow) {
+      y = Math.min(y, topMinY); // lift the top seat up to TOP_PAD from the edge
     }
 
     x = clamp(x, minX, maxX);
-    y = clamp(y, minY, maxY);
+    y = clamp(y, isTopRow ? topMinY : minY, maxY);
 
     // Lower seats: timer ring on the outer side. Upper seats: faces the centre.
     const isLeft = x < cx - 1;
