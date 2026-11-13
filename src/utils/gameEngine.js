@@ -9,7 +9,11 @@ import {
 } from "../config/trumpCards.config.js";
 import { getShopItem } from "../config/trumpShop.config.js";
 import { createDeck, shuffle, handScore, isNatural } from "./deckEngine.js";
-import { executeTrump, rollTrumpCard, activePlayerCount } from "./trumpExecutors.js";
+import {
+  executeTrump,
+  rollTrumpCard,
+  activePlayerCount,
+} from "./trumpExecutors.js";
 
 export const PHASES = {
   LOBBY: "lobby",
@@ -930,7 +934,8 @@ const HANDLERS = {
     // Clear existing trump cards first (in case of rematch)
     for (const p of d.players) {
       p.trumps = []; // Clear existing trump cards
-      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(d, p);
+      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++)
+        grantTrump(d, p);
     }
     startRound(d);
   },
@@ -981,7 +986,7 @@ const HANDLERS = {
         p.lucky9Awarded = false;
         p.trumps = [];
         for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++)
-          grantTrump(p);
+          grantTrump(d, p);
       }
       Object.assign(d, {
         phase: PHASES.LOBBY,
@@ -1047,7 +1052,8 @@ const HANDLERS = {
       p.aegisActive = false;
       p.lucky9Awarded = false;
       p.trumps = [];
-      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++) grantTrump(d, p);
+      for (let i = 0; i < GAME_CONFIG.STARTING_TRUMP_CARDS; i++)
+        grantTrump(d, p);
     }
     Object.assign(d, {
       phase: PHASES.LOBBY,
@@ -1702,10 +1708,7 @@ function getCounterRequestForPlayer(state, playerId) {
       const canMirror =
         TRUMP_CARDS_CATALOG[request.trumpId]?.mirrorable !== false;
       const hasMirror =
-        player &&
-        !lockedDown &&
-        player.trumps.includes("MIRROR") &&
-        canMirror;
+        player && !lockedDown && player.trumps.includes("MIRROR") && canMirror;
 
       // Check if targeted directly
       const isTargeted = request.targetId === playerId;
