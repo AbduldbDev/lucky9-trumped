@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../../services/supabaseClient";
+import { getMatchHistory } from "../../services/statsService.js";
 import { CARD_SKINS_SHOP, getSkin } from "../../config/cardSkins.config";
 import { RARITY_COLOR } from "../../config/trumpCards.config.js";
 
@@ -17,24 +17,17 @@ export default function UserProfile({ profile, onClose, onEquipSkin }) {
   const [equipping, setEquipping] = useState(null);
 
   useEffect(() => {
-    loadMatchHistory();
+    let cancelled = false;
+    getMatchHistory(profile.id, 20).then((rows) => {
+      if (!cancelled) {
+        setMatchHistory(rows);
+        setLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [profile.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const loadMatchHistory = async () => {
-    try {
-      const { data, error } = await supabase.rpc("get_match_history", {
-        p_user_id: profile.id,
-        p_limit: 20,
-      });
-
-      if (error) throw error;
-      setMatchHistory(data || []);
-    } catch (err) {
-      console.warn("[Lucky9] Could not load match history:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleEquipSkin = async (skinId) => {
     if (!onEquipSkin) return;

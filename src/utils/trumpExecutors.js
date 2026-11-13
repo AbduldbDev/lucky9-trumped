@@ -856,3 +856,11 @@ export function rollTrumpCard(rng = Math.random) {
 
   return pool[Math.floor(rng() * pool.length)].id;
 }
+
+/**
+ * Roll a batch of random Trump Card ids (e.g. for shop purchase grants).
+ * Uses the same pool/rarity logic as rollTrumpCard.
+ */
+export function rollTrumpCards(count, rng = Math.random) {
+  return Array.from({ length: count }, () => rollTrumpCard(rng));
+}

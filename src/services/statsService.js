@@ -6,6 +6,7 @@
 
 import { GAME_CONFIG } from "../config/gameRules.config.js";
 import { CARD_SKINS_SHOP } from "../config/cardSkins.config.js";
+import { TABLE_COLOR_IDS } from "../config/profilePreferences.config.js";
 import { supabase, isSupabaseConfigured } from "./supabaseClient.js";
 
 const emptyStats = () => ({
@@ -191,6 +192,24 @@ export async function saveUsername(profile, username) {
   return { ...profile, username: name };
 }
 
+/**
+ * Recent match history for the profile pages (SRD §9: match_history table).
+ * Returns [] on failure — history is non-critical, pages render without it.
+ */
+export async function getMatchHistory(userId, limit = 20) {
+  try {
+    const { data, error } = await supabase.rpc("get_match_history", {
+      p_user_id: userId,
+      p_limit: limit,
+    });
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.warn("[Lucky9] Could not load match history:", err);
+    return [];
+  }
+}
+
 export async function purchaseSkin(profile, itemId) {
   const skin = CARD_SKINS_SHOP.find((s) => s.id === itemId);
   if (!skin) throw new Error("Unknown skin.");
@@ -214,19 +233,10 @@ export async function equipSkin(profile, itemId) {
 }
 
 export async function setTableColor(profile, color) {
-  console.log("[statsService] setTableColor called with:", {
-    profileId: profile.id,
-    color,
-    currentTableColor: profile.tableColor,
-  });
-
-  const validColors = ["green", "purple", "blue", "red", "black"];
-  if (!validColors.includes(color)) {
-    console.error("[statsService] Invalid color:", color);
+  if (!TABLE_COLOR_IDS.includes(color)) {
     throw new Error("Invalid table color.");
   }
 
-  console.log("[statsService] Updating database...");
   const { error } = await supabase
     .from("profiles")
     .update({ table_color: color })
@@ -237,10 +247,7 @@ export async function setTableColor(profile, color) {
     throw new Error(error.message);
   }
 
-  console.log("[statsService] Database updated successfully");
-  const updatedProfile = { ...profile, tableColor: color };
-  console.log("[statsService] Returning updated profile:", updatedProfile);
-  return updatedProfile;
+  return { ...profile, tableColor: color };
 }
 
 /**

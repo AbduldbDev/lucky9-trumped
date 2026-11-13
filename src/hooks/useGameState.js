@@ -19,8 +19,9 @@ import {
   viewFor,
 } from "../utils/gameEngine.js";
 import { GAME_CONFIG } from "../config/gameRules.config.js";
-import { rollTrumpCard } from "../utils/trumpExecutors.js";
 import { useSupabaseRealtime } from "./useSupabaseRealtime.js";
+import { verifyTrumpPurchase } from "../services/trumpShopService.js";
+import { rollTrumpCards } from "../utils/trumpExecutors.js";
 import { supabase } from "../services/supabaseClient.js";
 
 export function useGameState({ partyCode, isHost, profile }) {
@@ -90,32 +91,23 @@ export function useGameState({ partyCode, isHost, profile }) {
   );
 
   // ── Trump Shop: verify the buyer's DB purchase receipt, then grant ────────
-  // The guest pays through the `purchase_trump_bundle` RPC (server-side price
-  // validation + atomic chip deduction) and sends the receipt id here. The
-  // HOST consumes the receipt exactly once (`verify_trump_purchase`), rolls
-  // the cards with the existing rarity logic, and applies GRANT_TRUMPS.
+  // The guest pays through `trumpShopService.purchaseTrumpBundle` (server-side
+  // price validation + atomic chip deduction) and sends the receipt id here.
+  // The HOST consumes the receipt exactly once via the service, rolls the
+  // cards with the existing rarity logic, and applies GRANT_TRUMPS.
   const grantVerifiedPurchase = useCallback(
     async (action) => {
-      if (!supabase || !fullRef.current) return;
+      if (!fullRef.current) return;
 
-      const { data, error } = await supabase.rpc("verify_trump_purchase", {
-        p_purchase_id: action.purchaseId,
-        p_user_id: action.by,
-        p_party_code: partyCode,
-      });
-      if (error || !data?.ok) {
-        console.warn(
-          "[Lucky9] Trump purchase verification failed:",
-          error?.message ?? data?.reason ?? data,
-        );
-        return;
-      }
+      const receipt = await verifyTrumpPurchase(
+        action.purchaseId,
+        action.by,
+        partyCode,
+      );
+      if (!receipt.ok) return;
 
       // Authoritative host-side random generation (existing pool + rarity)
-      const cards = Array.from(
-        { length: data.quantity },
-        () => rollTrumpCard(),
-      );
+      const cards = rollTrumpCards(receipt.quantity);
       const next = gameReducer(fullRef.current, {
         type: "GRANT_TRUMPS",
         by: action.by,

@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TRUMP_SHOP_ITEMS } from "../config/trumpShop.config.js";
+import { SHOP_RESULT_TIMEOUT_MS, TRUMP_SHOP_ITEMS } from "../config/trumpShop.config.js";
 import { purchaseTrumpBundle } from "../services/trumpShopService.js";
-
-// How long to wait for the host's verified grant before warning the buyer.
-const RESULT_TIMEOUT_MS = 12000;
 
 /**
  * Trump Shop orchestration (one instance per room, owned by Room).
@@ -104,7 +101,7 @@ export function useTrumpShop({
           setError(
             "Payment confirmed, but the cards did not arrive in time. They may still appear — if not, the host may have disconnected.",
           );
-        }, RESULT_TIMEOUT_MS);
+        }, SHOP_RESULT_TIMEOUT_MS);
         pendingRef.current = pending;
 
         dispatch({

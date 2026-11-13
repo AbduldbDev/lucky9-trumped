@@ -45,3 +45,6 @@ export function getShopItem(bundleId) {
 export function quantityLabel(quantity) {
   return `${quantity} Random Trump${quantity === 1 ? "" : "s"}`;
 }
+
+/** How long the buyer waits for the host's verified grant before a warning. */
+export const SHOP_RESULT_TIMEOUT_MS = 12000;
