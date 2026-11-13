@@ -152,7 +152,7 @@ export default function SplashScreen({ onDone }) {
             <span className="font-semibold text-gold/70">AbduldbDev</span>
           </p>
           <p className="mt-1 text-[9px] text-white/20">
-            © 2026 AbduldbDev. All rights reserved.
+            © {new Date().getFullYear()} AbduldbDev. All rights reserved.
           </p>
         </footer>
       </div>

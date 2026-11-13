@@ -84,6 +84,8 @@ INSERT INTO public.card_skins (id, name, rarity, price) VALUES
     -- RARE
     ('silent_origin', 'Silent Origin', 'RARE', 1000),
     ('azure_horizon', 'Azure Horizon', 'RARE', 1000),
+    ('void_prism', 'Void Prism', 'RARE', 1000),
+    ('solaris_prime', 'Solaris Prime', 'RARE', 1000),
 
     -- EPIC
     ('celestial_reverie', 'Celestial Reverie', 'LEGENDARY', 2000),
@@ -97,8 +99,10 @@ INSERT INTO public.card_skins (id, name, rarity, price) VALUES
     ('void_empero', 'Void Emperor', 'MYTHIC', 3500),
     ('obsidian_sovereign', 'Obsidian Sovereign', 'MYTHIC', 3500),
     ('eternal_void', 'Eternal Void', 'MYTHIC', 3500),
-    ('celestial_ascension', 'Celestial Ascension', 'MYTHIC', 3500)
-
+    ('celestial_ascension', 'Celestial Ascension', 'MYTHIC', 3500),
+    ('abyssal_overlord', 'Abyssal Overlord', 'MYTHIC', 3500),
+    ('celestial_dominion', 'Celestial Dominion', 'MYTHIC', 3500),
+    ('eternal_ascendant', 'Eternal Ascendant', 'MYTHIC', 3500)
 ON CONFLICT (id) DO UPDATE SET
     name = EXCLUDED.name,
     rarity = EXCLUDED.rarity,

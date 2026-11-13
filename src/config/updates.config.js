@@ -8,6 +8,10 @@ export const UPDATES = [
     items: [
       {
         type: "new",
+        text: "Introduced new Card Skins! Customize your cards with exclusive designs, unique color themes, and stunning visual effects across different rarities.",
+      },
+      {
+        type: "new",
         text: "Added the Trump Shop: purchase random Trump Cards using Chips during a match. Confirm your purchase, and everyone in the room will be notified when someone buys from the shop!",
       },
       {
