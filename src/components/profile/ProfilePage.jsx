@@ -37,13 +37,23 @@ const SCROLL =
  * Mobile-first: base = phones, `sm:` = tablets, `lg:` = desktop.
  * Match history and skins are scrollable lists. Data loading and handlers are unchanged.
  */
-export default function ProfilePage({ profile, onEquipSkin, onSetTableColor }) {
+export default function ProfilePage({
+  profile,
+  onEquipSkin,
+  onSetTableColor,
+  onRename,
+}) {
   const navigate = useNavigate();
   const [matchHistory, setMatchHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("stats");
   const [equipping, setEquipping] = useState(null);
   const [changingColor, setChangingColor] = useState(false);
+  // Inline username editing
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState("");
 
   useEffect(() => {
     loadMatchHistory();
@@ -91,6 +101,40 @@ export default function ProfilePage({ profile, onEquipSkin, onSetTableColor }) {
     } finally {
       setChangingColor(false);
     }
+  };
+
+  const handleRename = async () => {
+    const name = nameDraft.trim();
+    if (!onRename || savingName) return;
+    if (!name) {
+      setNameError("Enter a username.");
+      return;
+    }
+    if (name === profile.username) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      await onRename(name);
+      setEditingName(false);
+      setNameError("");
+    } catch (err) {
+      setNameError(err.message || "Could not update username.");
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const startRename = () => {
+    setNameDraft(profile.username);
+    setNameError("");
+    setEditingName(true);
+  };
+
+  const cancelRename = () => {
+    setEditingName(false);
+    setNameError("");
   };
 
   const winRate =
@@ -194,9 +238,88 @@ export default function ProfilePage({ profile, onEquipSkin, onSetTableColor }) {
                 <span className="mb-0.5 block text-[8px] font-semibold uppercase tracking-[0.2em] text-white/35 sm:text-[9px] sm:tracking-[0.25em]">
                   Player
                 </span>
-                <h2 className="truncate font-serif text-sm font-bold leading-tight text-ivory sm:text-xl">
-                  {profile.username}
-                </h2>
+                {editingName ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleRename();
+                    }}
+                    className="flex flex-col gap-1.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus
+                        value={nameDraft}
+                        maxLength={20}
+                        onChange={(e) => setNameDraft(e.target.value)}
+                        aria-label="New username"
+                        placeholder="New username"
+                        className="min-w-0 flex-1 rounded-lg border border-gold/40 bg-black/40 px-2.5 py-1
+                          font-serif text-sm font-bold text-ivory outline-none
+                          focus:border-gold/70 sm:text-base"
+                      />
+                      <button
+                        type="submit"
+                        disabled={savingName}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                          border border-gold/40 bg-gold-faint/25 text-gold-light transition-all
+                          hover:border-gold/70 disabled:opacity-40 sm:h-8 sm:w-8"
+                        title="Save username"
+                        aria-label="Save username"
+                      >
+                        <i
+                          className={
+                            savingName
+                              ? "fa-solid fa-spinner fa-spin text-[10px] sm:text-xs"
+                              : "fa-solid fa-check text-[10px] sm:text-xs"
+                          }
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelRename}
+                        disabled={savingName}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                          border border-white/10 text-white/40 transition-all
+                          hover:border-white/25 hover:text-white/80 disabled:opacity-40 sm:h-8 sm:w-8"
+                        title="Cancel"
+                        aria-label="Cancel username change"
+                      >
+                        <i className="fa-solid fa-xmark text-[10px] sm:text-xs" />
+                      </button>
+                    </div>
+                    <span className="text-[9px] text-white/30 sm:text-[10px]">
+                      Up to 20 characters
+                    </span>
+                    {nameError && (
+                      <span
+                        role="alert"
+                        className="text-[10px] text-red-400/90 sm:text-[11px]"
+                      >
+                        <i className="fa-solid fa-circle-exclamation mr-1.5" />
+                        {nameError}
+                      </span>
+                    )}
+                  </form>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="truncate font-serif text-sm font-bold leading-tight text-ivory sm:text-xl">
+                      {profile.username}
+                    </h2>
+                    {onRename && (
+                      <button
+                        onClick={startRename}
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full
+                          text-white/30 transition-all hover:bg-white/5 hover:text-gold-light
+                          focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/60"
+                        title="Change username"
+                        aria-label="Change username"
+                      >
+                        <i className="fa-solid fa-pen text-[9px] sm:text-[10px]" />
+                      </button>
+                    )}
+                  </div>
+                )}
                 <p className="mt-0.5 truncate text-[9px] uppercase tracking-wider text-white/40 sm:text-[11px] sm:tracking-widest">
                   {profile.currentRank} · Level {profile.level}
                 </p>

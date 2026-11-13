@@ -5,7 +5,7 @@ import { useProfile } from "../hooks/useProfile.js";
 
 /** /profile: loads the profile and wires the profile actions. */
 export default function ProfileRoutePage() {
-  const { profile, equip, setTableColor } = useProfile();
+  const { profile, equip, setTableColor, rename } = useProfile();
 
   if (!profile) return <LobbySkeleton />;
 
@@ -15,6 +15,7 @@ export default function ProfileRoutePage() {
         profile={profile}
         onEquipSkin={equip}
         onSetTableColor={setTableColor}
+        onRename={rename}
       />
     </AudioProvider>
   );

@@ -4,12 +4,13 @@ import {
   initProfile,
   purchaseSkin,
   refreshProfile,
+  saveUsername,
   setTableColor,
 } from "../services/statsService.js";
 
 /**
  * Loads the signed-in player's profile and exposes the profile mutations
- * (equip / buy / table colour) so containers don't repeat the same wiring.
+ * (equip / buy / table colour / rename) so containers don't repeat the wiring.
  */
 export function useProfile() {
   const [profile, setProfile] = useState(null);
@@ -48,6 +49,11 @@ export function useProfile() {
     [profile],
   );
 
+  const rename = useCallback(
+    async (username) => setProfile(await saveUsername(profile, username)),
+    [profile],
+  );
+
   return {
     profile,
     setProfile,
@@ -55,5 +61,6 @@ export function useProfile() {
     equip,
     buy,
     setTableColor: changeTableColor,
+    rename,
   };
 }

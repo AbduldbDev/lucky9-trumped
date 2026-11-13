@@ -8,7 +8,11 @@ export const UPDATES = [
     items: [
       {
         type: "new",
-        text: "Added the Trump Shop: during a match, spend Chips on bundles of random Trump Cards — Starter (1 Trump, 150 Chips), Duo (2 Trumps, 280 Chips), Value (5 Trumps, 650 Chips), or Mega (7 Trumps, 850 Chips). Confirm before you buy, and everyone in the room sees your purchase!",
+        text: "Added the Trump Shop: purchase random Trump Cards using Chips during a match. Confirm your purchase, and everyone in the room will be notified when someone buys from the shop!",
+      },
+      {
+        type: "new",
+        text: "You can now change your username! Tap the pencil next to your name on your profile page (up to 20 characters, names must be unique). Your original username will still be used for login.",
       },
       {
         type: "new",
