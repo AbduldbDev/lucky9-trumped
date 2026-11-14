@@ -8,8 +8,10 @@ import { AudioProvider } from "../contexts/AudioContext.jsx";
 import { useIntro } from "../contexts/IntroContext.jsx";
 import { useProfile } from "../hooks/useProfile.js";
 import { useActiveRoom } from "../hooks/useActiveRoom.js";
+import { usePageTitle } from "../hooks/usePageTitle.js";
 
 export default function LobbyPage() {
+  usePageTitle("Lobby");
   const { profile, setProfile, refresh, equip, buy } = useProfile();
   const { room, createRoom, joinRoom, exitRoom } = useActiveRoom();
   const { welcomePending, dismissWelcome, isFirstVisit } = useIntro();

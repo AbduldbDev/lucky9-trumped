@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import AuthLayout from "../common/AuthLayout.jsx";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import { useLeaderboard } from "../../hooks/useLeaderboard.js";
+import { usePageTitle } from "../../hooks/usePageTitle.js";
 import LeaderboardPanel from "./LeaderboardPanel.jsx";
 
 /**
@@ -10,6 +11,7 @@ import LeaderboardPanel from "./LeaderboardPanel.jsx";
  * The list scrolls inside the panel.
  */
 export default function Leaderboard() {
+  usePageTitle("Leaderboard");
   const navigate = useNavigate();
   const { user } = useAuth();
   const { entries, loading, error, reload } = useLeaderboard(10);

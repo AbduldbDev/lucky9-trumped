@@ -11,18 +11,20 @@
 
 ## 🎯 Overview
 
-**Lucky 9: Trump Card Edition** is a sophisticated real-time multiplayer card game that enhances the classic Lucky 9 (Filipino card game) with strategic Trump Cards system, lives-based elimination, escalating bets, and fog-of-war mechanics. Built with React, Vite, TailwindCSS, and Supabase for seamless multiplayer experiences.
+**Lucky 9: Trump Card Edition** is a real-time multiplayer card game that enhances the classic Lucky 9 (Filipino card game) with a strategic Trump Cards system, lives-based elimination, escalating bets, and fog-of-war mechanics. Built with React, Vite, TailwindCSS, and Supabase for seamless multiplayer.
 
 ### Key Features
 
-- 🎴 **2-6 Player Multiplayer** — Real-time gameplay with Supabase Realtime
-- 🃏 **17 Unique Trump Cards** — 5 rarity tiers from Common to Mythic
-- 🛡️ **Counter System** — Reactive defense mechanics with SHATTER card
+- 🎴 **2–6 Player Multiplayer** — Real-time gameplay with Supabase Realtime
+- 🃏 **25 Unique Trump Cards** — 5 rarity tiers from Common to Mythic
+- 🛒 **In-Game Trump Shop** — Spend chips on bundles of random Trump Cards (database-priced)
+- 🛡️ **Counter System** — SHATTER counters and MIRROR reflects targeted effects
 - 🎭 **Fog-of-War** — Hidden hole cards and strategic information control
-- 💰 **Economy System** — Coins, shop, and 8 unlockable card skins
-- ⚡ **Host-Authoritative Architecture** — Secure game state management
-- 🎨 **Modern UI/UX** — Polished interface with animations and sound effects
-- 👥 **Spectator Mode** — Watch games after elimination
+- 💰 **Economy System** — Chips, Trump Shop, and 25 unlockable card skins
+- 👤 **Player Profiles** — Username, lifetime stats, match history, and leaderboards
+- ⚡ **Host-Authoritative Architecture** — Secure, validated game state management
+- 🎨 **Modern UI/UX** — Polished interface with animations, sound effects, and themes
+- 👥 **Spectator Mode** — Watch games after elimination or when joining mid-match
 
 ---
 
@@ -56,7 +58,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ### Testing
 
 ```bash
-# Run headless engine self-test (300 simulated matches)
+# Run headless engine self-test (300 simulated matches + trump card suites)
 npm test
 ```
 
@@ -69,21 +71,28 @@ npm test
 1. Go to [supabase.com](https://supabase.com) and create a new project
 2. Note your **Project URL** and **Anon Public Key**
 
-### 2. Enable Anonymous Authentication
+### 2. Run Database Migrations
 
-1. Navigate to **Authentication → Providers**
-2. Enable **"Allow anonymous sign-ins"**
-   - Players get anonymous profiles without signup
-   - Required for seamless multiplayer experience
+1. Open the **SQL Editor** in the Supabase Dashboard
+2. Run the migrations in order:
 
-### 3. Run Database Migrations
+| Migration | Purpose |
+| --------- | ------- |
+| `000_complete_setup.sql` | Core schema: profiles, card skins, player stats, match history, RPCs (`record_match`, `purchase_skin`, `equip_skin`, …) |
+| `005_fix_trigger.sql` | Profile creation trigger fix |
+| `006_add_sync_functions.sql` | Sync/helper functions |
+| `007_verify_sync.sql` | Verification helper |
+| `008_update_match_history.sql` | Match history columns + nullable winner |
+| `009_fix_match_history_function.sql` | History view function fix |
+| `010_fix_match_history_type.sql` | History type fix |
+| `011_fix_match_history_permissions.sql` | RLS policies for history inserts |
+| `012_trump_shop.sql` | **Trump Shop**: `trump_shop_items` + `trump_purchases` tables, `purchase_trump_bundle` and `verify_trump_purchase` RPCs |
 
-1. Open **SQL Editor** in Supabase Dashboard
-2. Run the following migrations in order:
-   - `supabase/migrations/001_schema.sql` — Core schema (profiles, card_skins)
-   - `supabase/migrations/002_game_rooms.sql` — Game rooms table
+> The **Trump Shop bundles are seeded in `012_trump_shop.sql`** — the database is the
+> authoritative price source. If you change bundles in `src/config/trumpShop.config.js`,
+> update the SQL seed to match.
 
-### 4. Configure Environment Variables
+### 3. Configure Environment Variables
 
 Add your credentials to `.env`:
 
@@ -92,13 +101,12 @@ VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
 VITE_SUPABASE_ANON_KEY=YOUR-ANON-PUBLIC-KEY
 ```
 
-### Fallback Mode
+### Accounts & Authentication
 
-If Supabase is unavailable, the app falls back to:
-
-- Local guest profile (localStorage)
-- Coins/skins stored locally
-- Multiplayer still requires Supabase URL + anon key
+- Players sign up with a **username + password** (3–20 characters, letters/numbers/underscores)
+- Usernames are stored on the profile and also used for login
+- Profiles hold chips, level/rank, equipped skin, owned inventory, table color, and lifetime stats
+- The original username used at signup remains the login credential (username changes on the profile page don't affect login)
 
 ---
 
@@ -113,10 +121,10 @@ If Supabase is unavailable, the app falls back to:
 2. **Players Join**
    - Click **"Join Room"**
    - Enter the Party Code
-   - Wait in lobby
+   - Wait in the lobby and mark yourself **Ready**
 
 3. **Start Game**
-   - Host clicks **"Start Game"** when ready
+   - Host clicks **"Start Game"** when everyone is ready
    - Minimum 2 players required
 
 ### Core Rules
@@ -128,35 +136,44 @@ Be the last player standing by winning rounds and preserving your lives.
 #### Scoring
 
 - **Score = (Sum of card values) mod 10**
-- Card values: **A=1**, **2-9=face value**, **10/J/Q/K=0**
-- Maximum **3 cards** per hand
+- Card values: **A=1**, **2–9=face value**, **10/J/Q/K=0**
+- Up to **5 cards** per hand
 - **Highest score wins** the round
 
 #### Lives & Betting
 
-- Each player starts with **12 lives**
-- **Bet = max(1, round + Σ bet modifiers)**
-- Losers lose **bet amount** in lives
-- Winners gain: **bet × number of losers** (split among tied winners)
-- **0 lives = Eliminated** (become spectator)
+- Players start with **1 life** (can grow up to **12**)
+- **Bet = round number + bet modifiers** (Bet Up/Down cards, min 0)
+- Losers lose the **bet amount** in lives
+- Winners **gain bet × number of losers** (split among tied winners)
+- **0 lives = Eliminated** (become a spectator)
+- **Angel Card** and **Aegis** interact with life loss — see the Trump Cards catalog
+- Leaving a match mid-game eliminates you immediately
 
 #### Turn Actions
 
 **On Your Turn:**
 
 1. **Play Trump Cards** (optional, multiple allowed)
-2. **Hit** — Draw a card (if < 3 cards and not sealed)
+2. **Hit** — Draw a card (if < 5 cards and not sealed)
 3. **Stand** — End your turn
 
 **Showdown Trigger:**
 
 - All active players must **Stand**
 - Trump cards **reset** all Stand flags (extends the round)
+- A 3-second reveal countdown starts before the showdown resolves
 
 #### Lucky 9 Bonus
 
 - When your hand totals exactly **9**, you receive a **bonus Trump Card**
-- Works for initial deal AND trump card draws
+- Works for the initial deal AND trump card draws
+
+#### Timeouts & Rematch
+
+- Turn timer is **30 seconds**; a timeout eliminates you for that round
+- **2 consecutive timeouts** = permanent elimination for the match
+- After a match ends, players **vote on a rematch** (30s timer, unanimous required, otherwise the room returns to the lobby)
 
 ---
 
@@ -166,64 +183,74 @@ Be the last player standing by winning rounds and preserving your lives.
 
 | Rarity        | Drop Rate | Color  |
 | ------------- | --------- | ------ |
-| **Common**    | 45%       | Gray   |
-| **Uncommon**  | 27%       | Green  |
-| **Rare**      | 17%       | Blue   |
-| **Legendary** | 8%        | Yellow |
-| **Mythic**    | 3%        | Purple |
+| **Common**    | 35%       | Gray   |
+| **Uncommon**  | 25%       | Green  |
+| **Rare**      | 18%       | Blue   |
+| **Legendary** | 12%       | Yellow |
+| **Mythic**    | 10%       | Purple |
 
 ### Distribution
 
-- **2 Trump Cards** at match start
-- **1 Trump Card** per round
+- **5 Trump Cards** at match start
+- **2 Trump Cards** for round winners, **1** for active losers
 - **1 Bonus Card** when hitting Lucky 9
+- **Trump Shop bundles** (see below)
 - No inventory cap (unlimited storage)
+- Cards can have a `minPlayers` requirement — they only roll into hands and can only be played while enough players are active (e.g. **Bond needs 3+**)
 
 ---
 
 ## 📋 Trump Card Catalog
 
-### 🟢 Common (45%)
+### 🟢 Common (35%)
 
-| Card               | Effect                                               |
-| ------------------ | ---------------------------------------------------- |
-| **Bet Up**         | Increase total bet by 1                              |
-| **Bet Down**       | Decrease total bet by 1 (min: 0)                     |
-| **Hush**           | Draw one hidden card (only you can see its value)    |
-| **Fortune Teller** | Reveal the next 3 cards in the deck (private vision) |
+| Card           | Effect                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------- |
+| **Bet Up**     | Increase total bet by 1                                                                 |
+| **Bet Down**   | Decrease total bet by 1 (min: 0)                                                        |
+| **Shatter**    | Counter a targeted trump (cancel its effect) or destroy table effects (bets, Angel, Aegis) |
+| **Sacrifice**  | Lose 2 lives to gain 2 Trump Cards (needs more than 1 life)                             |
+| **Odds**       | Check whether the next deck card is above or below 5 (without revealing its value)      |
 
-### 🟢 Uncommon (27%)
+### 🟢 Uncommon (25%)
 
-| Card                | Effect                                               | Counterable |
-| ------------------- | ---------------------------------------------------- | ----------- |
-| **Double Bet Up**   | Increase total bet by 2                              | ❌          |
-| **Double Bet Down** | Decrease total bet by 2 (min: 0)                     | ❌          |
-| **Shatter**         | Counter targeted trump effects (10s decision window) | ❌          |
-| **Return**          | Remove your own last drawn card                      | ❌          |
-| **Discard**         | Remove target player's last drawn card               | ✅          |
+| Card                | Effect                                        | Counterable |
+| ------------------- | --------------------------------------------- | ----------- |
+| **Double Bet Up**   | Increase total bet by 2                       | ❌          |
+| **Double Bet Down** | Decrease total bet by 2 (min: 0)              | ❌          |
+| **Return**          | Remove your own last drawn card               | ❌          |
+| **Discard**         | Remove target player's last drawn card        | ✅          |
+| **Hush**            | Draw one hidden card (only you see its value) | ❌          |
 
-### 🔵 Rare (17%)
+### 🔵 Rare (18%)
 
-| Card         | Effect                                             | Counterable |
-| ------------ | -------------------------------------------------- | ----------- |
-| **Refresh**  | Replace all your cards with 2 new cards            | ❌          |
-| **Exchange** | Swap your last card with target player's last card | ✅          |
-| **Target**   | Force target player to draw 1 card (max 3)         | ✅          |
+| Card         | Effect                                                   | Counterable |
+| ------------ | -------------------------------------------------------- | ----------- |
+| **Refresh**  | Replace all your cards with 2 new cards                  | ❌          |
+| **Exchange** | Swap your last card with target player's last card       | ✅          |
+| **Target**   | Force target player to draw 1 card (max 5)               | ✅          |
+| **Checker**  | Inspect remaining copies of a rank in the deck (private) | ❌          |
+| **Mirror**   | When countering, reflect the trump back at its user      | —           |
 
-### 🟡 Legendary (8%)
+### 🟡 Legendary (12%)
 
-| Card        | Effect                                          | Counterable |
-| ----------- | ----------------------------------------------- | ----------- |
-| **Select**  | Draw a specific rank (A-10) from remaining deck | ❌          |
-| **Disable** | Target player skips turns for the round         | ✅          |
-| **Checker** | Inspect remaining copies of a card rank in deck | ❌          |
+| Card               | Effect                                                | Counterable |
+| ------------------ | ----------------------------------------------------- | ----------- |
+| **Select**         | Draw a specific rank (A–10) from the remaining deck   | ❌          |
+| **Disable**        | Target player skips turns for the round               | ✅          |
+| **Fortune Teller** | Reveal the next 3 deck cards (private vision)         | ❌          |
+| **Lockdown**       | Target player cannot use Trump Cards for the round    | ✅          |
+| **Aegis**          | Halve your life penalty this round (destroyable by Shatter) | ❌    |
 
-### 🟣 Mythic (3%)
+### 🟣 Mythic (10%)
 
-| Card                | Effect                                     | Counterable |
-| ------------------- | ------------------------------------------ | ----------- |
-| **Friendship Card** | All players draw 1 card (each can counter) | ✅          |
-| **Angel Card**      | Survive with 0 lives for the current round | ❌          |
+| Card                | Effect                                                                     | Counterable |
+| ------------------- | -------------------------------------------------------------------------- | ----------- |
+| **Friendship Card** | All active players draw 1 card (each can counter)                          | ✅          |
+| **Angel Card**      | Survive at 0 lives for the current round (destroyable by Shatter)          | ❌          |
+| **Devour**          | Steal up to 2 lives from a target and add them to your own                 | ✅          |
+| **Rebirth**         | Discard all your Trump Cards and roll the same number of new ones          | ❌          |
+| **Bond**            | Bond two players for 3 rounds: negative targeted effects are shared. **Requires 3+ active players** | ✅ |
 
 ---
 
@@ -236,12 +263,18 @@ Be the last player standing by winning rounds and preserving your lives.
 
 2. **Counter Prompt Appears**
    - Player 3 sees a **10-second timer** popup
-   - Options: **Accept** (use SHATTER) or **Decline**
+   - Options: **Counter** (use SHATTER — or MIRROR) or **Decline**
 
 3. **Resolution**
-   - **Accept:** SHATTER is consumed, original trump has no effect
-   - **Decline:** Original trump effect executes normally
-   - **Timeout:** Treated as Decline
+   - **Shatter:** the SHATTER card is consumed and the original trump has no effect
+   - **Mirror:** the effect is reflected back at the original user (self-targeting allowed)
+   - **Decline / Timeout:** the original trump effect executes normally
+
+### Rules & Restrictions
+
+- **Bonded players** each get their own counter window — if *both* counter with SHATTER, no bond forms
+- **Locked-down players** (LOCKDOWN victim) cannot counter with SHATTER or MIRROR — only "Accept Fate"
+- **Devour** and **Friendship Card** can also be countered
 
 ### Counterable Cards
 
@@ -249,7 +282,44 @@ Be the last player standing by winning rounds and preserving your lives.
 - **Exchange** — Swap last cards
 - **Target** — Force target to draw
 - **Disable** — Skip target's turns
+- **Lockdown** — Disable target's trumps
+- **Devour** — Steal lives
 - **Friendship Card** — Mass draw (each player decides independently)
+- **Bond** — Create a bond (either target may counter)
+
+---
+
+## 🛒 Trump Shop
+
+Spend **chips** on bundles of random Trump Cards during a match (PLAYING phase only — starting a match wipes held Trumps).
+
+| Bundle    | Random Trumps | Price (chips) |
+| --------- | ------------- | ------------- |
+| **Starter** | 1           | 150           |
+| **Duo**     | 2           | 280           |
+| **Value**   | 5           | 650           |
+| **Mega**    | 7           | 850           |
+
+### How It Works
+
+1. Open the shop from the **top bar** during a match and pick a bundle
+2. Confirm the purchase — chips are deducted **atomically in the database**
+3. The host verifies the purchase server-side and rolls your random cards (using the same rarity logic as normal draws, respecting `minPlayers`)
+4. **Everyone in the room** sees a notification that you bought Trumps; only you see which cards you got
+5. If the host never delivers, a 12-second watchdog warns you instead of leaving you hanging
+
+- **Prices live in the database** (`trump_shop_items`), never trusted from the client
+- Purchases are audited in `trump_purchases` and processed exactly once
+
+---
+
+## 👤 Profiles, Stats & Leaderboards
+
+- **Profile page**: avatar, username (inline rename, up to 20 chars, must be unique), rank/level, chips, wins/losses/win-rate
+- **Match history**: recent matches with result, room code, rounds, duration, and chips rewarded
+- **Statistics**: total matches, current/best win streak, wins, losses, level
+- **Leaderboard**: global rankings from the database
+- **Winners earn 100–120 chips** per match
 
 ---
 
@@ -260,43 +330,56 @@ Be the last player standing by winning rounds and preserving your lives.
 ```
 lucky9-trumped/
 ├── src/
-│   ├── components/         # React components
-│   │   ├── cards/          # Card UI (Card.jsx, FogBadge.jsx)
-│   │   ├── intro/          # Splash, Welcome, Lobby screens
-│   │   ├── lobby/          # Lobby and WaitingRoom
-│   │   ├── shop/           # Coin shop for skins
-│   │   └── table/          # Game table components
-│   │       ├── components/ # Table sub-components
-│   │       ├── Controls.jsx
-│   │       ├── Table.jsx
-│   │       └── Timerring.jsx
-│   ├── config/             # Data-driven configuration
+│   ├── components/
+│   │   ├── auth/            # Login, SignUp, route guards
+│   │   ├── cards/           # Card UI (Card.jsx, FogBadge.jsx)
+│   │   ├── common/          # Shared layout atoms
+│   │   ├── intro/           # Splash, Welcome, asset loader
+│   │   ├── leaderboard/     # Leaderboard panel/modal
+│   │   ├── lobby/           # Lobby and WaitingRoom
+│   │   ├── profile/         # Profile page (player card, history,
+│   │   │                    #   skins inventory, table color settings)
+│   │   ├── room/            # Room orchestration (Table / WaitingRoom)
+│   │   ├── shop/            # Skin shop + in-game Trump Shop
+│   │   └── table/
+│   │       ├── game/        # Table, seats, deck, Controls (ActionBar + TrumpTray)
+│   │       ├── ui/          # TopBar, panels, round result, audio settings
+│   │       ├── modals/      # CounterPrompt, TrumpGuide, GameOver, OpponentStats
+│   │       └── effects/     # Trump notifications, showdown overlay, active effects
+│   ├── config/              # Data-driven configuration
 │   │   ├── audio.config.js
 │   │   ├── cardSkins.config.js
 │   │   ├── gameRules.config.js
-│   │   └── trumpCards.config.js
-│   ├── hooks/              # Custom React hooks
-│   │   ├── useGameState.js         # State synchronization
+│   │   ├── profilePreferences.config.js
+│   │   ├── trumpCards.config.js
+│   │   ├── trumpShop.config.js
+│   │   └── updates.config.js
+│   ├── contexts/            # Auth, Audio, Intro contexts
+│   ├── hooks/               # Custom React hooks
+│   │   ├── useGameState.js         # Host-authoritative state sync + dispatch
 │   │   ├── useSupabaseRealtime.js  # Realtime connection
-│   │   ├── useTurnTimer.js
-│   │   └── ...
-│   ├── services/           # External services
+│   │   ├── useMatchSettlement.js   # Per-player match result saving
+│   │   ├── useTrumpShop.js         # Shop purchase flow
+│   │   ├── usePersonalNotifications.js
+│   │   └── ...                     # Timers, targeting, rematch, audio, etc.
+│   ├── pages/               # Route pages
+│   ├── services/            # All Supabase access lives here
 │   │   ├── supabaseClient.js
-│   │   └── statsService.js
-│   ├── utils/              # Pure logic (testable)
+│   │   ├── statsService.js       # Profile, stats, match history, skins, table color
+│   │   └── trumpShopService.js   # Shop purchases + purchase verification
+│   ├── utils/               # Pure logic (testable)
 │   │   ├── deckEngine.js       # Deck management
 │   │   ├── gameEngine.js       # Core game reducer
-│   │   ├── trumpExecutors.js   # Trump card effects
+│   │   ├── trumpExecutors.js   # Trump card effects + rarity rolls
+│   │   ├── assetCache.js
 │   │   ├── partyCode.js        # 6-char code generator
 │   │   └── ...
 │   ├── App.jsx
 │   └── main.jsx
 ├── supabase/
-│   └── migrations/
-│       ├── 001_schema.sql      # Core schema
-│       └── 002_game_rooms.sql  # Game rooms table
+│   └── migrations/          # 000_complete_setup.sql … 012_trump_shop.sql
 ├── scripts/
-│   └── selftest.mjs        # Automated testing (300 matches)
+│   └── selftest.mjs         # Automated testing (300 matches + suites)
 ├── package.json
 └── vite.config.js
 ```
@@ -306,45 +389,49 @@ lucky9-trumped/
 **Host-Authoritative Architecture:**
 
 - **Host** (room creator) runs the authoritative game state
-- Holds the deck and all hands
-- Executes all game logic via pure reducer (`gameEngine.js`)
-- Broadcasts two types of events:
-  - `state` — Public game state (deck stripped, hole cards hidden)
-  - `private` — Per-player events (only their hole cards and trump inventory)
+  - Holds the deck and all hands
+  - Executes all game logic via a pure reducer (`gameEngine.js`)
+  - Verifies Trump Shop purchases against the database before granting cards
+  - Broadcasts two types of events:
+    - `state` — Public game state (deck stripped, hole cards hidden)
+    - `private` — Per-player events (only their hole cards, trump inventory, and private results)
 
 - **Guests** (other players)
-  - Send action requests to host
+  - Send action requests to the host
   - Receive public state + their private state
   - UI updates based on broadcasted state
 
 **Security Considerations:**
 
-- Fog-of-war is **not cheat-proof** in current implementation
+- Fog-of-war is **not cheat-proof** in the current implementation
 - Broadcast channels are readable by anyone with the Party Code
 - Determined players can inspect `private` messages in browser dev tools
-- **Fine for friends; competitive play should move reducer to Edge Function**
+- **Fine for friends; competitive play should move the reducer to an Edge Function**
+- Trump Shop purchases are protected server-side: prices come from the DB and grants are verified + deduplicated by purchase ID
 
 ---
 
 ## 🎨 Card Skins
 
-### Unlockable Skins
+### Unlockable Skins (25 total)
 
-| Skin                     | Rarity    | Price      | Preview                |
-| ------------------------ | --------- | ---------- | ---------------------- |
-| **Classic Velvet Red**   | Common    | Free       | Default starter skin   |
-| **Cyberpunk Neon**       | Rare      | 500 coins  | Cyan/Fuchsia gradient  |
-| **Royal Amethyst**       | Rare      | 750 coins  | Purple/Indigo gradient |
-| **Emerald Dynasty**      | Rare      | 750 coins  | Emerald/Green gradient |
-| **Midnight Obsidian**    | Epic      | 1200 coins | Slate/Black gradient   |
-| **Sakura Blossom**       | Epic      | 1200 coins | Pink/Rose gradient     |
-| **Imperial Dragon Gold** | Legendary | 2000 coins | Amber/Yellow gradient  |
-| **Celestial Diamond**    | Legendary | 2000 coins | Sky/Blue gradient      |
+| Tier             | Count | Price              | Examples                                        |
+| ---------------- | ----- | ------------------ | ----------------------------------------------- |
+| **Common**       | 6     | Free / 100 chips   | Default Card, Default Red/Purple/Yellow/Pink/Blue |
+| **Uncommon**     | 2     | 300 chips          | The Devil, The Castle                           |
+| **Rare**         | 4     | 1,000 chips        | Silent Origin, Azure Horizon, Void Prism, Solaris Prime |
+| **Legendary**    | 4     | 2,000 chips        | Celestial Reverie, Eclipse of the Velvet Moon, Heavenly Ascendance, Petal Whispers |
+| **Mythic**       | 9     | 3,500 chips        | Abyssal Sovereign, Crimson Requiem, Void Emperor, Obsidian Sovereign, Eternal Void, Celestial Ascension, Abyssal Overlord, Celestial Dominion, Eternal Ascendant |
 
-### Earning Coins
+### Earning Chips
 
-- **Round Payout:** `round_payout × ROUND_PAYOUT_COIN_VALUE`
-- **Match Winner:** Base payout + `WINNER_MULTIPLIER × player_count`
+- **Match winners** earn 100–120 chips
+- Chips also fund the **Trump Shop**
+
+### Appearance Settings
+
+- Equip any owned skin from the profile page
+- Choose your **table felt color** (local view preference, persisted per profile)
 
 ---
 
@@ -358,21 +445,24 @@ npm test
 
 Runs **300 simulated matches** with:
 
-- Random player counts (2-6)
+- Random player counts (2–6)
 - Random actions and trump plays
 - Validation of game state integrity
-- Edge case coverage
+- Trump card suites: shop grants, LOCKDOWN counter restrictions, the `minPlayers` player-count gate, catalog completeness, and rarity chances summing to 100%
 
 ### Manual Testing Checklist
 
 - [ ] Create and join rooms
-- [ ] All 17 trump cards function correctly
-- [ ] Counter system (SHATTER) works with 10s timer
+- [ ] All 25 trump cards function correctly
+- [ ] Counter system (SHATTER / MIRROR) works with the 10s timer
+- [ ] LOCKDOWN blocks SHATTER/MIRROR counters
+- [ ] BOND requires 3+ active players (rolls and plays)
 - [ ] Lucky 9 bonus triggers properly
 - [ ] Fog-of-war hides appropriate information
 - [ ] Spectator mode after elimination
-- [ ] Coin rewards and shop purchases
-- [ ] Rematch functionality
+- [ ] Chip rewards, skin purchases, and Trump Shop purchases
+- [ ] Username change on the profile page
+- [ ] Rematch voting
 
 ---
 
@@ -384,18 +474,25 @@ Runs **300 simulated matches** with:
 export const GAME_CONFIG = {
   MAX_PLAYERS: 6,
   MIN_PLAYERS: 2,
-  STARTING_LIVES: 12,
-  STARTING_TRUMP_CARDS: 2,
-  TRUMP_CARDS_PER_ROUND: 1,
-  TRUMP_CARD_ON_TOTAL_NINE: true,
+  MIN_BET: 0,
+  MAX_CARDS_IN_HAND: 5,
+  STARTING_LIVES: 1,
+  MAX_LIVES: 12,
+  STARTING_TRUMP_CARDS: 5,
+  TRUMP_CARDS_FOR_WINNER: 2,
+  TRUMP_CARDS_FOR_LOSER: 1,
   TURN_TIMER: 30, // seconds per turn
+  COUNTER_PROMPT_TIME_MS: 10000, // 10s counter window
+  WIN_REWARD_MIN: 100,
+  WIN_REWARD_MAX: 120,
+  ENABLE_REMATCH: true,
   // ... more config
 };
 ```
 
 ### Adding New Trump Cards
 
-1. **Add to catalog** (`src/config/trumpCards.config.js`):
+1. **Add to the catalog** (`src/config/trumpCards.config.js`) and to `ENABLED_TRUMP_CARDS`:
 
 ```javascript
 MY_CARD: {
@@ -403,29 +500,33 @@ MY_CARD: {
   name: "My Card",
   rarity: "RARE",
   description: "Does something awesome",
-  targetType: "NONE", // or SINGLE_PLAYER, ALL_PLAYERS, RANK_CHOICE
-  counterable: false, // true if can be blocked by SHATTER
+  targetType: "NONE", // NONE, SELF, SINGLE_PLAYER, TWO_PLAYERS, ALL_PLAYERS, RANK_CHOICE
+  counterable: false, // true if it can be blocked by SHATTER
+  mirrorable: true,   // false to opt out of MIRROR reflection
+  minPlayers: 3,      // optional: only usable/rollable with N+ active players
   effect: { type: "MY_EFFECT", ...params }
 }
 ```
 
-2. **Add executor** (`src/utils/trumpExecutors.js`):
+2. **Add an executor** (`src/utils/trumpExecutors.js`):
 
 ```javascript
-MY_EFFECT: (ctx) => {
-  // ctx = { state, playerId, targetId, params }
-  // Mutate ctx.state directly (Immer draft)
-
-  // Example: Modify player's hand
-  const player = ctx.state.players.find((p) => p.id === ctx.playerId);
-  player.hand.push(somethingNew);
-
-  // Optional: Check Lucky 9 after draws
-  checkLucky9(ctx.state, ctx.playerId);
-};
+MY_EFFECT({ draft, actor, target }) {
+  // Mutate the draft state directly.
+  // Return a human-readable result message.
+}
 ```
 
 3. **Test**: Run `npm test` to validate
+
+### Adding New Trump Shop Bundles
+
+Update **both** sides — the UI config and the DB seed must stay in sync:
+
+1. `src/config/trumpShop.config.js` → add an entry to `TRUMP_SHOP_ITEMS`
+2. `supabase/migrations/012_trump_shop.sql` → add the same row to the `trump_shop_items` seed
+
+The database is the price authority; the client config only drives the display.
 
 ### Adding New Skins
 
@@ -435,11 +536,12 @@ MY_EFFECT: (ctx) => {
 {
   id: "my_skin",
   name: "My Awesome Skin",
-  rarity: "Epic",
+  rarity: "RARE",
   price: 1000,
   unlockedByDefault: false,
   previewColor: "from-color-700 to-color-950", // Tailwind gradient
-  borderColor: "border-color-400"
+  borderColor: "border-color-400",
+  backSvg: "/card_skins/my_skin.png",
 }
 ```
 
@@ -447,7 +549,7 @@ MY_EFFECT: (ctx) => {
 
 ```sql
 INSERT INTO card_skins (id, name, price, rarity)
-VALUES ('my_skin', 'My Awesome Skin', 1000, 'Epic');
+VALUES ('my_skin', 'My Awesome Skin', 1000, 'RARE');
 ```
 
 ---
@@ -456,17 +558,48 @@ VALUES ('my_skin', 'My Awesome Skin', 1000, 'Epic');
 
 ### Tables
 
-**`profiles`**
+**`profiles`** — one per user
 
 ```sql
 - id (uuid, primary key, references auth.users)
-- name (text, default "Guest")
-- coins (integer, default 0)
-- equipped_skin (text, default "classic_red")
-- unlocked_skins (jsonb, default ["classic_red"])
+- username (text, unique)
+- chips (integer)
+- level (integer)
+- current_rank (text)
+- equipped_skin_id (text)
+- table_color (text)
 ```
 
-**`card_skins`**
+**`player_stats`** — lifetime statistics
+
+```sql
+- user_id (uuid)
+- total_matches, total_wins, total_losses (integer)
+- current_win_streak, highest_win_streak (integer)
+- favorite_trump_card (text)
+```
+
+**`match_history`** — one row per player per match
+
+```sql
+- match_code (text)
+- winner_id (uuid, nullable)
+- player_id (uuid)
+- won (boolean)
+- total_rounds (integer)
+- duration_seconds (integer)
+- chips_rewarded (integer)
+```
+
+**`user_inventory`** — owned items
+
+```sql
+- user_id (uuid)
+- item_id (text)
+- item_type (text)  -- e.g. CARD_SKIN
+```
+
+**`card_skins`** — skin catalog
 
 ```sql
 - id (text, primary key)
@@ -475,13 +608,25 @@ VALUES ('my_skin', 'My Awesome Skin', 1000, 'Epic');
 - rarity (text)
 ```
 
-**`game_rooms`** (optional, for persistence)
+**`trump_shop_items`** — Trump Shop bundle catalog (price authority)
 
 ```sql
-- id (text, primary key)
-- created_at (timestamp)
-- host_id (uuid)
-- state (jsonb)
+- id (text, primary key)      -- bundle id
+- name (text)
+- quantity (integer)          -- random trumps granted
+- price (integer)             -- chips
+```
+
+**`trump_purchases`** — purchase audit trail (consumed exactly once by the host)
+
+```sql
+- id (uuid, primary key)
+- user_id (uuid)
+- party_code (text)
+- bundle_id (text)
+- quantity (integer)
+- price_chips (integer)
+- verified (boolean)
 ```
 
 ---
@@ -499,18 +644,18 @@ npm test         # Run engine self-tests
 
 ### Tech Stack
 
-- **Frontend:** React 18.3.1, TailwindCSS 3.4.10
+- **Frontend:** React 18.3.1, TailwindCSS 3.4.10, react-router-dom 7
 - **Build Tool:** Vite 8.3.6
-- **Backend:** Supabase (Auth, Realtime, PostgreSQL)
-- **State Management:** React hooks + Immer (via pure reducer)
+- **Backend:** Supabase (Auth, Realtime, PostgreSQL + RLS + RPCs)
+- **State Management:** React hooks + pure reducer (no external state library)
 - **Icons:** Font Awesome
 
 ### Code Style
 
 - **Pure functions** for game logic (`gameEngine.js`, `trumpExecutors.js`)
-- **React hooks** for UI state and side effects
-- **Config-driven** design (easy to extend trump cards, skins, rules)
-- **Component composition** for maintainability
+- **Services** own all Supabase access; **config files** own all constants
+- **React hooks** for UI state and side effects; components stay thin
+- **Config-driven** design (easy to extend trump cards, skins, bundles, rules)
 
 ---
 
@@ -519,23 +664,22 @@ npm test         # Run engine self-tests
 ### Security
 
 1. **Fog-of-war not cheat-proof**
-   - Broadcast channels readable by anyone with Party Code
+   - Broadcast channels readable by anyone with the Party Code
    - Private messages visible in browser dev tools
-   - **Mitigation:** Move reducer to Supabase Edge Function for competitive play
+   - **Mitigation:** Move the reducer to a Supabase Edge Function for competitive play
 
 2. **Client-reported match results**
-   - `record_match` RPC trusts client coin amounts
-   - Caps exist per match, but not foolproof
+   - `record_match` RPC trusts the client's reward claim
+   - Caps exist per match, but this is not foolproof
    - **Mitigation:** Server-side match settlement for real stakes
 
-3. **Host is single point of failure**
-   - If host closes tab, match ends for all players
-   - **Mitigation:** Implement host migration or serverless reducer
+3. **Host is a single point of failure**
+   - If the host closes their tab, the match ends for all players
+   - **Mitigation:** Implement host migration or a serverless reducer
 
 ### UX
 
-- **No rejoin after disconnect** (reload creates new profile)
-- **No match history** (planned feature)
+- **Chips can be deducted without a grant** if the host disconnects right after a shop purchase (a watchdog warns the buyer after 12s)
 - **No in-game chat** (planned feature)
 
 ---
@@ -544,14 +688,20 @@ npm test         # Run engine self-tests
 
 ### Planned Features
 
-- [ ] **Host Migration** — Transfer host if original disconnects
-- [ ] **Match History** — View past game statistics
+- [ ] **Host Migration** — Transfer host if the original disconnects
 - [ ] **In-Game Chat** — Text communication during games
 - [ ] **Tournaments** — Multi-match bracket system
-- [ ] **More Trump Cards** — Expand to 25+ unique cards
+- [ ] **More Trump Cards** — Expand the catalog
 - [ ] **Achievements** — Unlock badges and rewards
-- [ ] **Leaderboards** — Global and friends rankings
 - [ ] **Mobile App** — Native iOS/Android versions
+
+### Recently Shipped
+
+- [x] **Trump Shop** — Chip-priced random Trump bundles during matches
+- [x] **25 Trump Cards** — Including Sacrifice, Odds, Mirror, Lockdown, Aegis, Rebirth, Devour, Bond
+- [x] **Username changes** — Rename from the profile page
+- [x] **Match History & Leaderboards**
+- [x] **Player-count gates** — Cards that require a minimum number of active players
 
 ### Community Requests
 
@@ -569,7 +719,7 @@ Contributions are welcome! Please follow these guidelines:
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
 3. **Write tests** for new trump cards/features
-4. **Follow existing code style** (pure functions, config-driven)
+4. **Follow existing code style** (pure logic, config-driven, services for DB access)
 5. **Commit with clear messages** (`git commit -m 'Add: Fortune Teller trump card'`)
 6. **Push to branch** (`git push origin feature/amazing-feature`)
 7. **Open a Pull Request**

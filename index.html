@@ -2,20 +2,126 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Lucky 9 · Trump Card Edition</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+
+    <!-- ── Primary SEO ─────────────────────────────────────────────────── -->
+    <title>
+      Lucky 9 Trumped — Free Online Multiplayer Lucky Nine Card Game
+    </title>
+    <meta
+      name="description"
+      content="Play Lucky 9 Trumped free online — a 2-6 player multiplayer Lucky Nine (Lucky 9) card game with 25 strategic Trump Cards, counters, mirrors, and fog-of-war. Create a room, invite friends, and play in your browser — no download needed."
+    />
+    <meta
+      name="keywords"
+      content="lucky9, lucky 9, lucky nine, lucky 9 trumped, lucky9 trumped, lucky nine card game, lucky 9 online, play lucky nine, multiplayer card game, trump card game, filipino card game, free online card game, browser card game, lucky 9 rules"
+    />
+    <meta name="author" content="Lucky 9 Trumped" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="application-name" content="Lucky 9 Trumped" />
+    <link rel="canonical" href="https://lucky9-trumped.vercel.app/" />
+
+    <!-- ── Favicon & PWA ────────────────────────────────────────────────── -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- ── Open Graph (Facebook, Discord, WhatsApp link previews) ──────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Lucky 9 Trumped" />
+    <meta property="og:url" content="https://lucky9-trumped.vercel.app/" />
+    <meta
+      property="og:title"
+      content="Lucky 9 Trumped — Free Online Multiplayer Lucky Nine Card Game"
+    />
+    <meta
+      property="og:description"
+      content="The classic Lucky 9 card game reimagined with 25 strategic Trump Cards. Play free with 2-6 friends in real time — right in your browser."
+    />
+    <meta
+      property="og:image"
+      content="https://lucky9-trumped.vercel.app/android-chrome-512x512.png"
+    />
+    <meta
+      property="og:image:alt"
+      content="Lucky 9 Trumped — Trump Card Edition"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ── Twitter / X card ─────────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary" />
+    <meta
+      name="twitter:title"
+      content="Lucky 9 Trumped — Free Online Multiplayer Lucky Nine Card Game"
+    />
+    <meta
+      name="twitter:description"
+      content="The classic Lucky 9 card game reimagined with 25 strategic Trump Cards. Play free with 2-6 friends in real time — right in your browser."
+    />
+    <meta
+      name="twitter:image"
+      content="https://lucky9-trumped.vercel.app/android-chrome-512x512.png"
+    />
+
+    <!-- ── Structured data (Google rich results) ───────────────────────── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Lucky 9 Trumped",
+        "alternateName": ["Lucky Nine", "Lucky 9", "Lucky9"],
+        "url": "https://lucky9-trumped.vercel.app/",
+        "description": "A free online multiplayer Lucky Nine (Lucky 9) card game with strategic Trump Cards, reactive counters, and fog-of-war gameplay for 2-6 players.",
+        "genre": ["Card Game", "Multiplayer", "Strategy"],
+        "gamePlatform": ["Web Browser"],
+        "playMode": ["MultiPlayer"],
+        "applicationCategory": "Game",
+        "operatingSystem": "Any (web browser)",
+        "inLanguage": "en",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock"
+        }
+      }
+    </script>
+
     <!-- Font Awesome 6 -->
-    <link rel="stylesheet"
+    <link
+      rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-      crossorigin="anonymous" referrerpolicy="no-referrer" />
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@500&display=swap"
-      rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div id="root"></div>
+    <!-- SEO fallback for bots that don't execute JS (the SPA renders below) -->
+    <noscript>
+      <h1>Lucky 9 Trumped — Free Online Multiplayer Lucky Nine Card Game</h1>
+      <p>
+        Lucky 9 Trumped is a free real-time online card game for 2-6 players
+        based on the classic Filipino Lucky 9 (Lucky Nine) card game, enhanced
+        with 25 strategic Trump Cards, counter and mirror mechanics, escalating
+        bets, and fog-of-war play. Create a room, share the code, and play with
+        friends directly in your browser.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

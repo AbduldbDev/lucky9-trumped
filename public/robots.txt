@@ -1,0 +1,10 @@
+# Allow all search engines to crawl the whole site
+User-agent: *
+Allow: /
+
+# Authenticated areas only — nothing secret, but no reason to crawl
+Disallow: /lobby
+Disallow: /profile
+Disallow: /leaderboard
+
+Sitemap: https://lucky9-trumped.vercel.app/sitemap.xml
